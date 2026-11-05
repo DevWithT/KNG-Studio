@@ -75,7 +75,8 @@ void MainComponent::updateDeviceLabel()
         deviceLabel.setText (device->getTypeName()
                                  + "  |  " + device->getName()
                                  + "  |  " + juce::String (device->getCurrentSampleRate(), 0) + " Hz"
-                                 + "  |  " + juce::String (device->getCurrentBufferSizeSamples()) + " samples",
+                                 + "  |  " + juce::String (device->getCurrentBufferSizeSamples()) + " samples"
+                                 + "  |  " + juce::String (device->getActiveInputChannels().countNumberOfSetBits()) + " inputs",
                              juce::dontSendNotification);
     }
     else
