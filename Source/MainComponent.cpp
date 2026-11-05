@@ -14,19 +14,22 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
     transportBar = std::make_unique<TransportBar> (*session);
     addAndMakeVisible (*transportBar);
 
-    trackLane = std::make_unique<TrackLane> (*session);
-    addAndMakeVisible (*trackLane);
+    tracksView = std::make_unique<TracksView> (*session);
+    tracksViewport.setViewedComponent (tracksView.get(), false);
+    tracksViewport.setScrollBarsShown (true, false);
+    addAndMakeVisible (tracksViewport);
 
     engine.getDeviceManager().deviceManager.addChangeListener (this);
     updateDeviceLabel();
 
-    setSize (1000, 650);
+    setSize (1100, 700);
 }
 
 MainComponent::~MainComponent()
 {
     engine.getDeviceManager().deviceManager.removeChangeListener (this);
-    trackLane = nullptr;
+    tracksViewport.setViewedComponent (nullptr, false);
+    tracksView = nullptr;
     transportBar = nullptr;
     session = nullptr;
 }
@@ -51,9 +54,11 @@ void MainComponent::resized()
         transportBar->setBounds (area.removeFromTop (40));
 
     area.removeFromTop (10);
+    tracksViewport.setBounds (area);
 
-    if (trackLane != nullptr)
-        trackLane->setBounds (area.removeFromTop (120));
+    if (tracksView != nullptr)
+        tracksView->setSize (tracksViewport.getWidth() - tracksViewport.getScrollBarThickness(),
+                             tracksView->getIdealHeight());
 }
 
 void MainComponent::changeListenerCallback (juce::ChangeBroadcaster*)

@@ -5,7 +5,7 @@
 #include <tracktion_engine/tracktion_engine.h>
 #include "EditSession.h"
 #include "TransportBar.h"
-#include "TrackLane.h"
+#include "TracksView.h"
 
 class MainComponent : public juce::Component,
                       private juce::ChangeListener
@@ -28,7 +28,9 @@ private:
 
     std::unique_ptr<EditSession> session;
     std::unique_ptr<TransportBar> transportBar;
-    std::unique_ptr<TrackLane> trackLane;
+
+    juce::Viewport tracksViewport;
+    std::unique_ptr<TracksView> tracksView;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

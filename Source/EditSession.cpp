@@ -24,6 +24,7 @@ EditSession::EditSession (te::Engine& engineToUse)
     edit->playInStopEnabled = true;
     edit->ensureNumberOfAudioTracks (1);
 
+    syncTrackState();
     refreshInputs();
     save();
 }
@@ -34,21 +35,136 @@ EditSession::~EditSession()
     save();
 }
 
-te::AudioTrack* EditSession::getTrack()
+//==============================================================================
+void EditSession::syncTrackState()
 {
-    edit->ensureNumberOfAudioTracks (1);
-    return te::getAudioTracks (*edit)[0];
+    const auto n = (size_t) getNumTracks();
+    trackInputs.resize (n, 0);
+    trackArmed.resize (n, false);
 }
 
-te::InputDeviceInstance* EditSession::findFirstWaveInput()
+int EditSession::getNumTracks()
 {
+    return te::getAudioTracks (*edit).size();
+}
+
+te::AudioTrack* EditSession::getTrack (int index)
+{
+    return te::getAudioTracks (*edit)[index];
+}
+
+void EditSession::addTrack()
+{
+    edit->ensureNumberOfAudioTracks (getNumTracks() + 1);
+    syncTrackState();
+}
+
+//==============================================================================
+juce::Array<te::InputDeviceInstance*> EditSession::getWaveInputs()
+{
+    juce::Array<te::InputDeviceInstance*> result;
+
     for (auto instance : edit->getAllInputDevices())
         if (instance->getInputDevice().getDeviceType() == te::InputDevice::waveDevice)
-            return instance;
+            result.add (instance);
 
-    return nullptr;
+    return result;
 }
 
+juce::StringArray EditSession::getInputNames()
+{
+    juce::StringArray names;
+
+    for (auto* input : getWaveInputs())
+        names.add (input->getInputDevice().getName());
+
+    return names;
+}
+
+int EditSession::getTrackInput (int trackIndex) const
+{
+    return juce::isPositiveAndBelow (trackIndex, (int) trackInputs.size())
+             ? trackInputs[(size_t) trackIndex] : 0;
+}
+
+void EditSession::setTrackInput (int trackIndex, int inputIndex)
+{
+    syncTrackState();
+
+    if (! juce::isPositiveAndBelow (trackIndex, (int) trackInputs.size()))
+        return;
+
+    const bool wasArmed = trackArmed[(size_t) trackIndex];
+
+    if (wasArmed)
+        applyArm (trackIndex, false);
+
+    trackInputs[(size_t) trackIndex] = juce::jmax (0, inputIndex);
+
+    if (wasArmed)
+        setArmed (trackIndex, true);
+}
+
+//==============================================================================
+bool EditSession::isArmed (int trackIndex) const
+{
+    return juce::isPositiveAndBelow (trackIndex, (int) trackArmed.size())
+             && trackArmed[(size_t) trackIndex];
+}
+
+bool EditSession::isAnyTrackArmed() const
+{
+    for (bool armed : trackArmed)
+        if (armed)
+            return true;
+
+    return false;
+}
+
+void EditSession::setArmed (int trackIndex, bool shouldBeArmed)
+{
+    syncTrackState();
+
+    if (! juce::isPositiveAndBelow (trackIndex, (int) trackArmed.size()))
+        return;
+
+    if (shouldBeArmed)
+    {
+        // One input can only feed one armed track, so disarm any other track using it
+        for (int j = 0; j < (int) trackArmed.size(); ++j)
+            if (j != trackIndex
+                && trackArmed[(size_t) j]
+                && trackInputs[(size_t) j] == trackInputs[(size_t) trackIndex])
+                applyArm (j, false);
+    }
+
+    applyArm (trackIndex, shouldBeArmed);
+}
+
+void EditSession::applyArm (int trackIndex, bool shouldBeArmed)
+{
+    auto* track = getTrack (trackIndex);
+    auto inputs = getWaveInputs();
+    auto* input = inputs[trackInputs[(size_t) trackIndex]];
+
+    trackArmed[(size_t) trackIndex] = shouldBeArmed && track != nullptr && input != nullptr;
+
+    if (track == nullptr || input == nullptr)
+        return;
+
+    if (shouldBeArmed)
+    {
+        [[maybe_unused]] auto result = input->setTarget (track->itemID, true, nullptr, 0);
+        input->setRecordingEnabled (track->itemID, true);
+        edit->restartPlayback();
+    }
+    else
+    {
+        input->setRecordingEnabled (track->itemID, false);
+    }
+}
+
+//==============================================================================
 void EditSession::refreshInputs()
 {
     auto& dm = engine.getDeviceManager();
@@ -68,30 +184,22 @@ void EditSession::refreshInputs()
     }
 
     edit->getTransport().ensureContextAllocated();
+    syncTrackState();
 
-    auto* track = getTrack();
-    auto* input = findFirstWaveInput();
+    const int numInputs = getWaveInputs().size();
 
-    if (track != nullptr && input != nullptr)
-    {
-        [[maybe_unused]] auto result = input->setTarget (track->itemID, true, &edit->getUndoManager(), 0);
-        input->setRecordingEnabled (track->itemID, armed);
-    }
+    for (auto& in : trackInputs)
+        if (in >= numInputs)
+            in = 0;
+
+    for (int i = 0; i < (int) trackArmed.size(); ++i)
+        if (trackArmed[(size_t) i])
+            applyArm (i, true);
 
     edit->restartPlayback();
 }
 
-void EditSession::setArmed (bool shouldBeArmed)
-{
-    armed = shouldBeArmed;
-
-    auto* track = getTrack();
-    auto* input = findFirstWaveInput();
-
-    if (track != nullptr && input != nullptr)
-        input->setRecordingEnabled (track->itemID, armed);
-}
-
+//==============================================================================
 void EditSession::play()
 {
     getTransport().play (false);
@@ -99,8 +207,8 @@ void EditSession::play()
 
 void EditSession::record()
 {
-    if (! armed)
-        setArmed (true);
+    if (! isAnyTrackArmed())
+        setArmed (0, true);
 
     getTransport().record (false);
 }

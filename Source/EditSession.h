@@ -11,23 +11,39 @@ public:
     tracktion::Edit& getEdit()                  { return *edit; }
     tracktion::TransportControl& getTransport() { return edit->getTransport(); }
 
+    // Transport
     void play();
     void stop();
     void record();
 
-    void setArmed (bool shouldBeArmed);
-    bool isArmed() const                        { return armed; }
+    // Tracks
+    int getNumTracks();
+    tracktion::AudioTrack* getTrack (int index);
+    void addTrack();
+
+    // Inputs
+    juce::StringArray getInputNames();
+    int getTrackInput (int trackIndex) const;
+    void setTrackInput (int trackIndex, int inputIndex);
+
+    // Arming
+    void setArmed (int trackIndex, bool shouldBeArmed);
+    bool isArmed (int trackIndex) const;
+    bool isAnyTrackArmed() const;
 
     void refreshInputs();
     void save();
 
 private:
-    tracktion::AudioTrack* getTrack();
-    tracktion::InputDeviceInstance* findFirstWaveInput();
+    void syncTrackState();
+    juce::Array<tracktion::InputDeviceInstance*> getWaveInputs();
+    void applyArm (int trackIndex, bool shouldBeArmed);
 
     tracktion::Engine& engine;
     std::unique_ptr<tracktion::Edit> edit;
-    bool armed = false;
+
+    std::vector<int> trackInputs;
+    std::vector<bool> trackArmed;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EditSession)
 };

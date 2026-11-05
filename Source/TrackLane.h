@@ -7,7 +7,7 @@ class TrackLane : public juce::Component,
                   private juce::Timer
 {
 public:
-    explicit TrackLane (EditSession& sessionToUse);
+    TrackLane (EditSession& sessionToUse, int trackIndexToUse);
     ~TrackLane() override;
 
     void paint (juce::Graphics&) override;
@@ -28,6 +28,8 @@ private:
     int timeToX (double seconds) const;
 
     EditSession& session;
+    const int trackIndex;
+
     std::vector<ClipThumb> clipThumbs;
     tracktion::RecordingThumbnailManager::Thumbnail::Ptr recordingThumb;
 

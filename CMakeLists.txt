@@ -19,7 +19,9 @@ target_sources(KNGStudio PRIVATE
     Source/MainComponent.cpp
     Source/EditSession.cpp
     Source/TransportBar.cpp
-    Source/TrackLane.cpp)
+    Source/TrackLane.cpp
+    Source/TrackHeader.cpp
+    Source/TracksView.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0

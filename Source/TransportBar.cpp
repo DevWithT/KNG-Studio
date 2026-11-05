@@ -6,15 +6,11 @@ TransportBar::TransportBar (EditSession& sessionToUse)
     for (auto* b : { &playButton, &stopButton, &recordButton })
         addAndMakeVisible (b);
 
-    addAndMakeVisible (armButton);
     addAndMakeVisible (timeLabel);
 
     playButton.onClick   = [this] { session.play(); };
     stopButton.onClick   = [this] { session.stop(); };
     recordButton.onClick = [this] { session.record(); };
-    armButton.onClick    = [this] { session.setArmed (armButton.getToggleState()); };
-
-    armButton.setToggleState (session.isArmed(), juce::dontSendNotification);
 
     recordButton.setColour (juce::TextButton::buttonOnColourId, juce::Colours::red);
     playButton.setColour (juce::TextButton::buttonOnColourId, juce::Colours::green);
@@ -39,7 +35,6 @@ void TransportBar::resized()
     stopButton.setBounds (area.removeFromLeft (80).reduced (2));
     recordButton.setBounds (area.removeFromLeft (80).reduced (2));
     area.removeFromLeft (10);
-    armButton.setBounds (area.removeFromLeft (110).reduced (2));
     timeLabel.setBounds (area.removeFromLeft (140));
 }
 
@@ -50,7 +45,6 @@ void TransportBar::timerCallback()
     timeLabel.setText (formatTime (transport.getPosition().inSeconds()), juce::dontSendNotification);
     recordButton.setToggleState (transport.isRecording(), juce::dontSendNotification);
     playButton.setToggleState (transport.isPlaying() && ! transport.isRecording(), juce::dontSendNotification);
-    armButton.setToggleState (session.isArmed(), juce::dontSendNotification);
 }
 
 juce::String TransportBar::formatTime (double seconds)

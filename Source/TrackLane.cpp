@@ -2,8 +2,8 @@
 
 namespace te = tracktion;
 
-TrackLane::TrackLane (EditSession& sessionToUse)
-    : session (sessionToUse)
+TrackLane::TrackLane (EditSession& sessionToUse, int trackIndexToUse)
+    : session (sessionToUse), trackIndex (trackIndexToUse)
 {
     startTimerHz (30);
 }
@@ -31,7 +31,7 @@ void TrackLane::syncClips()
 {
     juce::Array<te::Clip*> current;
 
-    if (auto* track = te::getAudioTracks (session.getEdit())[0])
+    if (auto* track = session.getTrack (trackIndex))
         for (auto* c : track->getClips())
             if (dynamic_cast<te::WaveAudioClip*> (c) != nullptr)
                 current.add (c);
@@ -80,7 +80,7 @@ void TrackLane::syncRecordingThumb()
     if (recordingThumb != nullptr)
         return;
 
-    if (auto* track = te::getAudioTracks (edit)[0])
+    if (auto* track = session.getTrack (trackIndex))
     {
         for (auto idi : edit.getEditInputDevices().getDevicesForTargetTrack (*track))
         {
