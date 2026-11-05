@@ -77,6 +77,21 @@ public:
     void setSnapEnabled (bool shouldSnap)       { snapEnabled = shouldSnap; }
     double snapTime (double seconds) const;
 
+    // Mixer and plugins
+    juce::Array<tracktion::Plugin*> getFxPlugins (tracktion::PluginList& list);
+    void addPlugin (tracktion::PluginList& list, const juce::PluginDescription& desc);
+    void movePlugin (tracktion::PluginList& list, tracktion::Plugin* plugin, int direction);
+    void removePlugin (tracktion::Plugin* plugin);
+    float getSendDb (int trackIndex);
+    void setSendDb (int trackIndex, float db);
+    bool isReverbBus (int trackIndex);
+    void setMasterVolumeDb (float db);
+    float getMasterVolumeDb();
+    tracktion::Plugin* getMasterMeterPlugin();
+
+    // Lets the UI open an FX chain window (MainComponent sets this)
+    std::function<void (tracktion::PluginList&, const juce::String&)> onShowFxChain;
+
     // Undo
     void undo();
     void redo();
@@ -91,6 +106,8 @@ private:
     void syncTrackState();
     juce::Array<tracktion::InputDeviceInstance*> getWaveInputs();
     void applyArm (int trackIndex, bool shouldBeArmed);
+    tracktion::AuxSendPlugin* findSend (tracktion::AudioTrack& track);
+    void ensureReverbBus();
 
     tracktion::Engine& engine;
     juce::File editFile;

@@ -1,4 +1,5 @@
 #include "MainComponent.h"
+#include "PluginWindow.h"
 
 class KngStudioApplication : public juce::JUCEApplication
 {
@@ -9,7 +10,7 @@ public:
 
     void initialise (const juce::String&) override
     {
-        engine = std::make_unique<tracktion::Engine> (getApplicationName());
+        engine = std::make_unique<tracktion::Engine> (getApplicationName(), std::make_unique<KngUIBehaviour>(), nullptr);
         mainWindow = std::make_unique<MainWindow> (getApplicationName(), *engine);
     }
 

@@ -1,13 +1,15 @@
 #include "TrackHeader.h"
 
 TrackHeader::TrackHeader (EditSession& sessionToUse, int trackIndexToUse)
-    : session (sessionToUse), trackIndex (trackIndexToUse)
+    : session (sessionToUse),
+      trackIndex (trackIndexToUse),
+      isBus (sessionToUse.isReverbBus (trackIndexToUse))
 {
     addAndMakeVisible (nameLabel);
     nameLabel.setFont (juce::Font (juce::FontOptions (15.0f)));
     nameLabel.setInterceptsMouseClicks (false, false);
 
-    for (auto* b : { &armButton, &muteButton, &soloButton })
+    for (auto* b : { &armButton, &muteButton, &soloButton, &fxButton })
     {
         addAndMakeVisible (b);
         b->setClickingTogglesState (false);
@@ -34,6 +36,13 @@ TrackHeader::TrackHeader (EditSession& sessionToUse, int trackIndexToUse)
             t->setSolo (! t->isSolo (false));
     };
 
+    fxButton.onClick = [this]
+    {
+        if (auto* t = session.getTrack (trackIndex))
+            if (session.onShowFxChain)
+                session.onShowFxChain (t->pluginList, t->getName() + " FX");
+    };
+
     addAndMakeVisible (inputBox);
     inputBox.setTextWhenNoChoicesAvailable ("No inputs");
     inputBox.onChange = [this]
@@ -58,9 +67,29 @@ TrackHeader::TrackHeader (EditSession& sessionToUse, int trackIndexToUse)
     panSlider.setRange (-1.0, 1.0, 0.01);
     panSlider.setDoubleClickReturnValue (true, 0.0);
 
+    addAndMakeVisible (sendLabel);
+    sendLabel.setText ("Reverb", juce::dontSendNotification);
+    sendLabel.setFont (juce::Font (juce::FontOptions (12.0f)));
+    sendLabel.setInterceptsMouseClicks (false, false);
+
+    addAndMakeVisible (sendSlider);
+    sendSlider.setSliderStyle (juce::Slider::LinearHorizontal);
+    sendSlider.setTextBoxStyle (juce::Slider::TextBoxRight, false, 56, 20);
+    sendSlider.setRange (-60.0, 0.0, 0.1);
+    sendSlider.setDoubleClickReturnValue (true, -60.0);
+    sendSlider.textFromValueFunction = [] (double v)
+    {
+        return v <= -60.0 ? juce::String ("Off") : juce::String (v, 1) + " dB";
+    };
+    sendSlider.setValue (session.getSendDb (trackIndex), juce::dontSendNotification);
+    sendSlider.onValueChange = [this] { session.setSendDb (trackIndex, (float) sendSlider.getValue()); };
+
+    addAndMakeVisible (meter);
+
     if (auto* t = session.getTrack (trackIndex))
     {
         nameLabel.setText (t->getName(), juce::dontSendNotification);
+        meter.attachTo (t->getLevelMeterPlugin());
 
         if (auto* vp = t->getVolumePlugin())
         {
@@ -82,6 +111,15 @@ TrackHeader::TrackHeader (EditSession& sessionToUse, int trackIndexToUse)
             if (auto* vp = t->getVolumePlugin())
                 vp->setPan ((float) panSlider.getValue());
     };
+
+    // The reverb bus doesn't record and can't send to itself
+    if (isBus)
+    {
+        armButton.setVisible (false);
+        inputBox.setVisible (false);
+        sendLabel.setVisible (false);
+        sendSlider.setVisible (false);
+    }
 
     startTimerHz (10);
 }
@@ -130,7 +168,7 @@ void TrackHeader::paint (juce::Graphics& g)
 {
     auto r = getLocalBounds().toFloat();
 
-    g.setColour (juce::Colour (0xff3a3f44));
+    g.setColour (isBus ? juce::Colour (0xff3b3548) : juce::Colour (0xff3a3f44));
     g.fillRoundedRectangle (r, 4.0f);
 
     if (session.isArmed (trackIndex))
@@ -144,7 +182,12 @@ void TrackHeader::resized()
 {
     auto r = getLocalBounds().reduced (6);
 
+    meter.setBounds (r.removeFromRight (8));
+    r.removeFromRight (4);
+
     auto row1 = r.removeFromTop (22);
+    fxButton.setBounds (row1.removeFromRight (32));
+    row1.removeFromRight (3);
     soloButton.setBounds (row1.removeFromRight (26));
     row1.removeFromRight (3);
     muteButton.setBounds (row1.removeFromRight (26));
@@ -158,9 +201,14 @@ void TrackHeader::resized()
 
     r.removeFromTop (4);
     auto row3 = r.removeFromTop (22);
-    panSlider.setBounds (row3.removeFromRight (70));
+    panSlider.setBounds (row3.removeFromRight (60));
     row3.removeFromRight (6);
     volumeSlider.setBounds (row3);
+
+    r.removeFromTop (4);
+    auto row4 = r.removeFromTop (22);
+    sendLabel.setBounds (row4.removeFromLeft (50));
+    sendSlider.setBounds (row4);
 }
 
 void TrackHeader::mouseDown (const juce::MouseEvent& e)

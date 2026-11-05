@@ -26,7 +26,12 @@ target_sources(KNGStudio PRIVATE
     Source/TrackLaneMouse.cpp
     Source/TrackHeader.cpp
     Source/TracksView.cpp
-    Source/TimelineRuler.cpp)
+    Source/TimelineRuler.cpp
+    Source/EditSessionMixer.cpp
+    Source/LevelMeter.cpp
+    Source/FxChainComponent.cpp
+    Source/MasterStrip.cpp
+    Source/PluginWindow.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0

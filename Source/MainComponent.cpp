@@ -5,10 +5,11 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
 {
     setWantsKeyboardFocus (true);
 
-    for (auto* b : { &settingsButton, &newButton, &openButton, &saveButton })
+    for (auto* b : { &settingsButton, &scanButton, &newButton, &openButton, &saveButton })
         addAndMakeVisible (b);
 
     settingsButton.onClick = [this] { showAudioSettings(); };
+    scanButton.onClick     = [this] { showPluginScanner(); };
     newButton.onClick      = [this] { newProject(); };
     openButton.onClick     = [this] { openProject(); };
     saveButton.onClick     = [this] { saveProject(); };
@@ -28,7 +29,7 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
 
     loadProject (getLastProjectFile());
 
-    setSize (1200, 750);
+    setSize (1280, 800);
 }
 
 MainComponent::~MainComponent()
@@ -78,8 +79,10 @@ bool MainComponent::isBusyRecording() const
 //==============================================================================
 void MainComponent::closeProject()
 {
+    fxWindows.clear();
     tracksViewport.setViewedComponent (nullptr, false);
     tracksView = nullptr;
+    masterStrip = nullptr;
     ruler = nullptr;
     transportBar = nullptr;
     session = nullptr;   // saves on the way out
@@ -90,12 +93,19 @@ void MainComponent::loadProject (const juce::File& editFile)
     closeProject();
 
     session = std::make_unique<EditSession> (engine, editFile);
+    session->onShowFxChain = [this] (tracktion::PluginList& list, const juce::String& title)
+    {
+        showFxChain (list, title);
+    };
 
     transportBar = std::make_unique<TransportBar> (*session);
     addAndMakeVisible (*transportBar);
 
     ruler = std::make_unique<TimelineRuler> (*session);
     addAndMakeVisible (*ruler);
+
+    masterStrip = std::make_unique<MasterStrip> (*session);
+    addAndMakeVisible (*masterStrip);
 
     tracksView = std::make_unique<TracksView> (*session);
     tracksViewport.setViewedComponent (tracksView.get(), false);
@@ -160,6 +170,47 @@ void MainComponent::saveProject()
 }
 
 //==============================================================================
+void MainComponent::showFxChain (tracktion::PluginList& list, const juce::String& title)
+{
+    if (session == nullptr)
+        return;
+
+    // Reuse the window if this chain is already open
+    for (auto* w : fxWindows)
+    {
+        if (w->getList() == &list)
+        {
+            w->setVisible (true);
+            w->toFront (true);
+            return;
+        }
+    }
+
+    fxWindows.add (new FxChainWindow (title, *session, list));
+}
+
+void MainComponent::showPluginScanner()
+{
+    auto& pm = engine.getPluginManager();
+
+    auto* comp = new juce::PluginListComponent (pm.pluginFormatManager,
+                                                pm.knownPluginList,
+                                                getProjectsRoot().getChildFile ("plugin_scan_crash.txt"),
+                                                nullptr,
+                                                false);
+    comp->setSize (700, 500);
+
+    juce::DialogWindow::LaunchOptions options;
+    options.content.setOwned (comp);
+    options.dialogTitle = "Plugins";
+    options.dialogBackgroundColour = getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId);
+    options.escapeKeyTriggersCloseButton = true;
+    options.useNativeTitleBar = true;
+    options.resizable = true;
+    options.launchAsync();
+}
+
+//==============================================================================
 void MainComponent::paint (juce::Graphics& g)
 {
     g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
@@ -171,6 +222,8 @@ void MainComponent::resized()
     auto topBar = area.removeFromTop (30);
 
     settingsButton.setBounds (topBar.removeFromLeft (130));
+    topBar.removeFromLeft (6);
+    scanButton.setBounds (topBar.removeFromLeft (110));
     topBar.removeFromLeft (10);
     newButton.setBounds (topBar.removeFromLeft (60));
     topBar.removeFromLeft (4);
@@ -178,7 +231,7 @@ void MainComponent::resized()
     topBar.removeFromLeft (4);
     saveButton.setBounds (topBar.removeFromLeft (60));
     topBar.removeFromLeft (12);
-    projectLabel.setBounds (topBar.removeFromLeft (220));
+    projectLabel.setBounds (topBar.removeFromLeft (200));
     topBar.removeFromLeft (10);
     deviceLabel.setBounds (topBar);
 
@@ -188,6 +241,12 @@ void MainComponent::resized()
         transportBar->setBounds (area.removeFromTop (76));
 
     area.removeFromTop (10);
+
+    // Master strip along the bottom
+    if (masterStrip != nullptr)
+        masterStrip->setBounds (area.removeFromBottom (40));
+
+    area.removeFromBottom (6);
 
     // Ruler lines up with the track lanes (TracksView headerWidth 240 + gap 4)
     constexpr int laneOffset = 244;

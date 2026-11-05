@@ -27,7 +27,7 @@ private:
 
     int builtCount = -1;
 
-    static constexpr int rowHeight   = 90;
+    static constexpr int rowHeight   = 112;
     static constexpr int headerWidth = 240;
     static constexpr int gap         = 4;
 

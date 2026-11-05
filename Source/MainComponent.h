@@ -7,6 +7,8 @@
 #include "TransportBar.h"
 #include "TracksView.h"
 #include "TimelineRuler.h"
+#include "MasterStrip.h"
+#include "FxChainComponent.h"
 
 class MainComponent : public juce::Component,
                       private juce::ChangeListener
@@ -23,6 +25,8 @@ public:
 private:
     void changeListenerCallback (juce::ChangeBroadcaster*) override;
     void showAudioSettings();
+    void showPluginScanner();
+    void showFxChain (tracktion::PluginList& list, const juce::String& title);
     void updateDeviceLabel();
 
     // Projects
@@ -40,17 +44,19 @@ private:
 
     tracktion::Engine& engine;
 
-    juce::TextButton settingsButton { "Audio Settings" };
+    juce::TextButton settingsButton { "Audio Settings" }, scanButton { "Scan Plugins" };
     juce::TextButton newButton { "New" }, openButton { "Open" }, saveButton { "Save" };
     juce::Label projectLabel, deviceLabel;
 
     std::unique_ptr<EditSession> session;
     std::unique_ptr<TransportBar> transportBar;
     std::unique_ptr<TimelineRuler> ruler;
+    std::unique_ptr<MasterStrip> masterStrip;
 
     juce::Viewport tracksViewport;
     std::unique_ptr<TracksView> tracksView;
 
+    juce::OwnedArray<FxChainWindow> fxWindows;
     std::unique_ptr<juce::FileChooser> chooser;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)

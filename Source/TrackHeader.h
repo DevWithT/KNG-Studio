@@ -2,6 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "EditSession.h"
+#include "LevelMeter.h"
 
 class TrackHeader : public juce::Component,
                     private juce::Timer
@@ -20,11 +21,13 @@ private:
 
     EditSession& session;
     const int trackIndex;
+    const bool isBus;
 
-    juce::Label nameLabel;
-    juce::TextButton armButton { "R" }, muteButton { "M" }, soloButton { "S" };
+    juce::Label nameLabel, sendLabel;
+    juce::TextButton armButton { "R" }, muteButton { "M" }, soloButton { "S" }, fxButton { "FX" };
     juce::ComboBox inputBox;
-    juce::Slider volumeSlider, panSlider;
+    juce::Slider volumeSlider, panSlider, sendSlider;
+    LevelMeter meter;
 
     juce::StringArray lastInputNames;
 
