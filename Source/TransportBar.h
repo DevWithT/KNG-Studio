@@ -28,6 +28,7 @@ private:
 
     // Row 2
     juce::TextButton undoButton { "Undo" }, redoButton { "Redo" }, importButton { "Import Beat" };
+    juce::ToggleButton loopButton { "Loop" };
 
     std::unique_ptr<juce::FileChooser> chooser;
 

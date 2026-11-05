@@ -6,7 +6,8 @@ TransportBar::TransportBar (EditSession& sessionToUse)
     for (auto* c : std::initializer_list<juce::Component*> { &playButton, &stopButton, &recordButton,
                                                              &timeLabel, &monitorButton, &clickButton,
                                                              &countInBox, &tempoSlider,
-                                                             &undoButton, &redoButton, &importButton })
+                                                             &undoButton, &redoButton, &loopButton,
+                                                             &importButton })
         addAndMakeVisible (c);
 
     // Transport
@@ -47,6 +48,9 @@ TransportBar::TransportBar (EditSession& sessionToUse)
     undoButton.onClick   = [this] { session.undo(); };
     redoButton.onClick   = [this] { session.redo(); };
     importButton.onClick = [this] { importBeat(); };
+
+    loopButton.setToggleState (session.isLooping(), juce::dontSendNotification);
+    loopButton.onClick = [this] { session.setLooping (loopButton.getToggleState()); };
 
     startTimerHz (30);
 }
@@ -97,6 +101,8 @@ void TransportBar::resized()
     undoButton.setBounds (row2.removeFromLeft (80).reduced (2));
     redoButton.setBounds (row2.removeFromLeft (80).reduced (2));
     row2.removeFromLeft (10);
+    loopButton.setBounds (row2.removeFromLeft (70).reduced (2));
+    row2.removeFromLeft (10);
     importButton.setBounds (row2.removeFromLeft (120).reduced (2));
 }
 
@@ -110,6 +116,7 @@ void TransportBar::timerCallback()
 
     monitorButton.setToggleState (session.isMonitoring(), juce::dontSendNotification);
     clickButton.setToggleState (session.isClickEnabled(), juce::dontSendNotification);
+    loopButton.setToggleState (session.isLooping(), juce::dontSendNotification);
 
     if (! countInBox.isPopupActive())
         countInBox.setSelectedId (session.getCountInBars() + 1, juce::dontSendNotification);

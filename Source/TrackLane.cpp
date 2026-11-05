@@ -47,16 +47,27 @@ void TrackLane::syncClips()
         clipThumbs.clear();
 
         for (auto* c : current)
-            clipThumbs.push_back ({ c, nullptr });
+            clipThumbs.push_back ({ c, nullptr, -1 });
     }
 
-    // Thumbnails can fail right after recording while the file finishes, so retry until ready
     for (auto& ct : clipThumbs)
     {
-        if (ct.thumb != nullptr)
+        auto* wac = dynamic_cast<te::WaveAudioClip*> (ct.clip.get());
+
+        if (wac == nullptr)
             continue;
 
-        if (auto* wac = dynamic_cast<te::WaveAudioClip*> (ct.clip.get()))
+        // A different take plays a different file, so rebuild the thumbnail
+        const int currentTake = wac->getCurrentTake();
+
+        if (ct.take != currentTake)
+        {
+            ct.take = currentTake;
+            ct.thumb = nullptr;
+        }
+
+        // Thumbnails can fail right after recording while the file finishes, so retry until ready
+        if (ct.thumb == nullptr)
         {
             te::AudioFile af (wac->getAudioFile());
 
@@ -100,6 +111,15 @@ void TrackLane::paint (juce::Graphics& g)
 {
     g.fillAll (juce::Colour (0xff2a2a2a));
 
+    // Loop region tint
+    if (session.isLooping() && session.getLoopEnd() > session.getLoopStart())
+    {
+        const int lx1 = timeToX (session.getLoopStart());
+        const int lx2 = timeToX (session.getLoopEnd());
+        g.setColour (juce::Colour (0xff2e7d32).withAlpha (0.12f));
+        g.fillRect (lx1, 0, juce::jmax (1, lx2 - lx1), getHeight());
+    }
+
     // Gridline every 5 seconds
     g.setColour (juce::Colours::white.withAlpha (0.06f));
     for (int s = 0; s <= (int) viewSeconds; s += 5)
@@ -115,6 +135,8 @@ void TrackLane::paint (juce::Graphics& g)
 
 void TrackLane::drawClips (juce::Graphics& g)
 {
+    g.setFont (juce::Font (juce::FontOptions (11.0f)));
+
     for (auto& ct : clipThumbs)
     {
         auto pos = ct.clip->getPosition();
@@ -139,6 +161,19 @@ void TrackLane::drawClips (juce::Graphics& g)
             ct.thumb->drawChannel (g, area.reduced (0, 4), sourceRange, 0, 1.0f);
         }
 
+        // Take label
+        if (auto* wac = dynamic_cast<te::WaveAudioClip*> (ct.clip.get()))
+        {
+            const int numTakes = wac->getNumTakes (false);
+
+            if (numTakes > 1)
+            {
+                g.setColour (juce::Colours::white);
+                g.drawText ("Take " + juce::String (wac->getCurrentTake() + 1) + "/" + juce::String (numTakes),
+                            area.reduced (4, 2).removeFromTop (14), juce::Justification::left);
+            }
+        }
+
         if (selected)
         {
             g.setColour (juce::Colours::white);
@@ -157,7 +192,19 @@ void TrackLane::drawRecording (juce::Graphics& g)
     if (recordingThumb == nullptr)
         return;
 
-    const double start  = session.getTransport().getTimeWhenStarted().inSeconds();
+    auto& transport = session.getTransport();
+
+    // While loop recording, just mark the loop region
+    if (session.isLooping() && session.getLoopEnd() > session.getLoopStart())
+    {
+        const int x1 = timeToX (session.getLoopStart());
+        const int x2 = timeToX (session.getLoopEnd());
+        g.setColour (juce::Colours::red.withAlpha (0.35f));
+        g.fillRect (x1, 0, juce::jmax (1, x2 - x1), getHeight());
+        return;
+    }
+
+    const double start  = transport.getTimeWhenStarted().inSeconds();
     const double length = recordingThumb->thumb->getTotalLength();
 
     const int x1 = timeToX (start);
@@ -190,6 +237,33 @@ te::Clip* TrackLane::findClipAt (int x)
     return nullptr;
 }
 
+void TrackLane::showClipMenu (te::Clip* clip)
+{
+    juce::PopupMenu menu;
+
+    if (auto* wac = dynamic_cast<te::WaveAudioClip*> (clip))
+    {
+        const int numTakes = wac->getNumTakes (false);
+
+        if (numTakes > 1)
+        {
+            juce::PopupMenu takes;
+            const int current = wac->getCurrentTake();
+            te::WaveAudioClip::Ptr clipPtr (wac);
+
+            for (int i = 0; i < numTakes; ++i)
+                takes.addItem ("Take " + juce::String (i + 1), true, i == current,
+                               [clipPtr, i] { clipPtr->setCurrentTake (i); });
+
+            menu.addSubMenu ("Takes", takes);
+            menu.addSeparator();
+        }
+    }
+
+    menu.addItem ("Delete Clip", [s = &session] { s->deleteSelectedClip(); });
+    menu.showMenuAsync ({});
+}
+
 void TrackLane::mouseDown (const juce::MouseEvent& e)
 {
     auto& transport = session.getTransport();
@@ -206,10 +280,7 @@ void TrackLane::mouseDown (const juce::MouseEvent& e)
         if (clip != nullptr)
         {
             session.selectClip (clip);
-
-            juce::PopupMenu menu;
-            menu.addItem ("Delete Clip", [s = &session] { s->deleteSelectedClip(); });
-            menu.showMenuAsync ({});
+            showClipMenu (clip);
         }
 
         return;

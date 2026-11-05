@@ -19,6 +19,7 @@ private:
     {
         tracktion::Clip::Ptr clip;
         std::unique_ptr<tracktion::SmartThumbnail> thumb;
+        int take = -1;
     };
 
     void timerCallback() override;
@@ -26,6 +27,7 @@ private:
     void syncRecordingThumb();
     void drawClips (juce::Graphics&);
     void drawRecording (juce::Graphics&);
+    void showClipMenu (tracktion::Clip* clip);
     tracktion::Clip* findClipAt (int x);
     int timeToX (double seconds) const;
 

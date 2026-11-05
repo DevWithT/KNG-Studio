@@ -6,6 +6,7 @@
 #include "EditSession.h"
 #include "TransportBar.h"
 #include "TracksView.h"
+#include "TimelineRuler.h"
 
 class MainComponent : public juce::Component,
                       private juce::ChangeListener
@@ -30,6 +31,7 @@ private:
 
     std::unique_ptr<EditSession> session;
     std::unique_ptr<TransportBar> transportBar;
+    std::unique_ptr<TimelineRuler> ruler;
 
     juce::Viewport tracksViewport;
     std::unique_ptr<TracksView> tracksView;

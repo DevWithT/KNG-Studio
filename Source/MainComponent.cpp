@@ -16,6 +16,9 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
     transportBar = std::make_unique<TransportBar> (*session);
     addAndMakeVisible (*transportBar);
 
+    ruler = std::make_unique<TimelineRuler> (*session);
+    addAndMakeVisible (*ruler);
+
     tracksView = std::make_unique<TracksView> (*session);
     tracksViewport.setViewedComponent (tracksView.get(), false);
     tracksViewport.setScrollBarsShown (true, false);
@@ -32,6 +35,7 @@ MainComponent::~MainComponent()
     engine.getDeviceManager().deviceManager.removeChangeListener (this);
     tracksViewport.setViewedComponent (nullptr, false);
     tracksView = nullptr;
+    ruler = nullptr;
     transportBar = nullptr;
     session = nullptr;
 }
@@ -56,6 +60,16 @@ void MainComponent::resized()
         transportBar->setBounds (area.removeFromTop (76));
 
     area.removeFromTop (10);
+
+    // Ruler lines up with the track lanes (TracksView headerWidth 240 + gap 4)
+    constexpr int laneOffset = 244;
+    auto rulerRow = area.removeFromTop (24);
+
+    if (ruler != nullptr)
+        ruler->setBounds (rulerRow.withTrimmedLeft (laneOffset)
+                                  .withTrimmedRight (tracksViewport.getScrollBarThickness()));
+
+    area.removeFromTop (4);
     tracksViewport.setBounds (area);
 
     if (tracksView != nullptr)

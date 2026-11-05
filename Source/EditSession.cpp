@@ -219,7 +219,7 @@ void EditSession::stop()
     const bool wasRecording = transport.isRecording();
 
     transport.stop (false, false);
-    transport.setPosition (te::TimePosition());
+    transport.setPosition (transport.looping.get() ? transport.getLoopRange().getStart() : te::TimePosition());
 
     if (wasRecording)
         save();
@@ -379,4 +379,41 @@ bool EditSession::importAudioFile (const juce::File& file)
 
     save();
     return clip != nullptr;
+}
+
+//==============================================================================
+void EditSession::setLooping (bool shouldLoop)
+{
+    // No loop region yet, so default to 4 bars from the start
+    if (shouldLoop && getLoopEnd() <= getLoopStart())
+    {
+        const double fourBars = 16.0 * 60.0 / juce::jmax (1.0, getBpm());
+        setLoopRange (0.0, fourBars);
+    }
+
+    getTransport().looping = shouldLoop;
+}
+
+bool EditSession::isLooping()
+{
+    return getTransport().looping.get();
+}
+
+void EditSession::setLoopRange (double startSeconds, double endSeconds)
+{
+    if (endSeconds < startSeconds)
+        std::swap (startSeconds, endSeconds);
+
+    getTransport().setLoopRange (te::TimeRange (te::TimePosition::fromSeconds (juce::jmax (0.0, startSeconds)),
+                                                te::TimePosition::fromSeconds (juce::jmax (0.0, endSeconds))));
+}
+
+double EditSession::getLoopStart()
+{
+    return getTransport().getLoopRange().getStart().inSeconds();
+}
+
+double EditSession::getLoopEnd()
+{
+    return getTransport().getLoopRange().getEnd().inSeconds();
 }

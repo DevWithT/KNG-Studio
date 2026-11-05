@@ -49,6 +49,13 @@ public:
     void setCountInBars (int bars);
     int getCountInBars() const;
 
+    // Loop
+    void setLooping (bool shouldLoop);
+    bool isLooping();
+    void setLoopRange (double startSeconds, double endSeconds);
+    double getLoopStart();
+    double getLoopEnd();
+
     // Undo
     void undo();
     void redo();

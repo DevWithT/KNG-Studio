@@ -21,7 +21,8 @@ target_sources(KNGStudio PRIVATE
     Source/TransportBar.cpp
     Source/TrackLane.cpp
     Source/TrackHeader.cpp
-    Source/TracksView.cpp)
+    Source/TracksView.cpp
+    Source/TimelineRuler.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0
