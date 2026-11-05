@@ -16,6 +16,8 @@ public:
 
     void paint (juce::Graphics&) override;
     void resized() override;
+    void mouseDown (const juce::MouseEvent&) override;
+    bool keyPressed (const juce::KeyPress&) override;
 
 private:
     void changeListenerCallback (juce::ChangeBroadcaster*) override;

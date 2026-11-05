@@ -41,6 +41,21 @@ public:
     tracktion::Clip* getSelectedClip() const    { return selectedClip.get(); }
     void deleteSelectedClip();
 
+    // Tempo, click, count-in
+    void setBpm (double bpm);
+    double getBpm() const;
+    void setClickEnabled (bool shouldBeOn);
+    bool isClickEnabled() const;
+    void setCountInBars (int bars);
+    int getCountInBars() const;
+
+    // Undo
+    void undo();
+    void redo();
+
+    // Import
+    bool importAudioFile (const juce::File& file);
+
     void refreshInputs();
     void save();
 

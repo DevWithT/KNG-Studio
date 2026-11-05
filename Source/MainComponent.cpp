@@ -3,6 +3,8 @@
 MainComponent::MainComponent (tracktion::Engine& engineToUse)
     : engine (engineToUse)
 {
+    setWantsKeyboardFocus (true);
+
     addAndMakeVisible (settingsButton);
     settingsButton.onClick = [this] { showAudioSettings(); };
 
@@ -22,7 +24,7 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
     engine.getDeviceManager().deviceManager.addChangeListener (this);
     updateDeviceLabel();
 
-    setSize (1100, 700);
+    setSize (1200, 750);
 }
 
 MainComponent::~MainComponent()
@@ -51,7 +53,7 @@ void MainComponent::resized()
     area.removeFromTop (10);
 
     if (transportBar != nullptr)
-        transportBar->setBounds (area.removeFromTop (40));
+        transportBar->setBounds (area.removeFromTop (76));
 
     area.removeFromTop (10);
     tracksViewport.setBounds (area);
@@ -59,6 +61,51 @@ void MainComponent::resized()
     if (tracksView != nullptr)
         tracksView->setSize (tracksViewport.getWidth() - tracksViewport.getScrollBarThickness(),
                              tracksView->getIdealHeight());
+}
+
+void MainComponent::mouseDown (const juce::MouseEvent&)
+{
+    grabKeyboardFocus();
+}
+
+bool MainComponent::keyPressed (const juce::KeyPress& key)
+{
+    if (session == nullptr)
+        return false;
+
+    const auto mods = key.getModifiers();
+    const int code  = key.getKeyCode();
+
+    // Ctrl+Z undo, Ctrl+Shift+Z redo
+    if (mods.isCommandDown() && (code == 'Z' || code == 'z'))
+    {
+        if (mods.isShiftDown())
+            session->redo();
+        else
+            session->undo();
+
+        return true;
+    }
+
+    // Ctrl+Y redo
+    if (mods.isCommandDown() && (code == 'Y' || code == 'y'))
+    {
+        session->redo();
+        return true;
+    }
+
+    // Space toggles play/stop
+    if (code == juce::KeyPress::spaceKey)
+    {
+        if (session->getTransport().isPlaying())
+            session->stop();
+        else
+            session->play();
+
+        return true;
+    }
+
+    return false;
 }
 
 void MainComponent::changeListenerCallback (juce::ChangeBroadcaster*)

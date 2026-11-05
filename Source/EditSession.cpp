@@ -291,3 +291,92 @@ void EditSession::deleteSelectedClip()
     clip->removeFromParent();
     save();
 }
+
+//==============================================================================
+void EditSession::setBpm (double bpm)
+{
+    if (auto* tempo = edit->tempoSequence.getTempo (0))
+        tempo->setBpm (juce::jlimit (40.0, 300.0, bpm));
+}
+
+double EditSession::getBpm() const
+{
+    return edit->tempoSequence.getBpmAt (te::TimePosition());
+}
+
+void EditSession::setClickEnabled (bool shouldBeOn)
+{
+    edit->clickTrackEnabled = shouldBeOn;
+}
+
+bool EditSession::isClickEnabled() const
+{
+    return edit->clickTrackEnabled.get();
+}
+
+void EditSession::setCountInBars (int bars)
+{
+    edit->setCountInMode (bars >= 2 ? te::Edit::CountIn::twoBar
+                        : bars == 1 ? te::Edit::CountIn::oneBar
+                                    : te::Edit::CountIn::none);
+}
+
+int EditSession::getCountInBars() const
+{
+    switch (edit->getCountInMode())
+    {
+        case te::Edit::CountIn::twoBar: return 2;
+        case te::Edit::CountIn::oneBar: return 1;
+        default:                        return 0;
+    }
+}
+
+//==============================================================================
+void EditSession::undo()
+{
+    if (getTransport().isRecording())
+        return;
+
+    selectedClip = nullptr;
+    edit->undo();
+    syncTrackState();
+}
+
+void EditSession::redo()
+{
+    if (getTransport().isRecording())
+        return;
+
+    selectedClip = nullptr;
+    edit->redo();
+    syncTrackState();
+}
+
+//==============================================================================
+bool EditSession::importAudioFile (const juce::File& file)
+{
+    if (getTransport().isRecording())
+        return false;
+
+    te::AudioFile audioFile (engine, file);
+
+    if (! audioFile.isValid())
+        return false;
+
+    addTrack();
+    auto* track = getTrack (getNumTracks() - 1);
+
+    if (track == nullptr)
+        return false;
+
+    track->setName (file.getFileNameWithoutExtension());
+
+    const te::TimeRange range (te::TimePosition(),
+                               te::TimePosition::fromSeconds (audioFile.getLength()));
+
+    auto clip = track->insertWaveClip (file.getFileNameWithoutExtension(), file,
+                                       te::ClipPosition { range, te::TimeDuration() }, false);
+
+    save();
+    return clip != nullptr;
+}

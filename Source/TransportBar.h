@@ -14,13 +14,22 @@ public:
 
 private:
     void timerCallback() override;
+    void importBeat();
     static juce::String formatTime (double seconds);
 
     EditSession& session;
 
+    // Row 1
     juce::TextButton playButton { "Play" }, stopButton { "Stop" }, recordButton { "Record" };
     juce::Label timeLabel;
-    juce::ToggleButton monitorButton { "Monitor" };
+    juce::ToggleButton monitorButton { "Monitor" }, clickButton { "Click" };
+    juce::ComboBox countInBox;
+    juce::Slider tempoSlider;
+
+    // Row 2
+    juce::TextButton undoButton { "Undo" }, redoButton { "Redo" }, importButton { "Import Beat" };
+
+    std::unique_ptr<juce::FileChooser> chooser;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TransportBar)
 };
