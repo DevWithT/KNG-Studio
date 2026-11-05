@@ -5,13 +5,91 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
 {
     setWantsKeyboardFocus (true);
 
-    addAndMakeVisible (settingsButton);
+    for (auto* b : { &settingsButton, &newButton, &openButton, &saveButton })
+        addAndMakeVisible (b);
+
     settingsButton.onClick = [this] { showAudioSettings(); };
+    newButton.onClick      = [this] { newProject(); };
+    openButton.onClick     = [this] { openProject(); };
+    saveButton.onClick     = [this] { saveProject(); };
+
+    addAndMakeVisible (projectLabel);
+    projectLabel.setFont (juce::Font (juce::FontOptions (16.0f)));
+    projectLabel.setJustificationType (juce::Justification::centredLeft);
 
     addAndMakeVisible (deviceLabel);
     deviceLabel.setJustificationType (juce::Justification::centredLeft);
 
-    session = std::make_unique<EditSession> (engine);
+    tracksViewport.setScrollBarsShown (true, false);
+    addAndMakeVisible (tracksViewport);
+
+    engine.getDeviceManager().deviceManager.addChangeListener (this);
+    updateDeviceLabel();
+
+    loadProject (getLastProjectFile());
+
+    setSize (1200, 750);
+}
+
+MainComponent::~MainComponent()
+{
+    engine.getDeviceManager().deviceManager.removeChangeListener (this);
+    closeProject();
+}
+
+//==============================================================================
+juce::File MainComponent::getProjectsRoot()
+{
+    auto root = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory).getChildFile ("KNG Studio");
+    root.createDirectory();
+    return root;
+}
+
+juce::File MainComponent::getLastProjectFile()
+{
+    auto marker = getProjectsRoot().getChildFile ("last_project.txt");
+
+    if (marker.existsAsFile())
+    {
+        const auto path = marker.loadFileAsString().trim();
+
+        if (juce::File::isAbsolutePath (path))
+        {
+            juce::File f (path);
+
+            if (f.existsAsFile())
+                return f;
+        }
+    }
+
+    return getProjectsRoot().getChildFile ("Untitled").getChildFile ("Untitled.tracktionedit");
+}
+
+void MainComponent::setLastProjectFile (const juce::File& editFile)
+{
+    getProjectsRoot().getChildFile ("last_project.txt").replaceWithText (editFile.getFullPathName());
+}
+
+bool MainComponent::isBusyRecording() const
+{
+    return session != nullptr && session->getTransport().isRecording();
+}
+
+//==============================================================================
+void MainComponent::closeProject()
+{
+    tracksViewport.setViewedComponent (nullptr, false);
+    tracksView = nullptr;
+    ruler = nullptr;
+    transportBar = nullptr;
+    session = nullptr;   // saves on the way out
+}
+
+void MainComponent::loadProject (const juce::File& editFile)
+{
+    closeProject();
+
+    session = std::make_unique<EditSession> (engine, editFile);
 
     transportBar = std::make_unique<TransportBar> (*session);
     addAndMakeVisible (*transportBar);
@@ -21,25 +99,67 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
 
     tracksView = std::make_unique<TracksView> (*session);
     tracksViewport.setViewedComponent (tracksView.get(), false);
-    tracksViewport.setScrollBarsShown (true, false);
-    addAndMakeVisible (tracksViewport);
 
-    engine.getDeviceManager().deviceManager.addChangeListener (this);
-    updateDeviceLabel();
+    projectLabel.setText (session->getProjectName(), juce::dontSendNotification);
+    setLastProjectFile (editFile);
 
-    setSize (1200, 750);
+    resized();
 }
 
-MainComponent::~MainComponent()
+void MainComponent::newProject()
 {
-    engine.getDeviceManager().deviceManager.removeChangeListener (this);
-    tracksViewport.setViewedComponent (nullptr, false);
-    tracksView = nullptr;
-    ruler = nullptr;
-    transportBar = nullptr;
-    session = nullptr;
+    if (isBusyRecording())
+        return;
+
+    auto* w = new juce::AlertWindow ("New Project", "Name your project:", juce::MessageBoxIconType::NoIcon);
+    w->addTextEditor ("name", "My Song");
+    w->addButton ("Create", 1, juce::KeyPress (juce::KeyPress::returnKey));
+    w->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
+
+    w->enterModalState (true, juce::ModalCallbackFunction::create ([this, w] (int result)
+    {
+        if (result == 1)
+            createProject (w->getTextEditorContents ("name"));
+    }), true);
 }
 
+void MainComponent::createProject (const juce::String& name)
+{
+    auto safeName = juce::File::createLegalFileName (name.trim());
+
+    if (safeName.isEmpty())
+        safeName = "Untitled";
+
+    auto folder = getProjectsRoot().getNonexistentChildFile (safeName, "", false);
+    folder.createDirectory();
+
+    loadProject (folder.getChildFile (folder.getFileName() + ".tracktionedit"));
+}
+
+void MainComponent::openProject()
+{
+    if (isBusyRecording())
+        return;
+
+    chooser = std::make_unique<juce::FileChooser> ("Open Project", getProjectsRoot(), "*.tracktionedit");
+
+    chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+                          [this] (const juce::FileChooser& fc)
+                          {
+                              auto file = fc.getResult();
+
+                              if (file.existsAsFile())
+                                  loadProject (file);
+                          });
+}
+
+void MainComponent::saveProject()
+{
+    if (session != nullptr)
+        session->save();
+}
+
+//==============================================================================
 void MainComponent::paint (juce::Graphics& g)
 {
     g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
@@ -51,6 +171,14 @@ void MainComponent::resized()
     auto topBar = area.removeFromTop (30);
 
     settingsButton.setBounds (topBar.removeFromLeft (130));
+    topBar.removeFromLeft (10);
+    newButton.setBounds (topBar.removeFromLeft (60));
+    topBar.removeFromLeft (4);
+    openButton.setBounds (topBar.removeFromLeft (60));
+    topBar.removeFromLeft (4);
+    saveButton.setBounds (topBar.removeFromLeft (60));
+    topBar.removeFromLeft (12);
+    projectLabel.setBounds (topBar.removeFromLeft (220));
     topBar.removeFromLeft (10);
     deviceLabel.setBounds (topBar);
 
@@ -90,22 +218,23 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
     const auto mods = key.getModifiers();
     const int code  = key.getKeyCode();
 
-    // Ctrl+Z undo, Ctrl+Shift+Z redo
-    if (mods.isCommandDown() && (code == 'Z' || code == 'z'))
+    if (mods.isCommandDown())
     {
-        if (mods.isShiftDown())
-            session->redo();
-        else
-            session->undo();
+        // Ctrl+Z undo, Ctrl+Shift+Z redo
+        if (code == 'Z' || code == 'z')
+        {
+            if (mods.isShiftDown())
+                session->redo();
+            else
+                session->undo();
 
-        return true;
-    }
+            return true;
+        }
 
-    // Ctrl+Y redo
-    if (mods.isCommandDown() && (code == 'Y' || code == 'y'))
-    {
-        session->redo();
-        return true;
+        if (code == 'Y' || code == 'y')  { session->redo(); return true; }
+        if (code == 'S' || code == 's')  { saveProject();   return true; }
+        if (code == 'O' || code == 'o')  { openProject();   return true; }
+        if (code == 'N' || code == 'n')  { newProject();    return true; }
     }
 
     // Space toggles play/stop
@@ -122,6 +251,7 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
     return false;
 }
 
+//==============================================================================
 void MainComponent::changeListenerCallback (juce::ChangeBroadcaster*)
 {
     const auto before = deviceLabel.getText();

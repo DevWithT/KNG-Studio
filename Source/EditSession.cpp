@@ -2,26 +2,18 @@
 
 namespace te = tracktion;
 
-static juce::File getSessionFile()
+EditSession::EditSession (te::Engine& engineToUse, const juce::File& editFileToUse)
+    : engine (engineToUse), editFile (editFileToUse)
 {
-    auto folder = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)
-                      .getChildFile ("KNG Studio")
-                      .getChildFile ("Untitled");
-    folder.createDirectory();
-    return folder.getChildFile ("Untitled.tracktionedit");
-}
+    editFile.getParentDirectory().createDirectory();
 
-EditSession::EditSession (te::Engine& engineToUse)
-    : engine (engineToUse)
-{
-    auto file = getSessionFile();
-
-    if (file.existsAsFile())
-        edit = te::loadEditFromFile (engine, file);
+    if (editFile.existsAsFile())
+        edit = te::loadEditFromFile (engine, editFile);
     else
-        edit = te::createEmptyEdit (engine, file);
+        edit = te::createEmptyEdit (engine, editFile);
 
     edit->playInStopEnabled = true;
+    edit->alwaysUseRelativePaths = true;
     edit->ensureNumberOfAudioTracks (1);
 
     syncTrackState();
@@ -57,6 +49,34 @@ void EditSession::addTrack()
 {
     edit->ensureNumberOfAudioTracks (getNumTracks() + 1);
     syncTrackState();
+}
+
+void EditSession::deleteTrack (int index)
+{
+    if (getTransport().isRecording())
+        return;
+
+    auto* track = getTrack (index);
+
+    if (track == nullptr)
+        return;
+
+    syncTrackState();
+
+    if (isArmed (index))
+        applyArm (index, false);
+
+    selectedClip = nullptr;
+    edit->deleteTrack (track);
+
+    if (juce::isPositiveAndBelow (index, (int) trackInputs.size()))
+    {
+        trackInputs.erase (trackInputs.begin() + index);
+        trackArmed.erase (trackArmed.begin() + index);
+    }
+
+    syncTrackState();
+    save();
 }
 
 //==============================================================================
@@ -178,7 +198,8 @@ void EditSession::refreshInputs()
     {
         if (auto wip = dm.getWaveInDevice (i))
         {
-            wip->setMonitorMode (monitoringEnabled ? te::InputDevice::MonitorMode::automatic : te::InputDevice::MonitorMode::off);
+            wip->setMonitorMode (monitoringEnabled ? te::InputDevice::MonitorMode::automatic
+                                                   : te::InputDevice::MonitorMode::off);
             wip->setEnabled (true);
         }
     }
@@ -199,67 +220,6 @@ void EditSession::refreshInputs()
     edit->restartPlayback();
 }
 
-//==============================================================================
-void EditSession::play()
-{
-    getTransport().play (false);
-}
-
-void EditSession::record()
-{
-    if (! isAnyTrackArmed())
-        setArmed (0, true);
-
-    getTransport().record (false);
-}
-
-void EditSession::stop()
-{
-    auto& transport = getTransport();
-    const bool wasRecording = transport.isRecording();
-
-    transport.stop (false, false);
-    transport.setPosition (transport.looping.get() ? transport.getLoopRange().getStart() : te::TimePosition());
-
-    if (wasRecording)
-        save();
-}
-
-void EditSession::save()
-{
-    te::EditFileOperations (*edit).save (true, true, false);
-}
-
-//==============================================================================
-void EditSession::deleteTrack (int index)
-{
-    if (getTransport().isRecording())
-        return;
-
-    auto* track = getTrack (index);
-
-    if (track == nullptr)
-        return;
-
-    syncTrackState();
-
-    if (isArmed (index))
-        applyArm (index, false);
-
-    selectedClip = nullptr;
-    edit->deleteTrack (track);
-
-    if (juce::isPositiveAndBelow (index, (int) trackInputs.size()))
-    {
-        trackInputs.erase (trackInputs.begin() + index);
-        trackArmed.erase (trackArmed.begin() + index);
-    }
-
-    syncTrackState();
-    save();
-}
-
-//==============================================================================
 void EditSession::setMonitoring (bool shouldMonitor)
 {
     monitoringEnabled = shouldMonitor;
@@ -290,130 +250,4 @@ void EditSession::deleteSelectedClip()
 
     clip->removeFromParent();
     save();
-}
-
-//==============================================================================
-void EditSession::setBpm (double bpm)
-{
-    if (auto* tempo = edit->tempoSequence.getTempo (0))
-        tempo->setBpm (juce::jlimit (40.0, 300.0, bpm));
-}
-
-double EditSession::getBpm() const
-{
-    return edit->tempoSequence.getBpmAt (te::TimePosition());
-}
-
-void EditSession::setClickEnabled (bool shouldBeOn)
-{
-    edit->clickTrackEnabled = shouldBeOn;
-}
-
-bool EditSession::isClickEnabled() const
-{
-    return edit->clickTrackEnabled.get();
-}
-
-void EditSession::setCountInBars (int bars)
-{
-    edit->setCountInMode (bars >= 2 ? te::Edit::CountIn::twoBar
-                        : bars == 1 ? te::Edit::CountIn::oneBar
-                                    : te::Edit::CountIn::none);
-}
-
-int EditSession::getCountInBars() const
-{
-    switch (edit->getCountInMode())
-    {
-        case te::Edit::CountIn::twoBar: return 2;
-        case te::Edit::CountIn::oneBar: return 1;
-        default:                        return 0;
-    }
-}
-
-//==============================================================================
-void EditSession::undo()
-{
-    if (getTransport().isRecording())
-        return;
-
-    selectedClip = nullptr;
-    edit->undo();
-    syncTrackState();
-}
-
-void EditSession::redo()
-{
-    if (getTransport().isRecording())
-        return;
-
-    selectedClip = nullptr;
-    edit->redo();
-    syncTrackState();
-}
-
-//==============================================================================
-bool EditSession::importAudioFile (const juce::File& file)
-{
-    if (getTransport().isRecording())
-        return false;
-
-    te::AudioFile audioFile (engine, file);
-
-    if (! audioFile.isValid())
-        return false;
-
-    addTrack();
-    auto* track = getTrack (getNumTracks() - 1);
-
-    if (track == nullptr)
-        return false;
-
-    track->setName (file.getFileNameWithoutExtension());
-
-    const te::TimeRange range (te::TimePosition(),
-                               te::TimePosition::fromSeconds (audioFile.getLength()));
-
-    auto clip = track->insertWaveClip (file.getFileNameWithoutExtension(), file,
-                                       te::ClipPosition { range, te::TimeDuration() }, false);
-
-    save();
-    return clip != nullptr;
-}
-
-//==============================================================================
-void EditSession::setLooping (bool shouldLoop)
-{
-    // No loop region yet, so default to 4 bars from the start
-    if (shouldLoop && getLoopEnd() <= getLoopStart())
-    {
-        const double fourBars = 16.0 * 60.0 / juce::jmax (1.0, getBpm());
-        setLoopRange (0.0, fourBars);
-    }
-
-    getTransport().looping = shouldLoop;
-}
-
-bool EditSession::isLooping()
-{
-    return getTransport().looping.get();
-}
-
-void EditSession::setLoopRange (double startSeconds, double endSeconds)
-{
-    if (endSeconds < startSeconds)
-        std::swap (startSeconds, endSeconds);
-
-    getTransport().setLoopRange (te::TimeRange (te::TimePosition::fromSeconds (juce::jmax (0.0, startSeconds)),
-                                                te::TimePosition::fromSeconds (juce::jmax (0.0, endSeconds))));
-}
-
-double EditSession::getLoopStart()
-{
-    return getTransport().getLoopRange().getStart().inSeconds();
-}
-
-double EditSession::getLoopEnd()
-{
-    return getTransport().getLoopRange().getEnd().inSeconds();
 }

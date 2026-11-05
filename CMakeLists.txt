@@ -18,6 +18,8 @@ target_sources(KNGStudio PRIVATE
     Source/Main.cpp
     Source/MainComponent.cpp
     Source/EditSession.cpp
+    Source/EditSessionTransport.cpp
+    Source/EditSessionProject.cpp
     Source/TransportBar.cpp
     Source/TrackLane.cpp
     Source/TrackHeader.cpp

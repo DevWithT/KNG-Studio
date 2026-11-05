@@ -5,11 +5,16 @@
 class EditSession
 {
 public:
-    explicit EditSession (tracktion::Engine& engineToUse);
+    EditSession (tracktion::Engine& engineToUse, const juce::File& editFileToUse);
     ~EditSession();
 
     tracktion::Edit& getEdit()                  { return *edit; }
     tracktion::TransportControl& getTransport() { return edit->getTransport(); }
+
+    // Project
+    const juce::File& getProjectFile() const    { return editFile; }
+    juce::File getProjectFolder() const         { return editFile.getParentDirectory(); }
+    juce::String getProjectName() const         { return editFile.getFileNameWithoutExtension(); }
 
     // Transport
     void play();
@@ -72,6 +77,7 @@ private:
     void applyArm (int trackIndex, bool shouldBeArmed);
 
     tracktion::Engine& engine;
+    juce::File editFile;
     std::unique_ptr<tracktion::Edit> edit;
 
     std::vector<int> trackInputs;

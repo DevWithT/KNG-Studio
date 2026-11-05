@@ -25,9 +25,24 @@ private:
     void showAudioSettings();
     void updateDeviceLabel();
 
+    // Projects
+    void loadProject (const juce::File& editFile);
+    void closeProject();
+    void newProject();
+    void openProject();
+    void saveProject();
+    void createProject (const juce::String& name);
+    bool isBusyRecording() const;
+
+    static juce::File getProjectsRoot();
+    static juce::File getLastProjectFile();
+    static void setLastProjectFile (const juce::File& editFile);
+
     tracktion::Engine& engine;
+
     juce::TextButton settingsButton { "Audio Settings" };
-    juce::Label deviceLabel;
+    juce::TextButton newButton { "New" }, openButton { "Open" }, saveButton { "Save" };
+    juce::Label projectLabel, deviceLabel;
 
     std::unique_ptr<EditSession> session;
     std::unique_ptr<TransportBar> transportBar;
@@ -35,6 +50,8 @@ private:
 
     juce::Viewport tracksViewport;
     std::unique_ptr<TracksView> tracksView;
+
+    std::unique_ptr<juce::FileChooser> chooser;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };
