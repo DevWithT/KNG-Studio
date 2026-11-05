@@ -92,6 +92,14 @@ public:
     // Lets the UI open an FX chain window (MainComponent sets this)
     std::function<void (tracktion::PluginList&, const juce::String&)> onShowFxChain;
 
+    // Export
+    juce::File getExportsFolder();
+    bool trackHasContent (int trackIndex);
+    std::shared_ptr<tracktion::EditRenderer::Handle> exportMix (const juce::File& dest, bool loopOnly, int normaliseMode,
+                                                                std::function<void (const juce::String&)> onDone);
+    std::shared_ptr<tracktion::EditRenderer::Handle> exportStem (int trackIndex, const juce::File& dest, bool loopOnly,
+                                                                 std::function<void (const juce::String&)> onDone);
+
     // Undo
     void undo();
     void redo();
@@ -108,6 +116,8 @@ private:
     void applyArm (int trackIndex, bool shouldBeArmed);
     tracktion::AuxSendPlugin* findSend (tracktion::AudioTrack& track);
     void ensureReverbBus();
+    tracktion::Renderer::Parameters makeRenderParams (const juce::File& dest, bool loopOnly, int normaliseMode);
+    tracktion::TimeRange getExportRange (bool loopOnly);
 
     tracktion::Engine& engine;
     juce::File editFile;

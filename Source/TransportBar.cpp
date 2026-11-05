@@ -1,4 +1,5 @@
 #include "TransportBar.h"
+#include "ExportDialog.h"
 
 TransportBar::TransportBar (EditSession& sessionToUse)
     : session (sessionToUse)
@@ -7,7 +8,7 @@ TransportBar::TransportBar (EditSession& sessionToUse)
                                                              &timeLabel, &monitorButton, &clickButton,
                                                              &countInBox, &tempoSlider,
                                                              &undoButton, &redoButton, &loopButton,
-                                                             &importButton, &snapButton })
+                                                             &importButton, &snapButton, &exportButton })
         addAndMakeVisible (c);
 
     // Transport
@@ -48,6 +49,7 @@ TransportBar::TransportBar (EditSession& sessionToUse)
     undoButton.onClick   = [this] { session.undo(); };
     redoButton.onClick   = [this] { session.redo(); };
     importButton.onClick = [this] { importBeat(); };
+    exportButton.onClick = [this] { showExportDialog(); };
 
     loopButton.setToggleState (session.isLooping(), juce::dontSendNotification);
     loopButton.onClick = [this] { session.setLooping (loopButton.getToggleState()); };
@@ -108,6 +110,8 @@ void TransportBar::resized()
     snapButton.setBounds (row2.removeFromLeft (70).reduced (2));
     row2.removeFromLeft (10);
     importButton.setBounds (row2.removeFromLeft (120).reduced (2));
+    row2.removeFromLeft (10);
+    exportButton.setBounds (row2.removeFromLeft (100).reduced (2));
 }
 
 void TransportBar::timerCallback()
@@ -138,4 +142,18 @@ juce::String TransportBar::formatTime (double seconds)
     const int ms   = totalMs % 1000;
 
     return juce::String::formatted ("%02d:%02d.%03d", mins, secs, ms);
+}
+
+void TransportBar::showExportDialog()
+{
+    auto* dialog = new ExportDialog (session);
+
+    juce::DialogWindow::LaunchOptions options;
+    options.content.setOwned (dialog);
+    options.dialogTitle = "Export";
+    options.dialogBackgroundColour = juce::Colour (0xff2b2f33);
+    options.escapeKeyTriggersCloseButton = true;
+    options.useNativeTitleBar = true;
+    options.resizable = false;
+    options.launchAsync();
 }

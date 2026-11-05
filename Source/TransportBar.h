@@ -15,6 +15,7 @@ public:
 private:
     void timerCallback() override;
     void importBeat();
+    void showExportDialog();
     static juce::String formatTime (double seconds);
 
     EditSession& session;
@@ -27,7 +28,7 @@ private:
     juce::Slider tempoSlider;
 
     // Row 2
-    juce::TextButton undoButton { "Undo" }, redoButton { "Redo" }, importButton { "Import Beat" };
+    juce::TextButton undoButton { "Undo" }, redoButton { "Redo" }, importButton { "Import Beat" }, exportButton { "Export" };
     juce::ToggleButton loopButton { "Loop" }, snapButton { "Snap" };
 
     std::unique_ptr<juce::FileChooser> chooser;

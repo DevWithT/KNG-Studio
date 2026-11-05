@@ -31,7 +31,9 @@ target_sources(KNGStudio PRIVATE
     Source/LevelMeter.cpp
     Source/FxChainComponent.cpp
     Source/MasterStrip.cpp
-    Source/PluginWindow.cpp)
+    Source/PluginWindow.cpp
+    Source/EditSessionExport.cpp
+    Source/ExportDialog.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0
