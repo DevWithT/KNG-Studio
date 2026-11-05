@@ -7,7 +7,7 @@ TransportBar::TransportBar (EditSession& sessionToUse)
                                                              &timeLabel, &monitorButton, &clickButton,
                                                              &countInBox, &tempoSlider,
                                                              &undoButton, &redoButton, &loopButton,
-                                                             &importButton })
+                                                             &importButton, &snapButton })
         addAndMakeVisible (c);
 
     // Transport
@@ -51,6 +51,9 @@ TransportBar::TransportBar (EditSession& sessionToUse)
 
     loopButton.setToggleState (session.isLooping(), juce::dontSendNotification);
     loopButton.onClick = [this] { session.setLooping (loopButton.getToggleState()); };
+
+    snapButton.setToggleState (session.isSnapEnabled(), juce::dontSendNotification);
+    snapButton.onClick = [this] { session.setSnapEnabled (snapButton.getToggleState()); };
 
     startTimerHz (30);
 }
@@ -102,6 +105,7 @@ void TransportBar::resized()
     redoButton.setBounds (row2.removeFromLeft (80).reduced (2));
     row2.removeFromLeft (10);
     loopButton.setBounds (row2.removeFromLeft (70).reduced (2));
+    snapButton.setBounds (row2.removeFromLeft (70).reduced (2));
     row2.removeFromLeft (10);
     importButton.setBounds (row2.removeFromLeft (120).reduced (2));
 }
@@ -117,6 +121,7 @@ void TransportBar::timerCallback()
     monitorButton.setToggleState (session.isMonitoring(), juce::dontSendNotification);
     clickButton.setToggleState (session.isClickEnabled(), juce::dontSendNotification);
     loopButton.setToggleState (session.isLooping(), juce::dontSendNotification);
+    snapButton.setToggleState (session.isSnapEnabled(), juce::dontSendNotification);
 
     if (! countInBox.isPopupActive())
         countInBox.setSelectedId (session.getCountInBars() + 1, juce::dontSendNotification);

@@ -20,8 +20,10 @@ target_sources(KNGStudio PRIVATE
     Source/EditSession.cpp
     Source/EditSessionTransport.cpp
     Source/EditSessionProject.cpp
+    Source/EditSessionView.cpp
     Source/TransportBar.cpp
     Source/TrackLane.cpp
+    Source/TrackLaneMouse.cpp
     Source/TrackHeader.cpp
     Source/TracksView.cpp
     Source/TimelineRuler.cpp)

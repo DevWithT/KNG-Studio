@@ -41,10 +41,12 @@ public:
     void setMonitoring (bool shouldMonitor);
     bool isMonitoring() const                   { return monitoringEnabled; }
 
-    // Clip selection
+    // Clip selection and editing
     void selectClip (tracktion::Clip* clip);
     tracktion::Clip* getSelectedClip() const    { return selectedClip.get(); }
     void deleteSelectedClip();
+    void splitSelectedClipAtPlayhead();
+    void beginEdit();
 
     // Tempo, click, count-in
     void setBpm (double bpm);
@@ -60,6 +62,20 @@ public:
     void setLoopRange (double startSeconds, double endSeconds);
     double getLoopStart();
     double getLoopEnd();
+
+    // View (shared by the ruler and every lane)
+    double getViewStart() const                 { return viewStart; }
+    double getViewLength() const                { return viewLength; }
+    void setView (double startSeconds, double lengthSeconds);
+    void zoomAround (double timeSeconds, double factor);
+    void scrollBy (double seconds);
+    double xToTime (int x, int width) const;
+    int timeToX (double seconds, int width) const;
+
+    // Snap
+    bool isSnapEnabled() const                  { return snapEnabled; }
+    void setSnapEnabled (bool shouldSnap)       { snapEnabled = shouldSnap; }
+    double snapTime (double seconds) const;
 
     // Undo
     void undo();
@@ -85,6 +101,10 @@ private:
 
     bool monitoringEnabled = true;
     tracktion::Clip::Ptr selectedClip;
+
+    double viewStart = 0.0;
+    double viewLength = 60.0;
+    bool snapEnabled = true;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EditSession)
 };

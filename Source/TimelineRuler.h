@@ -14,6 +14,7 @@ public:
     void mouseDown (const juce::MouseEvent&) override;
     void mouseDrag (const juce::MouseEvent&) override;
     void mouseUp (const juce::MouseEvent&) override;
+    void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails&) override;
 
 private:
     void timerCallback() override   { repaint(); }
@@ -24,8 +25,6 @@ private:
     EditSession& session;
     bool draggingLoop = false;
     double dragStartTime = 0.0;
-
-    static constexpr double viewSeconds = 60.0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TimelineRuler)
 };

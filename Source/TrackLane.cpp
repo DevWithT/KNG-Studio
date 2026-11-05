@@ -12,13 +12,19 @@ TrackLane::TrackLane (EditSession& sessionToUse, int trackIndexToUse)
 TrackLane::~TrackLane()
 {
     stopTimer();
+    drag.clip = nullptr;
     clipThumbs.clear();
     recordingThumb = nullptr;
 }
 
 int TrackLane::timeToX (double seconds) const
 {
-    return juce::roundToInt (seconds / viewSeconds * getWidth());
+    return session.timeToX (seconds, getWidth());
+}
+
+double TrackLane::xToTime (int x) const
+{
+    return session.xToTime (x, getWidth());
 }
 
 void TrackLane::timerCallback()
@@ -28,6 +34,7 @@ void TrackLane::timerCallback()
     repaint();
 }
 
+//==============================================================================
 void TrackLane::syncClips()
 {
     juce::Array<te::Clip*> current;
@@ -107,6 +114,7 @@ void TrackLane::syncRecordingThumb()
     }
 }
 
+//==============================================================================
 void TrackLane::paint (juce::Graphics& g)
 {
     g.fillAll (juce::Colour (0xff2a2a2a));
@@ -120,11 +128,7 @@ void TrackLane::paint (juce::Graphics& g)
         g.fillRect (lx1, 0, juce::jmax (1, lx2 - lx1), getHeight());
     }
 
-    // Gridline every 5 seconds
-    g.setColour (juce::Colours::white.withAlpha (0.06f));
-    for (int s = 0; s <= (int) viewSeconds; s += 5)
-        g.drawVerticalLine (timeToX ((double) s), 0.0f, (float) getHeight());
-
+    drawGrid (g);
     drawClips (g);
     drawRecording (g);
 
@@ -133,33 +137,84 @@ void TrackLane::paint (juce::Graphics& g)
     g.fillRect (px, 0, 2, getHeight());
 }
 
+void TrackLane::drawGrid (juce::Graphics& g)
+{
+    if (getWidth() <= 0)
+        return;
+
+    const double beat = 60.0 / juce::jmax (1.0, session.getBpm());
+    const double pxPerBeat = getWidth() / session.getViewLength() * beat;
+
+    // Too zoomed out to draw anything useful
+    if (pxPerBeat * 4.0 < 4.0)
+        return;
+
+    const bool showBeats = pxPerBeat >= 12.0;
+    const double viewEnd = session.getViewStart() + session.getViewLength();
+
+    const int firstBeat = (int) std::floor (session.getViewStart() / beat);
+    const int lastBeat  = (int) std::ceil (viewEnd / beat);
+
+    for (int n = juce::jmax (0, firstBeat); n <= lastBeat; ++n)
+    {
+        const bool isBar = (n % 4) == 0;
+
+        if (! isBar && ! showBeats)
+            continue;
+
+        g.setColour (juce::Colours::white.withAlpha (isBar ? 0.10f : 0.04f));
+        g.drawVerticalLine (timeToX (n * beat), 0.0f, (float) getHeight());
+    }
+}
+
 void TrackLane::drawClips (juce::Graphics& g)
 {
     g.setFont (juce::Font (juce::FontOptions (11.0f)));
+
+    const double viewStart = session.getViewStart();
+    const double viewEnd   = viewStart + session.getViewLength();
 
     for (auto& ct : clipThumbs)
     {
         auto pos = ct.clip->getPosition();
         const bool selected = ct.clip.get() == session.getSelectedClip();
 
-        const int x1 = timeToX (pos.getStart().inSeconds());
-        const int x2 = timeToX (pos.getEnd().inSeconds());
+        const double clipStart = pos.getStart().inSeconds();
+        const double clipEnd   = pos.getEnd().inSeconds();
+
+        // Skip clips fully off screen
+        if (clipEnd < viewStart || clipStart > viewEnd)
+            continue;
+
+        const int x1 = timeToX (clipStart);
+        const int x2 = timeToX (clipEnd);
         juce::Rectangle<int> area (x1, 0, juce::jmax (1, x2 - x1), getHeight());
 
         g.setColour (selected ? juce::Colour (0xff4f8fd0) : juce::Colour (0xff3a6ea5));
         g.fillRect (area);
 
+        // Only draw the visible part of the waveform
         if (ct.thumb != nullptr)
         {
-            const double offset = pos.getOffset().inSeconds();
-            const double length = pos.getLength().inSeconds();
+            const double offset   = pos.getOffset().inSeconds();
+            const double visStart = juce::jmax (clipStart, viewStart);
+            const double visEnd   = juce::jmin (clipEnd, viewEnd);
 
-            te::TimeRange sourceRange (te::TimePosition::fromSeconds (offset),
-                                       te::TimePosition::fromSeconds (offset + length));
+            if (visEnd > visStart)
+            {
+                const int vx1 = timeToX (visStart);
+                const int vx2 = timeToX (visEnd);
+                juce::Rectangle<int> visArea (vx1, 4, juce::jmax (1, vx2 - vx1), juce::jmax (1, getHeight() - 8));
 
-            g.setColour (juce::Colours::white.withAlpha (0.85f));
-            ct.thumb->drawChannel (g, area.reduced (0, 4), sourceRange, 0, 1.0f);
+                te::TimeRange sourceRange (te::TimePosition::fromSeconds (offset + (visStart - clipStart)),
+                                           te::TimePosition::fromSeconds (offset + (visEnd - clipStart)));
+
+                g.setColour (juce::Colours::white.withAlpha (0.85f));
+                ct.thumb->drawChannel (g, visArea, sourceRange, 0, 1.0f);
+            }
         }
+
+        drawFades (g, *ct.clip, area);
 
         // Take label
         if (auto* wac = dynamic_cast<te::WaveAudioClip*> (ct.clip.get()))
@@ -170,7 +225,7 @@ void TrackLane::drawClips (juce::Graphics& g)
             {
                 g.setColour (juce::Colours::white);
                 g.drawText ("Take " + juce::String (wac->getCurrentTake() + 1) + "/" + juce::String (numTakes),
-                            area.reduced (4, 2).removeFromTop (14), juce::Justification::left);
+                            area.reduced (12, 2).removeFromTop (14), juce::Justification::left);
             }
         }
 
@@ -185,6 +240,61 @@ void TrackLane::drawClips (juce::Graphics& g)
             g.drawRect (area);
         }
     }
+}
+
+void TrackLane::drawFades (juce::Graphics& g, te::Clip& clip, juce::Rectangle<int> area)
+{
+    auto* acb = dynamic_cast<te::AudioClipBase*> (&clip);
+
+    if (acb == nullptr)
+        return;
+
+    auto pos = clip.getPosition();
+    const double fadeIn  = acb->getFadeIn().inSeconds();
+    const double fadeOut = acb->getFadeOut().inSeconds();
+
+    const int xIn  = timeToX (pos.getStart().inSeconds() + fadeIn);
+    const int xOut = timeToX (pos.getEnd().inSeconds() - fadeOut);
+
+    const float top = (float) area.getY();
+    const float bottom = (float) area.getBottom();
+
+    // Darken the faded corners
+    g.setColour (juce::Colours::black.withAlpha (0.35f));
+
+    if (fadeIn > 0.0)
+    {
+        juce::Path p;
+        p.startNewSubPath ((float) area.getX(), top);
+        p.lineTo ((float) xIn, top);
+        p.lineTo ((float) area.getX(), bottom);
+        p.closeSubPath();
+        g.fillPath (p);
+    }
+
+    if (fadeOut > 0.0)
+    {
+        juce::Path p;
+        p.startNewSubPath ((float) xOut, top);
+        p.lineTo ((float) area.getRight(), top);
+        p.lineTo ((float) area.getRight(), bottom);
+        p.closeSubPath();
+        g.fillPath (p);
+    }
+
+    // Fade lines
+    g.setColour (juce::Colours::white.withAlpha (0.7f));
+
+    if (fadeIn > 0.0)
+        g.drawLine ((float) area.getX(), bottom, (float) xIn, top, 1.5f);
+
+    if (fadeOut > 0.0)
+        g.drawLine ((float) xOut, top, (float) area.getRight(), bottom, 1.5f);
+
+    // Handles
+    g.setColour (juce::Colours::white);
+    g.fillRect (xIn - fadeHandleSize / 2, area.getY(), fadeHandleSize, fadeHandleSize);
+    g.fillRect (xOut - fadeHandleSize / 2, area.getY(), fadeHandleSize, fadeHandleSize);
 }
 
 void TrackLane::drawRecording (juce::Graphics& g)
@@ -220,89 +330,4 @@ void TrackLane::drawRecording (juce::Graphics& g)
 
     g.setColour (juce::Colours::white.withAlpha (0.85f));
     recordingThumb->thumb->drawChannels (g, area.reduced (0, 4), 0.0, length, 1.0f);
-}
-
-te::Clip* TrackLane::findClipAt (int x)
-{
-    for (auto& ct : clipThumbs)
-    {
-        auto pos = ct.clip->getPosition();
-        const int x1 = timeToX (pos.getStart().inSeconds());
-        const int x2 = timeToX (pos.getEnd().inSeconds());
-
-        if (x >= x1 && x <= x2)
-            return ct.clip.get();
-    }
-
-    return nullptr;
-}
-
-void TrackLane::showClipMenu (te::Clip* clip)
-{
-    juce::PopupMenu menu;
-
-    if (auto* wac = dynamic_cast<te::WaveAudioClip*> (clip))
-    {
-        const int numTakes = wac->getNumTakes (false);
-
-        if (numTakes > 1)
-        {
-            juce::PopupMenu takes;
-            const int current = wac->getCurrentTake();
-            te::WaveAudioClip::Ptr clipPtr (wac);
-
-            for (int i = 0; i < numTakes; ++i)
-                takes.addItem ("Take " + juce::String (i + 1), true, i == current,
-                               [clipPtr, i] { clipPtr->setCurrentTake (i); });
-
-            menu.addSubMenu ("Takes", takes);
-            menu.addSeparator();
-        }
-    }
-
-    menu.addItem ("Delete Clip", [s = &session] { s->deleteSelectedClip(); });
-    menu.showMenuAsync ({});
-}
-
-void TrackLane::mouseDown (const juce::MouseEvent& e)
-{
-    auto& transport = session.getTransport();
-
-    if (transport.isRecording() || getWidth() <= 0)
-        return;
-
-    grabKeyboardFocus();
-
-    auto* clip = findClipAt (e.x);
-
-    if (e.mods.isPopupMenu())
-    {
-        if (clip != nullptr)
-        {
-            session.selectClip (clip);
-            showClipMenu (clip);
-        }
-
-        return;
-    }
-
-    // Clicking empty space clears the selection
-    session.selectClip (clip);
-
-    const double secs = juce::jlimit (0.0, viewSeconds, e.x / (double) getWidth() * viewSeconds);
-    transport.setPosition (te::TimePosition::fromSeconds (secs));
-}
-
-bool TrackLane::keyPressed (const juce::KeyPress& key)
-{
-    if (key == juce::KeyPress::deleteKey || key == juce::KeyPress::backspaceKey)
-    {
-        if (session.getSelectedClip() != nullptr)
-        {
-            session.deleteSelectedClip();
-            return true;
-        }
-    }
-
-    return false;
 }

@@ -15,15 +15,12 @@ TimelineRuler::~TimelineRuler()
 
 double TimelineRuler::xToTime (int x) const
 {
-    if (getWidth() <= 0)
-        return 0.0;
-
-    return juce::jlimit (0.0, viewSeconds, x / (double) getWidth() * viewSeconds);
+    return juce::jmax (0.0, session.xToTime (x, getWidth()));
 }
 
 int TimelineRuler::timeToX (double seconds) const
 {
-    return juce::roundToInt (seconds / viewSeconds * getWidth());
+    return session.timeToX (seconds, getWidth());
 }
 
 double TimelineRuler::snapToBeat (double seconds) const
@@ -35,6 +32,9 @@ double TimelineRuler::snapToBeat (double seconds) const
 void TimelineRuler::paint (juce::Graphics& g)
 {
     g.fillAll (juce::Colour (0xff222222));
+
+    if (getWidth() <= 0)
+        return;
 
     // Loop region
     const double loopStart = session.getLoopStart();
@@ -50,21 +50,44 @@ void TimelineRuler::paint (juce::Graphics& g)
         g.fillRect (x1, 0, juce::jmax (1, x2 - x1), getHeight());
     }
 
-    // Second ticks, labels every 5 seconds
+    // Bars and beats
+    const double beat = 60.0 / juce::jmax (1.0, session.getBpm());
+    const double pxPerBar = getWidth() / session.getViewLength() * beat * 4.0;
+
+    // Space bar numbers at least 40px apart
+    int labelStep = 1;
+    while (pxPerBar * labelStep < 40.0 && labelStep < 1024)
+        labelStep *= 2;
+
+    const bool showBeats = pxPerBar / 4.0 >= 10.0;
+    const double viewEnd = session.getViewStart() + session.getViewLength();
+
+    const int firstBeat = juce::jmax (0, (int) std::floor (session.getViewStart() / beat));
+    const int lastBeat  = (int) std::ceil (viewEnd / beat);
+
     g.setFont (juce::Font (juce::FontOptions (11.0f)));
 
-    for (int s = 0; s <= (int) viewSeconds; ++s)
+    for (int n = firstBeat; n <= lastBeat; ++n)
     {
-        const int x = timeToX ((double) s);
-        const bool major = (s % 5) == 0;
-        const int h = major ? getHeight() / 2 : getHeight() / 4;
+        const bool isBar = (n % 4) == 0;
+        const int x = timeToX (n * beat);
 
-        g.setColour (juce::Colours::white.withAlpha (major ? 0.6f : 0.3f));
-        g.drawVerticalLine (x, (float) (getHeight() - h), (float) getHeight());
+        if (isBar)
+        {
+            const int barIndex = n / 4;
+            const bool labelled = (barIndex % labelStep) == 0;
 
-        if (major && s < (int) viewSeconds)
-            g.drawText (juce::String::formatted ("%d:%02d", s / 60, s % 60),
-                        x + 3, 1, 40, 12, juce::Justification::left);
+            g.setColour (juce::Colours::white.withAlpha (labelled ? 0.6f : 0.35f));
+            g.drawVerticalLine (x, (float) (getHeight() / 2), (float) getHeight());
+
+            if (labelled)
+                g.drawText (juce::String (barIndex + 1), x + 3, 1, 40, 12, juce::Justification::left);
+        }
+        else if (showBeats)
+        {
+            g.setColour (juce::Colours::white.withAlpha (0.25f));
+            g.drawVerticalLine (x, (float) (getHeight() * 3 / 4), (float) getHeight());
+        }
     }
 
     // Playhead
@@ -103,4 +126,19 @@ void TimelineRuler::mouseUp (const juce::MouseEvent&)
         transport.setPosition (te::TimePosition::fromSeconds (dragStartTime));
 
     draggingLoop = false;
+}
+
+void TimelineRuler::mouseWheelMove (const juce::MouseEvent& e, const juce::MouseWheelDetails& wheel)
+{
+    // Ctrl+scroll zooms, anything else scrolls sideways
+    if (e.mods.isCommandDown())
+    {
+        if (wheel.deltaY != 0.0f)
+            session.zoomAround (xToTime (e.x), wheel.deltaY > 0.0f ? 0.8 : 1.25);
+
+        return;
+    }
+
+    const float d = wheel.deltaX != 0.0f ? wheel.deltaX : wheel.deltaY;
+    session.scrollBy (-d * session.getViewLength() * 0.5);
 }
