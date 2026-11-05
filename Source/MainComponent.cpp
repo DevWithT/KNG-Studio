@@ -9,6 +9,14 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
     addAndMakeVisible (deviceLabel);
     deviceLabel.setJustificationType (juce::Justification::centredLeft);
 
+    session = std::make_unique<EditSession> (engine);
+
+    transportBar = std::make_unique<TransportBar> (*session);
+    addAndMakeVisible (*transportBar);
+
+    trackLane = std::make_unique<TrackLane> (*session);
+    addAndMakeVisible (*trackLane);
+
     engine.getDeviceManager().deviceManager.addChangeListener (this);
     updateDeviceLabel();
 
@@ -18,6 +26,9 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
 MainComponent::~MainComponent()
 {
     engine.getDeviceManager().deviceManager.removeChangeListener (this);
+    trackLane = nullptr;
+    transportBar = nullptr;
+    session = nullptr;
 }
 
 void MainComponent::paint (juce::Graphics& g)
@@ -33,11 +44,26 @@ void MainComponent::resized()
     settingsButton.setBounds (topBar.removeFromLeft (130));
     topBar.removeFromLeft (10);
     deviceLabel.setBounds (topBar);
+
+    area.removeFromTop (10);
+
+    if (transportBar != nullptr)
+        transportBar->setBounds (area.removeFromTop (40));
+
+    area.removeFromTop (10);
+
+    if (trackLane != nullptr)
+        trackLane->setBounds (area.removeFromTop (120));
 }
 
 void MainComponent::changeListenerCallback (juce::ChangeBroadcaster*)
 {
+    const auto before = deviceLabel.getText();
     updateDeviceLabel();
+
+    // Only rewire inputs when the device actually changed
+    if (session != nullptr && deviceLabel.getText() != before)
+        session->refreshInputs();
 }
 
 void MainComponent::updateDeviceLabel()

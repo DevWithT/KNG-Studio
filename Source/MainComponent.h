@@ -3,6 +3,9 @@
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <juce_audio_utils/juce_audio_utils.h>
 #include <tracktion_engine/tracktion_engine.h>
+#include "EditSession.h"
+#include "TransportBar.h"
+#include "TrackLane.h"
 
 class MainComponent : public juce::Component,
                       private juce::ChangeListener
@@ -22,6 +25,10 @@ private:
     tracktion::Engine& engine;
     juce::TextButton settingsButton { "Audio Settings" };
     juce::Label deviceLabel;
+
+    std::unique_ptr<EditSession> session;
+    std::unique_ptr<TransportBar> transportBar;
+    std::unique_ptr<TrackLane> trackLane;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

@@ -16,7 +16,10 @@ juce_add_gui_app(KNGStudio
 
 target_sources(KNGStudio PRIVATE
     Source/Main.cpp
-    Source/MainComponent.cpp)
+    Source/MainComponent.cpp
+    Source/EditSession.cpp
+    Source/TransportBar.cpp
+    Source/TrackLane.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0

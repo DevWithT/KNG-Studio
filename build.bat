@@ -15,11 +15,13 @@ cmake --build build --config Debug
 if errorlevel 1 goto :fail
 
 echo.
-echo Build succeeded.
+echo ===== BUILD SUCCEEDED =====
+if /i not "%~1"=="nopause" pause
 exit /b 0
 
 :fail
 echo.
-echo BUILD FAILED. Scroll up for the first error.
+echo ===== BUILD FAILED =====
+echo Scroll up for the first error.
 pause
 exit /b 1
