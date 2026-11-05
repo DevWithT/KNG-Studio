@@ -85,6 +85,7 @@ void TrackLane::mouseDown (const juce::MouseEvent& e)
         return;
 
     grabKeyboardFocus();
+    session.setFocusedTrack (trackIndex);
 
     auto* clip = findClipAt (e.x);
 
@@ -291,7 +292,44 @@ void TrackLane::showClipMenu (te::Clip* clip)
         }
     }
 
+    menu.addItem ("Duplicate (Ctrl+D)", [s = &session] { s->duplicateSelectedClip(); });
+    menu.addItem ("Copy (Ctrl+C)",      [s = &session] { s->copySelectedClip(); });
+    menu.addItem ("Paste (Ctrl+V)",     [s = &session] { s->pasteClip(); });
     menu.addItem ("Split at Playhead", [s = &session] { s->splitSelectedClipAtPlayhead(); });
     menu.addItem ("Delete Clip",       [s = &session] { s->deleteSelectedClip(); });
     menu.showMenuAsync ({});
+}
+
+//==============================================================================
+static bool isAudioFile (const juce::File& f)
+{
+    return f.hasFileExtension ("wav;mp3;aif;aiff;flac;ogg");
+}
+
+bool TrackLane::isInterestedInFileDrag (const juce::StringArray& files)
+{
+    for (auto& path : files)
+        if (isAudioFile (juce::File (path)))
+            return true;
+
+    return false;
+}
+
+void TrackLane::filesDropped (const juce::StringArray& files, int x, int)
+{
+    double t = juce::jmax (0.0, session.snapTime (xToTime (x)));
+
+    // Several files land back to back
+    for (auto& path : files)
+    {
+        juce::File f (path);
+
+        if (! isAudioFile (f))
+            continue;
+
+        const double end = session.importAudioFileAt (f, trackIndex, t);
+
+        if (end > t)
+            t = end;
+    }
 }

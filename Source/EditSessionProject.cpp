@@ -5,6 +5,10 @@ namespace te = tracktion;
 //==============================================================================
 void EditSession::save()
 {
+    // Remember this project's zoom
+    edit->state.setProperty ("kngViewStart", viewStart, nullptr);
+    edit->state.setProperty ("kngViewLength", viewLength, nullptr);
+
     te::EditFileOperations (*edit).save (true, true, false);
 }
 
@@ -50,4 +54,55 @@ bool EditSession::importAudioFile (const juce::File& file)
 
     save();
     return clip != nullptr;
+}
+
+//==============================================================================
+juce::File EditSession::copyIntoProject (const juce::File& file)
+{
+    if (file.isAChildOf (getProjectFolder()))
+        return file;
+
+    auto audioFolder = getProjectFolder().getChildFile ("Audio");
+    audioFolder.createDirectory();
+
+    auto dest = audioFolder.getNonexistentChildFile (file.getFileNameWithoutExtension(),
+                                                     file.getFileExtension(), false);
+
+    return file.copyFileTo (dest) ? dest : juce::File();
+}
+
+double EditSession::importAudioFileAt (const juce::File& file, int trackIndex, double startSeconds)
+{
+    if (getTransport().isRecording())
+        return -1.0;
+
+    auto* track = getTrack (trackIndex);
+
+    if (track == nullptr)
+        return -1.0;
+
+    auto dest = copyIntoProject (file);
+
+    if (dest == juce::File())
+        return -1.0;
+
+    te::AudioFile audioFile (engine, dest);
+
+    if (! audioFile.isValid())
+        return -1.0;
+
+    const double start = juce::jmax (0.0, startSeconds);
+    const double end   = start + audioFile.getLength();
+
+    beginEdit();
+
+    const te::TimeRange range (te::TimePosition::fromSeconds (start), te::TimePosition::fromSeconds (end));
+    auto clip = track->insertWaveClip (file.getFileNameWithoutExtension(), dest,
+                                       te::ClipPosition { range, te::TimeDuration() }, false);
+
+    if (clip == nullptr)
+        return -1.0;
+
+    save();
+    return end;
 }

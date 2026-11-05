@@ -26,6 +26,8 @@ public:
     tracktion::AudioTrack* getTrack (int index);
     void addTrack();
     void deleteTrack (int index);
+    void moveTrack (int index, int direction);
+    void setFocusedTrack (int index)            { focusedTrack = index; }
 
     // Inputs
     juce::StringArray getInputNames();
@@ -46,6 +48,9 @@ public:
     tracktion::Clip* getSelectedClip() const    { return selectedClip.get(); }
     void deleteSelectedClip();
     void splitSelectedClipAtPlayhead();
+    void duplicateSelectedClip();
+    void copySelectedClip();
+    void pasteClip();
     void beginEdit();
 
     // Tempo, click, count-in
@@ -93,10 +98,11 @@ public:
     std::function<void (tracktion::PluginList&, const juce::String&)> onShowFxChain;
 
     // Export
+    static juce::File getLameExecutable();
     juce::File getExportsFolder();
     bool trackHasContent (int trackIndex);
     std::shared_ptr<tracktion::EditRenderer::Handle> exportMix (const juce::File& dest, bool loopOnly, int normaliseMode,
-                                                                std::function<void (const juce::String&)> onDone);
+                                                                bool asMp3, std::function<void (const juce::String&)> onDone);
     std::shared_ptr<tracktion::EditRenderer::Handle> exportStem (int trackIndex, const juce::File& dest, bool loopOnly,
                                                                  std::function<void (const juce::String&)> onDone);
 
@@ -106,6 +112,7 @@ public:
 
     // Import
     bool importAudioFile (const juce::File& file);
+    double importAudioFileAt (const juce::File& file, int trackIndex, double startSeconds);
 
     void refreshInputs();
     void save();
@@ -116,8 +123,10 @@ private:
     void applyArm (int trackIndex, bool shouldBeArmed);
     tracktion::AuxSendPlugin* findSend (tracktion::AudioTrack& track);
     void ensureReverbBus();
-    tracktion::Renderer::Parameters makeRenderParams (const juce::File& dest, bool loopOnly, int normaliseMode);
+    tracktion::Renderer::Parameters makeRenderParams (const juce::File& dest, bool loopOnly, int normaliseMode,
+                                                      juce::AudioFormat& format);
     tracktion::TimeRange getExportRange (bool loopOnly);
+    juce::File copyIntoProject (const juce::File& file);
 
     tracktion::Engine& engine;
     juce::File editFile;
@@ -128,6 +137,8 @@ private:
 
     bool monitoringEnabled = true;
     tracktion::Clip::Ptr selectedClip;
+    tracktion::Clip::Ptr copiedClip;
+    int focusedTrack = -1;
 
     double viewStart = 0.0;
     double viewLength = 60.0;

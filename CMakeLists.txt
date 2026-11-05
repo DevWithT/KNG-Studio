@@ -21,6 +21,7 @@ target_sources(KNGStudio PRIVATE
     Source/EditSessionTransport.cpp
     Source/EditSessionProject.cpp
     Source/EditSessionView.cpp
+    Source/EditSessionTracks.cpp
     Source/TransportBar.cpp
     Source/TrackLane.cpp
     Source/TrackLaneMouse.cpp
@@ -41,6 +42,7 @@ target_compile_definitions(KNGStudio PRIVATE
     JUCE_PLUGINHOST_VST3=1
     JUCE_ASIO=1
     JUCE_USE_MP3AUDIOFORMAT=1
+    JUCE_USE_LAME_AUDIO_FORMAT=1
     JUCE_MODAL_LOOPS_PERMITTED=1
     JUCE_STRICT_REFCOUNTEDPOINTER=1
     TRACKTION_ENABLE_TIMESTRETCH_SOUNDTOUCH=1)

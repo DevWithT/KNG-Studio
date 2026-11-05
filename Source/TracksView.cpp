@@ -26,9 +26,19 @@ int TracksView::getIdealHeight() const
     return headers.size() * (rowHeight + gap) + 36;
 }
 
+juce::Array<tracktion::AudioTrack*> TracksView::getCurrentTracks()
+{
+    juce::Array<tracktion::AudioTrack*> result;
+
+    for (int i = 0; i < session.getNumTracks(); ++i)
+        result.add (session.getTrack (i));
+
+    return result;
+}
+
 void TracksView::timerCallback()
 {
-    if (session.getNumTracks() != builtCount)
+    if (getCurrentTracks() != builtTracks)
         rebuild();
 }
 
@@ -37,9 +47,9 @@ void TracksView::rebuild()
     lanes.clear();
     headers.clear();
 
-    builtCount = session.getNumTracks();
+    builtTracks = getCurrentTracks();
 
-    for (int i = 0; i < builtCount; ++i)
+    for (int i = 0; i < builtTracks.size(); ++i)
     {
         auto* h = headers.add (new TrackHeader (session, i));
         addAndMakeVisible (h);

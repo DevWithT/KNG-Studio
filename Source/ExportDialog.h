@@ -21,8 +21,9 @@ private:
 
     EditSession& session;
 
-    juce::Label whatLabel { {}, "Export" }, rangeLabel { {}, "Range" }, normaliseLabel { {}, "Normalize" };
-    juce::ComboBox whatBox, rangeBox, normaliseBox;
+    juce::Label whatLabel { {}, "Export" }, formatLabel { {}, "Format" },
+                rangeLabel { {}, "Range" }, normaliseLabel { {}, "Normalize" };
+    juce::ComboBox whatBox, formatBox, rangeBox, normaliseBox;
     juce::TextButton exportButton { "Export" };
     juce::Label statusLabel;
 

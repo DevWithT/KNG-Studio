@@ -3,15 +3,24 @@
 ExportDialog::ExportDialog (EditSession& sessionToUse)
     : session (sessionToUse)
 {
-    for (auto* c : std::initializer_list<juce::Component*> { &whatLabel, &whatBox, &rangeLabel, &rangeBox,
-                                                             &normaliseLabel, &normaliseBox, &exportButton,
-                                                             &progressBar, &statusLabel })
+    for (auto* c : std::initializer_list<juce::Component*> { &whatLabel, &whatBox, &formatLabel, &formatBox,
+                                                             &rangeLabel, &rangeBox, &normaliseLabel, &normaliseBox,
+                                                             &exportButton, &progressBar, &statusLabel })
         addAndMakeVisible (c);
 
-    whatBox.addItem ("Full mix (WAV 24-bit)", 1);
-    whatBox.addItem ("Stems, one per track (WAV 24-bit)", 2);
+    whatBox.addItem ("Full mix", 1);
+    whatBox.addItem ("Stems, one per track (always WAV)", 2);
     whatBox.setSelectedId (1, juce::dontSendNotification);
-    whatBox.onChange = [this] { normaliseBox.setEnabled (whatBox.getSelectedId() == 1); };
+    whatBox.onChange = [this]
+    {
+        const bool mix = whatBox.getSelectedId() == 1;
+        normaliseBox.setEnabled (mix);
+        formatBox.setEnabled (mix);
+    };
+
+    formatBox.addItem ("WAV 24-bit", 1);
+    formatBox.addItem ("MP3 320k", 2);
+    formatBox.setSelectedId (1, juce::dontSendNotification);
 
     rangeBox.addItem ("Whole song", 1);
     rangeBox.addItem ("Loop region", 2);
@@ -28,7 +37,7 @@ ExportDialog::ExportDialog (EditSession& sessionToUse)
     statusLabel.setText ("Files go to this project's Exports folder.", juce::dontSendNotification);
 
     startTimerHz (15);
-    setSize (440, 240);
+    setSize (460, 280);
 }
 
 ExportDialog::~ExportDialog()
@@ -57,6 +66,16 @@ void ExportDialog::startExport()
         return;
     }
 
+    const bool isMix = whatBox.getSelectedId() == 1;
+    const bool asMp3 = isMix && formatBox.getSelectedId() == 2;
+
+    if (asMp3 && ! EditSession::getLameExecutable().existsAsFile())
+    {
+        statusLabel.setText ("MP3 needs lame.exe in " + EditSession::getLameExecutable().getParentDirectory().getFullPathName(),
+                             juce::dontSendNotification);
+        return;
+    }
+
     exporting = true;
     exportButton.setEnabled (false);
     progress = 0.0;
@@ -64,14 +83,15 @@ void ExportDialog::startExport()
     const auto stamp = juce::Time::getCurrentTime().formatted ("%Y-%m-%d %H%M%S");
     juce::Component::SafePointer<ExportDialog> safe (this);
 
-    if (whatBox.getSelectedId() == 1)
+    if (isMix)
     {
         exportingStems = false;
 
-        auto dest = session.getExportsFolder().getChildFile (session.getProjectName() + " " + stamp + ".wav");
+        auto dest = session.getExportsFolder().getChildFile (session.getProjectName() + " " + stamp
+                                                             + (asMp3 ? ".mp3" : ".wav"));
         statusLabel.setText ("Exporting mix...", juce::dontSendNotification);
 
-        handle = session.exportMix (dest, loopOnly, normaliseBox.getSelectedId() - 1,
+        handle = session.exportMix (dest, loopOnly, normaliseBox.getSelectedId() - 1, asMp3,
                                     [safe, dest] (const juce::String& error)
                                     {
                                         if (safe != nullptr)
@@ -192,12 +212,16 @@ void ExportDialog::resized()
     whatBox.setBounds (r1);
 
     auto r2 = row();
-    rangeLabel.setBounds (r2.removeFromLeft (80));
-    rangeBox.setBounds (r2);
+    formatLabel.setBounds (r2.removeFromLeft (80));
+    formatBox.setBounds (r2);
 
     auto r3 = row();
-    normaliseLabel.setBounds (r3.removeFromLeft (80));
-    normaliseBox.setBounds (r3);
+    rangeLabel.setBounds (r3.removeFromLeft (80));
+    rangeBox.setBounds (r3);
+
+    auto r4 = row();
+    normaliseLabel.setBounds (r4.removeFromLeft (80));
+    normaliseBox.setBounds (r4);
 
     exportButton.setBounds (row().removeFromLeft (120));
     progressBar.setBounds (row());

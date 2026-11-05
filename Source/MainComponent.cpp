@@ -294,6 +294,9 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
         if (code == 'S' || code == 's')  { saveProject();   return true; }
         if (code == 'O' || code == 'o')  { openProject();   return true; }
         if (code == 'N' || code == 'n')  { newProject();    return true; }
+        if (code == 'D' || code == 'd')  { session->duplicateSelectedClip(); return true; }
+        if (code == 'C' || code == 'c')  { session->copySelectedClip();      return true; }
+        if (code == 'V' || code == 'v')  { session->pasteClip();             return true; }
     }
 
     // Space toggles play/stop

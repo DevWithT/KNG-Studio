@@ -8,6 +8,20 @@ TrackHeader::TrackHeader (EditSession& sessionToUse, int trackIndexToUse)
     addAndMakeVisible (nameLabel);
     nameLabel.setFont (juce::Font (juce::FontOptions (15.0f)));
     nameLabel.setInterceptsMouseClicks (false, false);
+    nameLabel.onTextChange = [this]
+    {
+        if (auto* t = session.getTrack (trackIndex))
+        {
+            const auto newName = nameLabel.getText().trim();
+
+            if (newName.isNotEmpty())
+            {
+                session.beginEdit();
+                t->setName (newName);
+                session.save();
+            }
+        }
+    };
 
     for (auto* b : { &armButton, &muteButton, &soloButton, &fxButton })
     {
@@ -156,6 +170,10 @@ void TrackHeader::timerCallback()
     {
         muteButton.setToggleState (t->isMuted (false), juce::dontSendNotification);
         soloButton.setToggleState (t->isSolo (false), juce::dontSendNotification);
+
+        // Picks up undo/redo of a rename
+        if (! nameLabel.isBeingEdited() && nameLabel.getText() != t->getName())
+            nameLabel.setText (t->getName(), juce::dontSendNotification);
     }
 
     if (! inputBox.isPopupActive() && inputBox.getNumItems() > 0)
@@ -171,6 +189,18 @@ void TrackHeader::paint (juce::Graphics& g)
     g.setColour (isBus ? juce::Colour (0xff3b3548) : juce::Colour (0xff3a3f44));
     g.fillRoundedRectangle (r, 4.0f);
 
+    // Track colour strip down the left edge
+    if (auto* t = session.getTrack (trackIndex))
+    {
+        const auto c = t->getColour();
+
+        if (c.getAlpha() > 0)
+        {
+            g.setColour (c.withAlpha (1.0f));
+            g.fillRoundedRectangle (r.withWidth (5.0f), 2.0f);
+        }
+    }
+
     if (session.isArmed (trackIndex))
     {
         g.setColour (juce::Colours::red.withAlpha (0.7f));
@@ -181,6 +211,7 @@ void TrackHeader::paint (juce::Graphics& g)
 void TrackHeader::resized()
 {
     auto r = getLocalBounds().reduced (6);
+    r.removeFromLeft (4);   // room for the colour strip
 
     meter.setBounds (r.removeFromRight (8));
     r.removeFromRight (4);
@@ -211,15 +242,60 @@ void TrackHeader::resized()
     sendSlider.setBounds (row4);
 }
 
+void TrackHeader::mouseDoubleClick (const juce::MouseEvent& e)
+{
+    if (nameLabel.getBounds().contains (e.getPosition()))
+        nameLabel.showEditor();
+}
+
 void TrackHeader::mouseDown (const juce::MouseEvent& e)
 {
     if (! e.mods.isPopupMenu())
         return;
 
+    auto* s = &session;
+    const int idx = trackIndex;
+    juce::Component::SafePointer<TrackHeader> safe (this);
+
     juce::PopupMenu menu;
 
+    menu.addItem ("Rename", [safe] { if (safe != nullptr) safe->nameLabel.showEditor(); });
+
+    menu.addItem ("Move Up", idx > 0, false,
+                  [s, idx] { juce::MessageManager::callAsync ([s, idx] { s->moveTrack (idx, -1); }); });
+
+    menu.addItem ("Move Down", idx < session.getNumTracks() - 1, false,
+                  [s, idx] { juce::MessageManager::callAsync ([s, idx] { s->moveTrack (idx, 1); }); });
+
+    // Colour palette
+    struct Swatch { const char* name; juce::uint32 argb; };
+    const Swatch swatches[] = {
+        { "Blue",   0xff3a6ea5 }, { "Red",    0xffc0392b }, { "Orange", 0xffd35400 },
+        { "Yellow", 0xffc9a227 }, { "Green",  0xff2e8b57 }, { "Teal",   0xff16a085 },
+        { "Purple", 0xff8e44ad }, { "Pink",   0xffc2185b }, { "Grey",   0xff607d8b }
+    };
+
+    juce::PopupMenu colours;
+
+    for (auto& sw : swatches)
+    {
+        const juce::Colour c (sw.argb);
+        colours.addItem (sw.name, [s, idx, c]
+        {
+            if (auto* t = s->getTrack (idx))
+            {
+                s->beginEdit();
+                t->setColour (c);
+                s->save();
+            }
+        });
+    }
+
+    menu.addSubMenu ("Color", colours);
+    menu.addSeparator();
+
     // Deleting rebuilds the track list, so do it after this header's click finishes
-    menu.addItem ("Delete Track", [s = &session, idx = trackIndex]
+    menu.addItem ("Delete Track", [s, idx]
     {
         juce::MessageManager::callAsync ([s, idx] { s->deleteTrack (idx); });
     });

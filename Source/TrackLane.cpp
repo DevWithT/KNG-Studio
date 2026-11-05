@@ -2,6 +2,20 @@
 
 namespace te = tracktion;
 
+// Clips take their track's colour, or blue if the track has none
+static juce::Colour clipColourFor (te::Clip& clip)
+{
+    if (auto* t = clip.getTrack())
+    {
+        const auto c = t->getColour();
+
+        if (c.getAlpha() > 0)
+            return c.withAlpha (1.0f).darker (0.2f);
+    }
+
+    return juce::Colour (0xff3a6ea5);
+}
+
 TrackLane::TrackLane (EditSession& sessionToUse, int trackIndexToUse)
     : session (sessionToUse), trackIndex (trackIndexToUse)
 {
@@ -190,7 +204,8 @@ void TrackLane::drawClips (juce::Graphics& g)
         const int x2 = timeToX (clipEnd);
         juce::Rectangle<int> area (x1, 0, juce::jmax (1, x2 - x1), getHeight());
 
-        g.setColour (selected ? juce::Colour (0xff4f8fd0) : juce::Colour (0xff3a6ea5));
+        const auto base = clipColourFor (*ct.clip);
+        g.setColour (selected ? base.brighter (0.3f) : base);
         g.fillRect (area);
 
         // Only draw the visible part of the waveform

@@ -35,15 +35,30 @@ public:
             setContentOwned (new MainComponent (engine), true);
             setResizable (true, true);
             centreWithSize (getWidth(), getHeight());
+
+            // Put the window back where it was last time
+            const auto saved = getStateFile().loadFileAsString();
+
+            if (saved.isNotEmpty())
+                restoreWindowStateFromString (saved);
+
             setVisible (true);
         }
 
         void closeButtonPressed() override
         {
+            getStateFile().replaceWithText (getWindowStateAsString());
             juce::JUCEApplication::getInstance()->systemRequestedQuit();
         }
 
     private:
+        static juce::File getStateFile()
+        {
+            auto root = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory).getChildFile ("KNG Studio");
+            root.createDirectory();
+            return root.getChildFile ("window.txt");
+        }
+
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainWindow)
     };
 

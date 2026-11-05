@@ -18,6 +18,7 @@ public:
 private:
     void timerCallback() override;
     void rebuild();
+    juce::Array<tracktion::AudioTrack*> getCurrentTracks();
 
     EditSession& session;
 
@@ -25,7 +26,8 @@ private:
     juce::OwnedArray<TrackLane> lanes;
     juce::TextButton addTrackButton { "+ Add Track" };
 
-    int builtCount = -1;
+    // Rebuild when tracks are added, removed or reordered
+    juce::Array<tracktion::AudioTrack*> builtTracks;
 
     static constexpr int rowHeight   = 112;
     static constexpr int headerWidth = 240;

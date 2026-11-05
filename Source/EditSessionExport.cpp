@@ -3,6 +3,13 @@
 namespace te = tracktion;
 
 //==============================================================================
+juce::File EditSession::getLameExecutable()
+{
+    return juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)
+               .getChildFile ("KNG Studio")
+               .getChildFile ("lame.exe");
+}
+
 juce::File EditSession::getExportsFolder()
 {
     auto folder = getProjectFolder().getChildFile ("Exports");
@@ -26,19 +33,34 @@ te::TimeRange EditSession::getExportRange (bool loopOnly)
     return te::TimeRange (te::TimePosition(), te::TimePosition() + edit->getLength());
 }
 
-te::Renderer::Parameters EditSession::makeRenderParams (const juce::File& dest, bool loopOnly, int normaliseMode)
+te::Renderer::Parameters EditSession::makeRenderParams (const juce::File& dest, bool loopOnly, int normaliseMode,
+                                                        juce::AudioFormat& format)
 {
-    static juce::WavAudioFormat wavFormat;
-
     te::Renderer::Parameters p (*edit);
     p.destFile = dest;
-    p.audioFormat = &wavFormat;
+    p.audioFormat = &format;
     p.bitDepth = 24;
     p.blockSizeForAudio = 512;
     p.time = getExportRange (loopOnly);
     p.usePlugins = true;
     p.useMasterPlugins = true;
     p.canRenderInMono = false;
+
+    // MP3: 16-bit in, 320k CBR out
+    if (auto* lame = dynamic_cast<juce::LAMEEncoderAudioFormat*> (&format))
+    {
+        p.bitDepth = 16;
+        const auto options = lame->getQualityOptions();
+
+        for (int i = 0; i < options.size(); ++i)
+        {
+            if (options[i].contains ("320"))
+            {
+                p.quality = i;
+                break;
+            }
+        }
+    }
 
     // Match the interface's sample rate, or fall back to 48k
     p.sampleRateForAudio = 48000.0;
@@ -64,17 +86,25 @@ te::Renderer::Parameters EditSession::makeRenderParams (const juce::File& dest, 
 
 //==============================================================================
 std::shared_ptr<te::EditRenderer::Handle> EditSession::exportMix (const juce::File& dest, bool loopOnly, int normaliseMode,
-                                                                  std::function<void (const juce::String&)> onDone)
+                                                                  bool asMp3, std::function<void (const juce::String&)> onDone)
 {
     getTransport().stop (false, false);
 
-    auto p = makeRenderParams (dest, loopOnly, normaliseMode);
+    // The format has to live until the render finishes, so the callback holds onto it
+    std::shared_ptr<juce::AudioFormat> format;
+
+    if (asMp3)
+        format = std::make_shared<juce::LAMEEncoderAudioFormat> (getLameExecutable());
+    else
+        format = std::make_shared<juce::WavAudioFormat>();
+
+    auto p = makeRenderParams (dest, loopOnly, normaliseMode, *format);
 
     // Let reverb and delay tails ring out on full-song exports
     if (! loopOnly)
         p.endAllowance = te::TimeDuration::fromSeconds (4.0);
 
-    return te::EditRenderer::render (p, [onDone] (tl::expected<juce::File, std::string> result)
+    return te::EditRenderer::render (p, [onDone, format] (tl::expected<juce::File, std::string> result)
     {
         const juce::String error = result.has_value() ? juce::String() : juce::String (result.error());
 
@@ -99,8 +129,10 @@ std::shared_ptr<te::EditRenderer::Handle> EditSession::exportStem (int trackInde
         return {};
     }
 
+    auto format = std::make_shared<juce::WavAudioFormat>();
+
     // Stems are never normalised so their balance stays intact
-    auto p = makeRenderParams (dest, loopOnly, 0);
+    auto p = makeRenderParams (dest, loopOnly, 0, *format);
     p.useMasterPlugins = false;
     p.checkNodesForAudio = false;
 
@@ -118,7 +150,7 @@ std::shared_ptr<te::EditRenderer::Handle> EditSession::exportStem (int trackInde
     if (! loopOnly)
         p.endAllowance = te::TimeDuration::fromSeconds (4.0);
 
-    return te::EditRenderer::render (p, [onDone] (tl::expected<juce::File, std::string> result)
+    return te::EditRenderer::render (p, [onDone, format] (tl::expected<juce::File, std::string> result)
     {
         const juce::String error = result.has_value() ? juce::String() : juce::String (result.error());
 

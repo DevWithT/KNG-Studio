@@ -4,6 +4,7 @@
 #include "EditSession.h"
 
 class TrackLane : public juce::Component,
+                  public juce::FileDragAndDropTarget,
                   private juce::Timer
 {
 public:
@@ -18,6 +19,8 @@ public:
     void mouseMove (const juce::MouseEvent&) override;
     void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails&) override;
     bool keyPressed (const juce::KeyPress&) override;
+    bool isInterestedInFileDrag (const juce::StringArray& files) override;
+    void filesDropped (const juce::StringArray& files, int x, int y) override;
 
 private:
     struct ClipThumb
