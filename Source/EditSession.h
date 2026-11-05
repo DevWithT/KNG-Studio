@@ -97,6 +97,10 @@ public:
     // Lets the UI open an FX chain window (MainComponent sets this)
     std::function<void (tracktion::PluginList&, const juce::String&)> onShowFxChain;
 
+    // Recording latency offset (saved between launches)
+    static double getLatencyOffsetMs();
+    void setLatencyOffsetMs (double ms);
+
     // Export
     static juce::File getLameExecutable();
     juce::File getExportsFolder();

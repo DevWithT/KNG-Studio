@@ -9,6 +9,7 @@
 #include "TimelineRuler.h"
 #include "MasterStrip.h"
 #include "FxChainComponent.h"
+#include "LatencyDialog.h"
 
 class MainComponent : public juce::Component,
                       private juce::ChangeListener
@@ -26,6 +27,7 @@ private:
     void changeListenerCallback (juce::ChangeBroadcaster*) override;
     void showAudioSettings();
     void showPluginScanner();
+    void showLatencyDialog();
     void showFxChain (tracktion::PluginList& list, const juce::String& title);
     void updateDeviceLabel();
 
@@ -44,7 +46,7 @@ private:
 
     tracktion::Engine& engine;
 
-    juce::TextButton settingsButton { "Audio Settings" }, scanButton { "Scan Plugins" };
+    juce::TextButton settingsButton { "Audio Settings" }, scanButton { "Scan Plugins" }, latencyButton { "Latency Check" };
     juce::TextButton newButton { "New" }, openButton { "Open" }, saveButton { "Save" };
     juce::Label projectLabel, deviceLabel;
 

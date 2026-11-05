@@ -205,6 +205,7 @@ void EditSession::refreshInputs()
             wip->setMonitorMode (monitoringEnabled ? te::InputDevice::MonitorMode::automatic
                                                    : te::InputDevice::MonitorMode::off);
             wip->setEnabled (true);
+            wip->setRecordAdjustmentMs (getLatencyOffsetMs());
         }
     }
 

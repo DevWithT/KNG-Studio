@@ -34,7 +34,10 @@ target_sources(KNGStudio PRIVATE
     Source/MasterStrip.cpp
     Source/PluginWindow.cpp
     Source/EditSessionExport.cpp
-    Source/ExportDialog.cpp)
+    Source/ExportDialog.cpp
+    Source/EditSessionLatency.cpp
+    Source/LatencyTester.cpp
+    Source/LatencyDialog.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0

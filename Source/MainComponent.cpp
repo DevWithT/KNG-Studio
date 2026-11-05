@@ -5,11 +5,12 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
 {
     setWantsKeyboardFocus (true);
 
-    for (auto* b : { &settingsButton, &scanButton, &newButton, &openButton, &saveButton })
+    for (auto* b : { &settingsButton, &scanButton, &latencyButton, &newButton, &openButton, &saveButton })
         addAndMakeVisible (b);
 
     settingsButton.onClick = [this] { showAudioSettings(); };
     scanButton.onClick     = [this] { showPluginScanner(); };
+    latencyButton.onClick  = [this] { showLatencyDialog(); };
     newButton.onClick      = [this] { newProject(); };
     openButton.onClick     = [this] { openProject(); };
     saveButton.onClick     = [this] { saveProject(); };
@@ -224,6 +225,8 @@ void MainComponent::resized()
     settingsButton.setBounds (topBar.removeFromLeft (130));
     topBar.removeFromLeft (6);
     scanButton.setBounds (topBar.removeFromLeft (110));
+    topBar.removeFromLeft (6);
+    latencyButton.setBounds (topBar.removeFromLeft (110));
     topBar.removeFromLeft (10);
     newButton.setBounds (topBar.removeFromLeft (60));
     topBar.removeFromLeft (4);
@@ -360,6 +363,23 @@ void MainComponent::showAudioSettings()
     options.content.setOwned (selector);
     options.dialogTitle = "Audio Settings";
     options.dialogBackgroundColour = getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId);
+    options.escapeKeyTriggersCloseButton = true;
+    options.useNativeTitleBar = true;
+    options.resizable = false;
+    options.launchAsync();
+}
+
+void MainComponent::showLatencyDialog()
+{
+    if (session == nullptr)
+        return;
+
+    auto* dialog = new LatencyDialog (*session, engine.getDeviceManager().deviceManager);
+
+    juce::DialogWindow::LaunchOptions options;
+    options.content.setOwned (dialog);
+    options.dialogTitle = "Latency Check";
+    options.dialogBackgroundColour = juce::Colour (0xff2b2f33);
     options.escapeKeyTriggersCloseButton = true;
     options.useNativeTitleBar = true;
     options.resizable = false;
