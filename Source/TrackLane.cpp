@@ -5,6 +5,7 @@ namespace te = tracktion;
 TrackLane::TrackLane (EditSession& sessionToUse, int trackIndexToUse)
     : session (sessionToUse), trackIndex (trackIndexToUse)
 {
+    setWantsKeyboardFocus (true);
     startTimerHz (30);
 }
 
@@ -117,15 +118,14 @@ void TrackLane::drawClips (juce::Graphics& g)
     for (auto& ct : clipThumbs)
     {
         auto pos = ct.clip->getPosition();
+        const bool selected = ct.clip.get() == session.getSelectedClip();
 
         const int x1 = timeToX (pos.getStart().inSeconds());
         const int x2 = timeToX (pos.getEnd().inSeconds());
         juce::Rectangle<int> area (x1, 0, juce::jmax (1, x2 - x1), getHeight());
 
-        g.setColour (juce::Colour (0xff3a6ea5));
+        g.setColour (selected ? juce::Colour (0xff4f8fd0) : juce::Colour (0xff3a6ea5));
         g.fillRect (area);
-        g.setColour (juce::Colours::black);
-        g.drawRect (area);
 
         if (ct.thumb != nullptr)
         {
@@ -137,6 +137,17 @@ void TrackLane::drawClips (juce::Graphics& g)
 
             g.setColour (juce::Colours::white.withAlpha (0.85f));
             ct.thumb->drawChannel (g, area.reduced (0, 4), sourceRange, 0, 1.0f);
+        }
+
+        if (selected)
+        {
+            g.setColour (juce::Colours::white);
+            g.drawRect (area, 2);
+        }
+        else
+        {
+            g.setColour (juce::Colours::black);
+            g.drawRect (area);
         }
     }
 }
@@ -164,6 +175,21 @@ void TrackLane::drawRecording (juce::Graphics& g)
     recordingThumb->thumb->drawChannels (g, area.reduced (0, 4), 0.0, length, 1.0f);
 }
 
+te::Clip* TrackLane::findClipAt (int x)
+{
+    for (auto& ct : clipThumbs)
+    {
+        auto pos = ct.clip->getPosition();
+        const int x1 = timeToX (pos.getStart().inSeconds());
+        const int x2 = timeToX (pos.getEnd().inSeconds());
+
+        if (x >= x1 && x <= x2)
+            return ct.clip.get();
+    }
+
+    return nullptr;
+}
+
 void TrackLane::mouseDown (const juce::MouseEvent& e)
 {
     auto& transport = session.getTransport();
@@ -171,6 +197,41 @@ void TrackLane::mouseDown (const juce::MouseEvent& e)
     if (transport.isRecording() || getWidth() <= 0)
         return;
 
+    grabKeyboardFocus();
+
+    auto* clip = findClipAt (e.x);
+
+    if (e.mods.isPopupMenu())
+    {
+        if (clip != nullptr)
+        {
+            session.selectClip (clip);
+
+            juce::PopupMenu menu;
+            menu.addItem ("Delete Clip", [s = &session] { s->deleteSelectedClip(); });
+            menu.showMenuAsync ({});
+        }
+
+        return;
+    }
+
+    // Clicking empty space clears the selection
+    session.selectClip (clip);
+
     const double secs = juce::jlimit (0.0, viewSeconds, e.x / (double) getWidth() * viewSeconds);
     transport.setPosition (te::TimePosition::fromSeconds (secs));
+}
+
+bool TrackLane::keyPressed (const juce::KeyPress& key)
+{
+    if (key == juce::KeyPress::deleteKey || key == juce::KeyPress::backspaceKey)
+    {
+        if (session.getSelectedClip() != nullptr)
+        {
+            session.deleteSelectedClip();
+            return true;
+        }
+    }
+
+    return false;
 }

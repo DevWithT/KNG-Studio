@@ -20,6 +20,7 @@ public:
     int getNumTracks();
     tracktion::AudioTrack* getTrack (int index);
     void addTrack();
+    void deleteTrack (int index);
 
     // Inputs
     juce::StringArray getInputNames();
@@ -30,6 +31,15 @@ public:
     void setArmed (int trackIndex, bool shouldBeArmed);
     bool isArmed (int trackIndex) const;
     bool isAnyTrackArmed() const;
+
+    // Monitoring
+    void setMonitoring (bool shouldMonitor);
+    bool isMonitoring() const                   { return monitoringEnabled; }
+
+    // Clip selection
+    void selectClip (tracktion::Clip* clip);
+    tracktion::Clip* getSelectedClip() const    { return selectedClip.get(); }
+    void deleteSelectedClip();
 
     void refreshInputs();
     void save();
@@ -44,6 +54,9 @@ private:
 
     std::vector<int> trackInputs;
     std::vector<bool> trackArmed;
+
+    bool monitoringEnabled = true;
+    tracktion::Clip::Ptr selectedClip;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EditSession)
 };

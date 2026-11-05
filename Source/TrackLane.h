@@ -12,6 +12,7 @@ public:
 
     void paint (juce::Graphics&) override;
     void mouseDown (const juce::MouseEvent&) override;
+    bool keyPressed (const juce::KeyPress&) override;
 
 private:
     struct ClipThumb
@@ -25,6 +26,7 @@ private:
     void syncRecordingThumb();
     void drawClips (juce::Graphics&);
     void drawRecording (juce::Graphics&);
+    tracktion::Clip* findClipAt (int x);
     int timeToX (double seconds) const;
 
     EditSession& session;

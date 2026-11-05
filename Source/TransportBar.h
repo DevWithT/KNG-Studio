@@ -20,6 +20,7 @@ private:
 
     juce::TextButton playButton { "Play" }, stopButton { "Stop" }, recordButton { "Record" };
     juce::Label timeLabel;
+    juce::ToggleButton monitorButton { "Monitor" };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TransportBar)
 };

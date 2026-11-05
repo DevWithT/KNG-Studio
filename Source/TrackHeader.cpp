@@ -5,6 +5,7 @@ TrackHeader::TrackHeader (EditSession& sessionToUse, int trackIndexToUse)
 {
     addAndMakeVisible (nameLabel);
     nameLabel.setFont (juce::Font (juce::FontOptions (15.0f)));
+    nameLabel.setInterceptsMouseClicks (false, false);
 
     for (auto* b : { &armButton, &muteButton, &soloButton })
     {
@@ -160,4 +161,20 @@ void TrackHeader::resized()
     panSlider.setBounds (row3.removeFromRight (70));
     row3.removeFromRight (6);
     volumeSlider.setBounds (row3);
+}
+
+void TrackHeader::mouseDown (const juce::MouseEvent& e)
+{
+    if (! e.mods.isPopupMenu())
+        return;
+
+    juce::PopupMenu menu;
+
+    // Deleting rebuilds the track list, so do it after this header's click finishes
+    menu.addItem ("Delete Track", [s = &session, idx = trackIndex]
+    {
+        juce::MessageManager::callAsync ([s, idx] { s->deleteTrack (idx); });
+    });
+
+    menu.showMenuAsync ({});
 }

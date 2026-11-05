@@ -178,7 +178,7 @@ void EditSession::refreshInputs()
     {
         if (auto wip = dm.getWaveInDevice (i))
         {
-            wip->setMonitorMode (te::InputDevice::MonitorMode::automatic);
+            wip->setMonitorMode (monitoringEnabled ? te::InputDevice::MonitorMode::automatic : te::InputDevice::MonitorMode::off);
             wip->setEnabled (true);
         }
     }
@@ -228,4 +228,66 @@ void EditSession::stop()
 void EditSession::save()
 {
     te::EditFileOperations (*edit).save (true, true, false);
+}
+
+//==============================================================================
+void EditSession::deleteTrack (int index)
+{
+    if (getTransport().isRecording())
+        return;
+
+    auto* track = getTrack (index);
+
+    if (track == nullptr)
+        return;
+
+    syncTrackState();
+
+    if (isArmed (index))
+        applyArm (index, false);
+
+    selectedClip = nullptr;
+    edit->deleteTrack (track);
+
+    if (juce::isPositiveAndBelow (index, (int) trackInputs.size()))
+    {
+        trackInputs.erase (trackInputs.begin() + index);
+        trackArmed.erase (trackArmed.begin() + index);
+    }
+
+    syncTrackState();
+    save();
+}
+
+//==============================================================================
+void EditSession::setMonitoring (bool shouldMonitor)
+{
+    monitoringEnabled = shouldMonitor;
+
+    auto& dm = engine.getDeviceManager();
+
+    for (int i = 0; i < dm.getNumWaveInDevices(); ++i)
+        if (auto wip = dm.getWaveInDevice (i))
+            wip->setMonitorMode (monitoringEnabled ? te::InputDevice::MonitorMode::automatic
+                                                   : te::InputDevice::MonitorMode::off);
+
+    edit->restartPlayback();
+}
+
+//==============================================================================
+void EditSession::selectClip (te::Clip* clip)
+{
+    selectedClip = clip;
+}
+
+void EditSession::deleteSelectedClip()
+{
+    if (selectedClip == nullptr || getTransport().isRecording())
+        return;
+
+    auto clip = selectedClip;
+    selectedClip = nullptr;
+
+    clip->removeFromParent();
+    save();
 }
