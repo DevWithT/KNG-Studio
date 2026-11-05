@@ -1,0 +1,41 @@
+cmake_minimum_required(VERSION 3.22)
+project(MyDAW VERSION 0.1.0)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+add_subdirectory(libs/tracktion_engine/modules/juce)
+
+juce_add_module(libs/tracktion_engine/modules/tracktion_core ALIAS_NAMESPACE tracktion)
+juce_add_module(libs/tracktion_engine/modules/tracktion_graph ALIAS_NAMESPACE tracktion)
+juce_add_module(libs/tracktion_engine/modules/tracktion_engine ALIAS_NAMESPACE tracktion)
+
+juce_add_gui_app(MyDAW
+    PRODUCT_NAME "MyDAW"
+    COMPANY_NAME "DevWithT")
+
+target_sources(MyDAW PRIVATE
+    Source/Main.cpp
+    Source/MainComponent.cpp)
+
+target_compile_definitions(MyDAW PRIVATE
+    JUCE_WEB_BROWSER=0
+    JUCE_USE_CURL=0
+    JUCE_PLUGINHOST_VST3=1
+    JUCE_MODAL_LOOPS_PERMITTED=1
+    JUCE_STRICT_REFCOUNTEDPOINTER=1
+    TRACKTION_ENABLE_TIMESTRETCH_SOUNDTOUCH=1)
+
+target_link_libraries(MyDAW PRIVATE
+    tracktion::tracktion_core
+    tracktion::tracktion_graph
+    tracktion::tracktion_engine
+    juce::juce_audio_utils
+    juce::juce_dsp
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_lto_flags
+    juce::juce_recommended_warning_flags)
+
+if(MSVC)
+    target_compile_options(MyDAW PRIVATE /bigobj)
+endif()
