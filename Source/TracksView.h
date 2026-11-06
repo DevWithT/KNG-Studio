@@ -25,6 +25,7 @@ private:
     juce::OwnedArray<TrackHeader> headers;
     juce::OwnedArray<TrackLane> lanes;
     juce::TextButton addTrackButton { "+ Add Track" };
+    juce::TextButton addMidiTrackButton { "+ Add MIDI Track" };
 
     // Rebuild when tracks are added, removed or reordered
     juce::Array<tracktion::AudioTrack*> builtTracks;

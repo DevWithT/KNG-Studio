@@ -1,9 +1,13 @@
 #include "TrackHeader.h"
+#include <map>
+
+namespace te = tracktion;
 
 TrackHeader::TrackHeader (EditSession& sessionToUse, int trackIndexToUse)
     : session (sessionToUse),
       trackIndex (trackIndexToUse),
-      isBus (sessionToUse.isReverbBus (trackIndexToUse))
+      isBus (sessionToUse.isReverbBus (trackIndexToUse)),
+      isMidi (sessionToUse.isMidiTrack (trackIndexToUse))
 {
     addAndMakeVisible (nameLabel);
     nameLabel.setFont (juce::Font (juce::FontOptions (15.0f)));
@@ -57,8 +61,12 @@ TrackHeader::TrackHeader (EditSession& sessionToUse, int trackIndexToUse)
                 session.onShowFxChain (t->pluginList, t->getName() + " FX");
     };
 
+    addAndMakeVisible (instrumentButton);
+    instrumentButton.setVisible (isMidi);
+    instrumentButton.onClick = [this] { showInstrumentMenu(); };
+
     addAndMakeVisible (inputBox);
-    inputBox.setTextWhenNoChoicesAvailable ("No inputs");
+    inputBox.setTextWhenNoChoicesAvailable (isMidi ? "No MIDI inputs" : "No inputs");
     inputBox.onChange = [this]
     {
         const int id = inputBox.getSelectedId();
@@ -145,7 +153,7 @@ TrackHeader::~TrackHeader()
 
 void TrackHeader::refreshInputList()
 {
-    auto names = session.getInputNames();
+    auto names = session.getInputNames (trackIndex);
 
     if (names == lastInputNames)
         return;
@@ -158,6 +166,41 @@ void TrackHeader::refreshInputList()
 
     if (names.size() > 0)
         inputBox.setSelectedId (session.getTrackInput (trackIndex) + 1, juce::dontSendNotification);
+}
+
+void TrackHeader::showInstrumentMenu()
+{
+    auto* s = &session;
+    const int idx = trackIndex;
+
+    juce::PopupMenu menu;
+
+    if (auto* inst = session.getInstrument (trackIndex))
+    {
+        te::Plugin::Ptr ptr (inst);
+        menu.addItem ("Open " + inst->getName(), [ptr] { ptr->showWindowExplicitly(); });
+        menu.addItem ("Remove Instrument", [s, idx] { s->removeInstrument (idx); });
+        menu.addSeparator();
+    }
+
+    std::map<juce::String, juce::PopupMenu> byMaker;
+
+    for (auto& d : session.getEdit().engine.getPluginManager().knownPluginList.getTypes())
+    {
+        if (! d.isInstrument)
+            continue;
+
+        const auto maker = d.manufacturerName.isNotEmpty() ? d.manufacturerName : juce::String ("Other");
+        byMaker[maker].addItem (d.name, [s, idx, d] { s->setInstrument (idx, d); });
+    }
+
+    if (byMaker.empty())
+        menu.addItem ("No instruments yet. Click Scan Plugins up top.", false, false, nullptr);
+
+    for (auto& [maker, sub] : byMaker)
+        menu.addSubMenu (maker, sub);
+
+    menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&instrumentButton));
 }
 
 void TrackHeader::timerCallback()
@@ -176,6 +219,15 @@ void TrackHeader::timerCallback()
             nameLabel.setText (t->getName(), juce::dontSendNotification);
     }
 
+    if (isMidi)
+    {
+        auto* inst = session.getInstrument (trackIndex);
+        const auto text = inst != nullptr ? inst->getName() : juce::String ("No instrument");
+
+        if (instrumentButton.getButtonText() != text)
+            instrumentButton.setButtonText (text);
+    }
+
     if (! inputBox.isPopupActive() && inputBox.getNumItems() > 0)
         inputBox.setSelectedId (session.getTrackInput (trackIndex) + 1, juce::dontSendNotification);
 
@@ -186,7 +238,9 @@ void TrackHeader::paint (juce::Graphics& g)
 {
     auto r = getLocalBounds().toFloat();
 
-    g.setColour (isBus ? juce::Colour (0xff3b3548) : juce::Colour (0xff3a3f44));
+    g.setColour (isBus  ? juce::Colour (0xff3b3548)
+               : isMidi ? juce::Colour (0xff34403a)
+                        : juce::Colour (0xff3a3f44));
     g.fillRoundedRectangle (r, 4.0f);
 
     // Track colour strip down the left edge
@@ -228,7 +282,18 @@ void TrackHeader::resized()
     nameLabel.setBounds (row1);
 
     r.removeFromTop (4);
-    inputBox.setBounds (r.removeFromTop (22));
+    auto row2 = r.removeFromTop (22);
+
+    if (isMidi)
+    {
+        inputBox.setBounds (row2.removeFromLeft (row2.getWidth() / 2));
+        row2.removeFromLeft (4);
+        instrumentButton.setBounds (row2);
+    }
+    else
+    {
+        inputBox.setBounds (row2);
+    }
 
     r.removeFromTop (4);
     auto row3 = r.removeFromTop (22);

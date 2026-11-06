@@ -11,6 +11,12 @@ TracksView::TracksView (EditSession& sessionToUse)
     };
 
     rebuild();
+    addAndMakeVisible (addMidiTrackButton);
+    addMidiTrackButton.onClick = [this]
+    {
+        session.addMidiTrack();
+        rebuild();
+    };
     startTimerHz (5);
 }
 
@@ -74,4 +80,5 @@ void TracksView::resized()
     }
 
     addTrackButton.setBounds (0, y + 4, 140, 28);
+    addMidiTrackButton.setBounds (146, y + 4, 170, 28);
 }

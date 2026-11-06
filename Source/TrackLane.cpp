@@ -55,7 +55,7 @@ void TrackLane::syncClips()
 
     if (auto* track = session.getTrack (trackIndex))
         for (auto* c : track->getClips())
-            if (dynamic_cast<te::WaveAudioClip*> (c) != nullptr)
+            if (dynamic_cast<te::WaveAudioClip*> (c) != nullptr || dynamic_cast<te::MidiClip*> (c) != nullptr)
                 current.add (c);
 
     bool changed = (int) clipThumbs.size() != current.size();
@@ -181,6 +181,44 @@ void TrackLane::drawGrid (juce::Graphics& g)
     }
 }
 
+// Mini note preview for MIDI clips
+static void drawMidiNotes (juce::Graphics& g, te::Clip& clip, juce::Rectangle<int> area,
+                           const std::function<int (double)>& toX)
+{
+    auto* mc = dynamic_cast<te::MidiClip*> (&clip);
+
+    if (mc == nullptr || mc->getSequence().getNumNotes() == 0)
+        return;
+
+    auto& seq = mc->getSequence();
+    const auto range = seq.getNoteNumberRange();
+    const int lo = range.getStart() - 1;
+    const float span = (float) juce::jmax (12, range.getEnd() + 1 - lo);
+
+    const auto clipStart = clip.getPosition().getStart();
+    const auto clipEnd   = clip.getPosition().getEnd();
+
+    g.setColour (juce::Colours::white.withAlpha (0.85f));
+
+    for (auto* n : seq.getNotes())
+    {
+        auto t1 = mc->getTimeOfContentBeat (n->getStartBeat());
+        auto t2 = mc->getTimeOfContentBeat (n->getEndBeat());
+
+        if (t1 >= clipEnd || t2 <= clipStart)
+            continue;
+
+        if (t1 < clipStart) t1 = clipStart;
+        if (t2 > clipEnd)   t2 = clipEnd;
+
+        const int x1 = toX (t1.inSeconds());
+        const int x2 = toX (t2.inSeconds());
+        const float y = area.getY() + 4.0f + (1.0f - (n->getNoteNumber() - lo) / span) * (area.getHeight() - 10.0f);
+
+        g.fillRect ((float) x1, y, (float) juce::jmax (2, x2 - x1), 3.0f);
+    }
+}
+
 void TrackLane::drawClips (juce::Graphics& g)
 {
     g.setFont (juce::Font (juce::FontOptions (11.0f)));
@@ -230,6 +268,7 @@ void TrackLane::drawClips (juce::Graphics& g)
         }
 
         drawFades (g, *ct.clip, area);
+        drawMidiNotes (g, *ct.clip, area, [this] (double s) { return timeToX (s); });
 
         // Take label
         if (auto* wac = dynamic_cast<te::WaveAudioClip*> (ct.clip.get()))

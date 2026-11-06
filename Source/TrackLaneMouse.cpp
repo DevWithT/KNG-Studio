@@ -333,3 +333,26 @@ void TrackLane::filesDropped (const juce::StringArray& files, int x, int)
             t = end;
     }
 }
+
+//==============================================================================
+void TrackLane::mouseDoubleClick (const juce::MouseEvent& e)
+{
+    if (session.getTransport().isRecording())
+        return;
+
+    // Double-click a MIDI clip to open its piano roll
+    if (auto* clip = findClipAt (e.x))
+    {
+        if (auto* mc = dynamic_cast<te::MidiClip*> (clip))
+            if (session.onShowPianoRoll)
+                session.onShowPianoRoll (*mc);
+
+        return;
+    }
+
+    // Double-click empty space on a MIDI track to make a new clip
+    if (session.isMidiTrack (trackIndex))
+        if (auto* mc = session.createMidiClip (trackIndex, xToTime (e.x)))
+            if (session.onShowPianoRoll)
+                session.onShowPianoRoll (*mc);
+}

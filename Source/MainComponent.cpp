@@ -81,6 +81,7 @@ bool MainComponent::isBusyRecording() const
 void MainComponent::closeProject()
 {
     fxWindows.clear();
+    pianoRollWindows.clear();
     tracksViewport.setViewedComponent (nullptr, false);
     tracksView = nullptr;
     masterStrip = nullptr;
@@ -98,6 +99,8 @@ void MainComponent::loadProject (const juce::File& editFile)
     {
         showFxChain (list, title);
     };
+
+    session->onShowPianoRoll = [this] (tracktion::MidiClip& clip) { showPianoRoll (clip); };
 
     transportBar = std::make_unique<TransportBar> (*session);
     addAndMakeVisible (*transportBar);
@@ -384,4 +387,23 @@ void MainComponent::showLatencyDialog()
     options.useNativeTitleBar = true;
     options.resizable = false;
     options.launchAsync();
+}
+
+void MainComponent::showPianoRoll (tracktion::MidiClip& clip)
+{
+    if (session == nullptr)
+        return;
+
+    // Reuse the window if this clip is already open
+    for (auto* w : pianoRollWindows)
+    {
+        if (w->getClip() == &clip)
+        {
+            w->setVisible (true);
+            w->toFront (true);
+            return;
+        }
+    }
+
+    pianoRollWindows.add (new PianoRollWindow (*session, clip));
 }
