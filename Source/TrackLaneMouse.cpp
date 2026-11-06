@@ -93,45 +93,80 @@ void TrackLane::mouseDown (const juce::MouseEvent& e)
     {
         if (clip != nullptr)
         {
-            session.selectClip (clip);
+            if (! session.isClipSelected (clip))
+                session.selectClip (clip);
+
             showClipMenu (clip);
         }
 
         return;
     }
 
-    // Clicking empty space clears the selection
-    session.selectClip (clip);
     drag = {};
 
-    if (clip != nullptr)
+    // Ctrl+click adds or removes a clip from the selection
+    if (clip != nullptr && e.mods.isCommandDown())
     {
-        auto pos = clip->getPosition();
-
-        drag.mode       = getModeAt (*clip, e.getPosition());
-        drag.clip       = clip;
-        drag.downTime   = xToTime (e.x);
-        drag.origStart  = pos.getStart().inSeconds();
-        drag.origEnd    = pos.getEnd().inSeconds();
-        drag.origOffset = pos.getOffset().inSeconds();
-
-        if (auto* acb = dynamic_cast<te::AudioClipBase*> (clip))
-        {
-            drag.origFadeIn  = acb->getFadeIn().inSeconds();
-            drag.origFadeOut = acb->getFadeOut().inSeconds();
-        }
-
-        session.beginEdit();
+        session.toggleClipSelection (clip);
+        return;
     }
 
-    // Clicking a clip body or empty space drops the playhead there (handy for S to split)
-    if (drag.mode == DragMode::none || drag.mode == DragMode::move)
+    // Empty space: start a selection box and drop the playhead here (Ctrl keeps the current selection)
+    if (clip == nullptr)
+    {
+        drag.mode = DragMode::box;
+        drag.boxStartX = drag.boxEndX = e.x;
+
+        if (! e.mods.isCommandDown())
+            session.clearSelection();
+
+        transport.setPosition (te::TimePosition::fromSeconds (juce::jmax (0.0, xToTime (e.x))));
+        return;
+    }
+
+    // Grabbing a clip that's already in a multi-selection keeps the selection
+    if (! session.isClipSelected (clip))
+        session.selectClip (clip);
+
+    auto pos = clip->getPosition();
+
+    drag.mode       = getModeAt (*clip, e.getPosition());
+    drag.clip       = clip;
+    drag.downTime   = xToTime (e.x);
+    drag.origStart  = pos.getStart().inSeconds();
+    drag.origEnd    = pos.getEnd().inSeconds();
+    drag.origOffset = pos.getOffset().inSeconds();
+
+    if (auto* acb = dynamic_cast<te::AudioClipBase*> (clip))
+    {
+        drag.origFadeIn  = acb->getFadeIn().inSeconds();
+        drag.origFadeOut = acb->getFadeOut().inSeconds();
+    }
+
+    if (drag.mode == DragMode::move)
+        for (auto& c : session.getSelectedClips())
+            drag.moving.push_back ({ c, c->getPosition().getStart().inSeconds() });
+
+    session.beginEdit();
+
+    // Clicking a clip body drops the playhead there (handy for S to split)
+    if (drag.mode == DragMode::move)
         transport.setPosition (te::TimePosition::fromSeconds (juce::jmax (0.0, xToTime (e.x))));
 }
 
 void TrackLane::mouseDrag (const juce::MouseEvent& e)
 {
-    if (drag.mode == DragMode::none || drag.clip == nullptr)
+    if (drag.mode == DragMode::none)
+        return;
+
+    if (drag.mode == DragMode::box)
+    {
+        drag.boxEndX = e.x;
+        repaint();
+        return;
+    }
+
+    if (drag.clip == nullptr)
         return;
 
     if (! drag.changed && e.getDistanceFromDragStart() < 3)
@@ -143,10 +178,38 @@ void TrackLane::mouseDrag (const juce::MouseEvent& e)
 
 void TrackLane::mouseUp (const juce::MouseEvent&)
 {
+    if (drag.mode == DragMode::box)
+    {
+        if (std::abs (drag.boxEndX - drag.boxStartX) > 3)
+            selectClipsInBox();
+
+        drag = {};
+        repaint();
+        return;
+    }
+
     if (drag.changed)
         session.save();
 
     drag = {};
+}
+
+void TrackLane::selectClipsInBox()
+{
+    const double t1 = xToTime (juce::jmin (drag.boxStartX, drag.boxEndX));
+    const double t2 = xToTime (juce::jmax (drag.boxStartX, drag.boxEndX));
+
+    juce::Array<te::Clip*> hits;
+
+    for (auto& ct : clipThumbs)
+    {
+        auto pos = ct.clip->getPosition();
+
+        if (pos.getEnd().inSeconds() > t1 && pos.getStart().inSeconds() < t2)
+            hits.add (ct.clip.get());
+    }
+
+    session.addClipsToSelection (hits);
 }
 
 void TrackLane::applyDrag (const juce::MouseEvent& e)
@@ -163,8 +226,16 @@ void TrackLane::applyDrag (const juce::MouseEvent& e)
     {
         case DragMode::move:
         {
-            const double newStart = juce::jmax (0.0, snapT (drag.origStart + delta));
-            clip->setStart (te::TimePosition::fromSeconds (newStart), false, true);
+            // Snap the clip you grabbed, then move the rest by the same amount
+            double shift = juce::jmax (0.0, snapT (drag.origStart + delta)) - drag.origStart;
+
+            for (auto& m : drag.moving)
+                shift = juce::jmax (shift, -m.origStart);
+
+            for (auto& m : drag.moving)
+                if (m.clip->getParent() != nullptr)
+                    m.clip->setStart (te::TimePosition::fromSeconds (m.origStart + shift), false, true);
+
             break;
         }
 
@@ -245,20 +316,22 @@ void TrackLane::mouseWheelMove (const juce::MouseEvent& e, const juce::MouseWhee
 
 bool TrackLane::keyPressed (const juce::KeyPress& key)
 {
+    const bool hasSelection = ! session.getSelectedClips().empty();
+
     if (key == juce::KeyPress::deleteKey || key == juce::KeyPress::backspaceKey)
     {
-        if (session.getSelectedClip() != nullptr)
+        if (hasSelection)
         {
             session.deleteSelectedClip();
             return true;
         }
     }
 
-    // S (no modifiers) splits the selected clip at the playhead
+    // S (no modifiers) splits the selected clips at the playhead
     if (! key.getModifiers().isAnyModifierKeyDown()
         && (key.getKeyCode() == 'S' || key.getKeyCode() == 's'))
     {
-        if (session.getSelectedClip() != nullptr)
+        if (hasSelection)
         {
             session.splitSelectedClipAtPlayhead();
             return true;
@@ -272,6 +345,7 @@ bool TrackLane::keyPressed (const juce::KeyPress& key)
 void TrackLane::showClipMenu (te::Clip* clip)
 {
     juce::PopupMenu menu;
+    auto* s = &session;
 
     if (auto* wac = dynamic_cast<te::WaveAudioClip*> (clip))
     {
@@ -288,7 +362,7 @@ void TrackLane::showClipMenu (te::Clip* clip)
                                [clipPtr, i] { clipPtr->setCurrentTake (i); });
 
             menu.addSubMenu ("Takes", takes);
-            menu.addItem ("Comp Takes...", [s = &session, clipPtr]
+            menu.addItem ("Comp Takes...", [s, clipPtr]
             {
                 if (s->onShowComp)
                     s->onShowComp (*clipPtr);
@@ -302,21 +376,16 @@ void TrackLane::showClipMenu (te::Clip* clip)
         menu.addSeparator();
     }
 
-    if (auto* mc = dynamic_cast<te::MidiClip*> (clip))
+    if (auto* acb = dynamic_cast<te::AudioClipBase*> (clip))
     {
-        te::MidiClip::Ptr midiPtr (mc);
-        menu.addItem ("Open Piano Roll", [s = &session, midiPtr]
+        te::AudioClipBase::Ptr acbPtr (acb);
+        menu.addItem ("Stretch, Pitch & Gain...", [s, acbPtr]
         {
-            if (s->onShowPianoRoll)
-                s->onShowPianoRoll (*midiPtr);
+            if (s->onShowClipProps)
+                s->onShowClipProps (*acbPtr);
         });
 
-        menu.addSeparator();
-    }
-
-    if (dynamic_cast<te::WaveAudioClip*> (clip) != nullptr)
-    {
-        menu.addItem ("Tune with KngTune", [s = &session, idx = trackIndex]
+        menu.addItem ("Tune with KngTune", [s, idx = trackIndex]
         {
             if (! s->addKngTune (idx))
                 juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::WarningIcon, "KngTune not found",
@@ -326,12 +395,24 @@ void TrackLane::showClipMenu (te::Clip* clip)
         menu.addSeparator();
     }
 
-    menu.addItem ("Duplicate (Ctrl+D)",  [s = &session] { s->duplicateSelectedClip(); });
-    menu.addItem ("Copy (Ctrl+C)",       [s = &session] { s->copySelectedClip(); });
-    menu.addItem ("Paste (Ctrl+V)",      [s = &session] { s->pasteClip(); });
+    if (auto* mc = dynamic_cast<te::MidiClip*> (clip))
+    {
+        te::MidiClip::Ptr midiPtr (mc);
+        menu.addItem ("Open Piano Roll", [s, midiPtr]
+        {
+            if (s->onShowPianoRoll)
+                s->onShowPianoRoll (*midiPtr);
+        });
+
+        menu.addSeparator();
+    }
+
+    menu.addItem ("Duplicate (Ctrl+D)", [s] { s->duplicateSelectedClip(); });
+    menu.addItem ("Copy (Ctrl+C)",      [s] { s->copySelectedClip(); });
+    menu.addItem ("Paste (Ctrl+V)",     [s] { s->pasteClip(); });
     menu.addSeparator();
-    menu.addItem ("Split at Playhead (S)", [s = &session] { s->splitSelectedClipAtPlayhead(); });
-    menu.addItem ("Delete Clip (Del)",     [s = &session] { s->deleteSelectedClip(); });
+    menu.addItem ("Split at Playhead (S)", [s] { s->splitSelectedClipAtPlayhead(); });
+    menu.addItem ("Delete (Del)",          [s] { s->deleteSelectedClip(); });
     menu.showMenuAsync ({});
 }
 

@@ -48,6 +48,12 @@ public:
     // Clip selection and editing
     void selectClip (tracktion::Clip* clip);
     tracktion::Clip* getSelectedClip() const    { return selectedClip.get(); }
+    void clearSelection();
+    void toggleClipSelection (tracktion::Clip* clip);
+    void addClipsToSelection (const juce::Array<tracktion::Clip*>& clips);
+    bool isClipSelected (tracktion::Clip* clip) const;
+    std::vector<tracktion::Clip::Ptr> getSelectedClips() const;
+    void selectAllClips();
     void deleteSelectedClip();
     void splitSelectedClipAtPlayhead();
     void duplicateSelectedClip();
@@ -95,6 +101,18 @@ public:
 
     // KngTune
     bool addKngTune (int trackIndex);
+
+    // Clip stretch, pitch and gain
+    double getClipSourceBpm (tracktion::AudioClipBase& clip);
+    void setClipFollowTempo (tracktion::AudioClipBase& clip, bool follow, double sourceBpm);
+    void setClipPitch (tracktion::AudioClipBase& clip, float semitones);
+    void setClipGain (tracktion::AudioClipBase& clip, float db);
+    std::function<void (tracktion::AudioClipBase&)> onShowClipProps;
+
+    // Markers
+    std::vector<tracktion::Clip::Ptr> getMarkers();
+    void addMarkerAt (double seconds);
+    void jumpToMarker (int direction);
 
     // Tempo, click, count-in
     void setBpm (double bpm);
@@ -185,7 +203,8 @@ private:
 
     bool monitoringEnabled = true;
     tracktion::Clip::Ptr selectedClip;
-    tracktion::Clip::Ptr copiedClip;
+    std::vector<tracktion::Clip::Ptr> copiedClips;
+    std::vector<tracktion::Clip::Ptr> selection;
     int focusedTrack = -1;
 
     double viewStart = 0.0;

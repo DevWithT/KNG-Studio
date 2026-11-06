@@ -31,7 +31,13 @@ private:
         int take = -1;
     };
 
-    enum class DragMode { none, move, trimStart, trimEnd, fadeIn, fadeOut };
+    enum class DragMode { none, move, trimStart, trimEnd, fadeIn, fadeOut, box };
+
+    struct MovedClip
+    {
+        tracktion::Clip::Ptr clip;
+        double origStart = 0.0;
+    };
 
     struct DragState
     {
@@ -39,6 +45,8 @@ private:
         tracktion::Clip::Ptr clip;
         double downTime = 0.0, origStart = 0.0, origEnd = 0.0, origOffset = 0.0;
         double origFadeIn = 0.0, origFadeOut = 0.0;
+        std::vector<MovedClip> moving;
+        int boxStartX = 0, boxEndX = 0;
         bool changed = false;
     };
 
@@ -50,6 +58,7 @@ private:
     void drawClips (juce::Graphics&);
     void drawFades (juce::Graphics&, tracktion::Clip&, juce::Rectangle<int> clipArea);
     void drawRecording (juce::Graphics&);
+    void drawBox (juce::Graphics&);
     int timeToX (double seconds) const;
     double xToTime (int x) const;
 
@@ -58,6 +67,7 @@ private:
     DragMode getModeAt (tracktion::Clip&, juce::Point<int>) const;
     void showClipMenu (tracktion::Clip*);
     void applyDrag (const juce::MouseEvent&);
+    void selectClipsInBox();
 
     EditSession& session;
     const int trackIndex;

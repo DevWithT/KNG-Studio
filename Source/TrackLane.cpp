@@ -145,6 +145,7 @@ void TrackLane::paint (juce::Graphics& g)
     drawGrid (g);
     drawClips (g);
     drawRecording (g);
+    drawBox (g);
 
     const int px = timeToX (session.getTransport().getPosition().inSeconds());
     g.setColour (juce::Colours::yellow);
@@ -229,7 +230,7 @@ void TrackLane::drawClips (juce::Graphics& g)
     for (auto& ct : clipThumbs)
     {
         auto pos = ct.clip->getPosition();
-        const bool selected = ct.clip.get() == session.getSelectedClip();
+        const bool selected = session.isClipSelected (ct.clip.get());
 
         const double clipStart = pos.getStart().inSeconds();
         const double clipEnd   = pos.getEnd().inSeconds();
@@ -280,6 +281,28 @@ void TrackLane::drawClips (juce::Graphics& g)
                 g.setColour (juce::Colours::white);
                 g.drawText ("Take " + juce::String (wac->getCurrentTake() + 1) + "/" + juce::String (numTakes),
                             area.reduced (12, 2).removeFromTop (14), juce::Justification::left);
+            }
+        }
+
+        // Gain, pitch and tempo tags along the bottom
+        if (auto* acb = dynamic_cast<te::AudioClipBase*> (ct.clip.get()))
+        {
+            juce::StringArray tags;
+
+            if (std::abs (acb->getGainDB()) > 0.05f)
+                tags.add (juce::String (acb->getGainDB(), 1) + " dB");
+
+            if (std::abs (acb->getPitchChange()) > 0.001f)
+                tags.add ((acb->getPitchChange() > 0.0f ? "+" : "") + juce::String (acb->getPitchChange(), 2) + " st");
+
+            if (acb->getAutoTempo())
+                tags.add ("Tempo");
+
+            if (! tags.isEmpty())
+            {
+                g.setColour (juce::Colours::white.withAlpha (0.9f));
+                g.drawText (tags.joinIntoString ("  "), area.reduced (12, 2).removeFromBottom (14),
+                            juce::Justification::left);
             }
         }
 
@@ -384,4 +407,18 @@ void TrackLane::drawRecording (juce::Graphics& g)
 
     g.setColour (juce::Colours::white.withAlpha (0.85f));
     recordingThumb->thumb->drawChannels (g, area.reduced (0, 4), 0.0, length, 1.0f);
+}
+
+void TrackLane::drawBox (juce::Graphics& g)
+{
+    if (drag.mode != DragMode::box)
+        return;
+
+    const int x1 = juce::jmin (drag.boxStartX, drag.boxEndX);
+    const int x2 = juce::jmax (drag.boxStartX, drag.boxEndX);
+
+    g.setColour (juce::Colours::white.withAlpha (0.12f));
+    g.fillRect (x1, 0, x2 - x1, getHeight());
+    g.setColour (juce::Colours::white.withAlpha (0.5f));
+    g.drawRect (x1, 0, x2 - x1, getHeight());
 }

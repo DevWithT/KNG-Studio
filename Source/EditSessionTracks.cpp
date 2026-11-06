@@ -35,50 +35,95 @@ void EditSession::moveTrack (int index, int direction)
 //==============================================================================
 void EditSession::duplicateSelectedClip()
 {
-    if (selectedClip == nullptr || getTransport().isRecording())
+    auto clips = getSelectedClips();
+
+    if (clips.empty() || getTransport().isRecording())
         return;
 
-    beginEdit();
+    // Duplicate the whole group right after itself
+    double groupStart = 1.0e12, groupEnd = 0.0;
 
-    const auto pos = selectedClip->getPosition();
-    auto newClip = te::duplicateClip (*selectedClip);
-
-    if (newClip != nullptr)
+    for (auto& c : clips)
     {
-        // Place the copy right after the original
-        newClip->setStart (pos.getEnd(), false, true);
-        selectedClip = newClip;
-        save();
+        groupStart = juce::jmin (groupStart, c->getPosition().getStart().inSeconds());
+        groupEnd   = juce::jmax (groupEnd,   c->getPosition().getEnd().inSeconds());
     }
+
+    const double offset = groupEnd - groupStart;
+
+    beginEdit();
+    std::vector<te::Clip::Ptr> copies;
+
+    for (auto& c : clips)
+    {
+        const double start = c->getPosition().getStart().inSeconds();
+
+        if (auto copy = te::duplicateClip (*c))
+        {
+            copy->setStart (te::TimePosition::fromSeconds (start + offset), false, true);
+            copies.push_back (copy);
+        }
+    }
+
+    clearSelection();
+    selection = copies;
+
+    if (! copies.empty())
+        selectedClip = copies.back();
+
+    save();
 }
 
 void EditSession::copySelectedClip()
 {
-    copiedClip = selectedClip;
+    copiedClips = getSelectedClips();
 }
 
 void EditSession::pasteClip()
 {
-    if (copiedClip == nullptr || copiedClip->getClipTrack() == nullptr || getTransport().isRecording())
+    std::vector<te::Clip::Ptr> sources;
+
+    for (auto& c : copiedClips)
+        if (c != nullptr && c->getClipTrack() != nullptr)
+            sources.push_back (c);
+
+    if (sources.empty() || getTransport().isRecording())
         return;
 
-    // Paste onto the lane you last clicked, or the original's track
-    te::ClipTrack* target = getTrack (focusedTrack);
+    double groupStart = 1.0e12;
 
-    if (target == nullptr)
-        target = copiedClip->getClipTrack();
+    for (auto& c : sources)
+        groupStart = juce::jmin (groupStart, c->getPosition().getStart().inSeconds());
+
+    const double playhead = getTransport().getPosition().inSeconds();
+
+    // One clip pastes onto the lane you last clicked; a group keeps its own tracks
+    te::ClipTrack* target = getTrack (focusedTrack);
+    const bool single = sources.size() == 1;
 
     beginEdit();
+    std::vector<te::Clip::Ptr> pasted;
 
-    auto newClip = te::duplicateClip (*copiedClip);
+    for (auto& s : sources)
+    {
+        const double start = s->getPosition().getStart().inSeconds();
+        auto copy = te::duplicateClip (*s);
 
-    if (newClip == nullptr)
-        return;
+        if (copy == nullptr)
+            continue;
 
-    if (target != nullptr && target != newClip->getClipTrack())
-        newClip->moveTo (*target);
+        if (single && target != nullptr && target != copy->getClipTrack())
+            copy->moveTo (*target);
 
-    newClip->setStart (getTransport().getPosition(), false, true);
-    selectedClip = newClip;
+        copy->setStart (te::TimePosition::fromSeconds (playhead + (start - groupStart)), false, true);
+        pasted.push_back (copy);
+    }
+
+    clearSelection();
+    selection = pasted;
+
+    if (! pasted.empty())
+        selectedClip = pasted.back();
+
     save();
 }

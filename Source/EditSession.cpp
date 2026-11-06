@@ -71,7 +71,7 @@ void EditSession::deleteTrack (int index)
     if (isArmed (index))
         applyArm (index, false);
 
-    selectedClip = nullptr;
+    clearSelection();
     edit->deleteTrack (track);
 
     if (juce::isPositiveAndBelow (index, (int) trackInputs.size()))
@@ -260,17 +260,25 @@ void EditSession::setMonitoring (bool shouldMonitor)
 //==============================================================================
 void EditSession::selectClip (te::Clip* clip)
 {
+    selection.clear();
     selectedClip = clip;
+
+    if (clip != nullptr)
+        selection.push_back (clip);
 }
 
 void EditSession::deleteSelectedClip()
 {
-    if (selectedClip == nullptr || getTransport().isRecording())
+    auto clips = getSelectedClips();
+
+    if (clips.empty() || getTransport().isRecording())
         return;
 
-    auto clip = selectedClip;
-    selectedClip = nullptr;
+    clearSelection();
+    beginEdit();
 
-    clip->removeFromParent();
+    for (auto& c : clips)
+        c->removeFromParent();
+
     save();
 }

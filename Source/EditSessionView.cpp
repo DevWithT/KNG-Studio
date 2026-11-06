@@ -53,21 +53,45 @@ void EditSession::beginEdit()
 
 void EditSession::splitSelectedClipAtPlayhead()
 {
-    if (selectedClip == nullptr || getTransport().isRecording())
+    if (getTransport().isRecording())
         return;
 
     const auto t = getTransport().getPosition();
-    const auto pos = selectedClip->getPosition();
+    std::vector<te::Clip::Ptr> rightHalves;
+    bool started = false;
 
-    if (t <= pos.getStart() || t >= pos.getEnd())
+    // Split every selected clip the playhead is inside
+    for (auto& c : getSelectedClips())
+    {
+        const auto pos = c->getPosition();
+
+        if (t <= pos.getStart() || t >= pos.getEnd())
+            continue;
+
+        if (auto* clipTrack = c->getClipTrack())
+        {
+            if (! started)
+            {
+                beginEdit();
+                started = true;
+            }
+
+            if (auto* right = clipTrack->splitClip (*c, t))
+                rightHalves.push_back (right);
+        }
+    }
+
+    if (! started)
         return;
 
-    if (auto* clipTrack = selectedClip->getClipTrack())
-    {
-        beginEdit();
+    // Select the right-hand halves so you can keep splitting forward
+    clearSelection();
 
-        // Select the right-hand half so you can keep splitting forward
-        selectedClip = clipTrack->splitClip (*selectedClip, t);
-        save();
-    }
+    for (auto& r : rightHalves)
+        selection.push_back (r);
+
+    if (! rightHalves.empty())
+        selectedClip = rightHalves.back();
+
+    save();
 }

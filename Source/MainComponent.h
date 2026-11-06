@@ -13,6 +13,8 @@
 #include "PianoRoll.h"
 #include "MixerView.h"
 #include "CompView.h"
+#include "MarkerBar.h"
+#include "ClipProps.h"
 
 class MainComponent : public juce::Component,
                       public juce::MenuBarModel,
@@ -36,9 +38,10 @@ private:
     enum CommandIDs
     {
         cmdNew = 1, cmdOpen, cmdSave, cmdImport, cmdExport, cmdAudioSettings, cmdScanPlugins, cmdLatency, cmdExit,
-        cmdUndo = 100, cmdRedo, cmdCopy, cmdPaste, cmdDuplicate, cmdSplit, cmdDelete,
+        cmdUndo = 100, cmdRedo, cmdCopy, cmdPaste, cmdDuplicate, cmdSplit, cmdDelete, cmdSelectAll,
         cmdAddAudioTrack = 200, cmdAddMidiTrack,
         cmdPlayStop = 300, cmdRecord, cmdGoToStart, cmdLoop, cmdClick, cmdSnap, cmdMonitor, cmdAutoWrite, cmdPunch,
+        cmdAddMarker, cmdPrevMarker, cmdNextMarker,
         cmdMixer = 400, cmdZoomIn, cmdZoomOut, cmdZoomFit,
         cmdShortcuts = 500
     };
@@ -51,6 +54,7 @@ private:
     void showFxChain (tracktion::PluginList& list, const juce::String& title);
     void showPianoRoll (tracktion::MidiClip& clip);
     void showComp (tracktion::WaveAudioClip& clip);
+    void showClipProps (tracktion::AudioClipBase& clip);
     void showShortcuts();
     void toggleMixer();
     void togglePlayStop();
@@ -78,6 +82,7 @@ private:
     std::unique_ptr<EditSession> session;
     std::unique_ptr<TransportBar> transportBar;
     std::unique_ptr<TimelineRuler> ruler;
+    std::unique_ptr<MarkerBar> markerBar;
     std::unique_ptr<MasterStrip> masterStrip;
 
     juce::Viewport tracksViewport;

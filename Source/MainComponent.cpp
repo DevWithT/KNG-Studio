@@ -85,6 +85,7 @@ void MainComponent::closeProject()
     tracksView = nullptr;
     masterStrip = nullptr;
     ruler = nullptr;
+    markerBar = nullptr;
     transportBar = nullptr;
     session = nullptr;   // saves on the way out
 }
@@ -97,12 +98,16 @@ void MainComponent::loadProject (const juce::File& editFile)
     session->onShowFxChain   = [this] (tracktion::PluginList& list, const juce::String& title) { showFxChain (list, title); };
     session->onShowPianoRoll = [this] (tracktion::MidiClip& clip) { showPianoRoll (clip); };
     session->onShowComp      = [this] (tracktion::WaveAudioClip& clip) { showComp (clip); };
+    session->onShowClipProps = [this] (tracktion::AudioClipBase& clip) { showClipProps (clip); };
 
     transportBar = std::make_unique<TransportBar> (*session);
     addAndMakeVisible (*transportBar);
 
     ruler = std::make_unique<TimelineRuler> (*session);
     addAndMakeVisible (*ruler);
+
+    markerBar = std::make_unique<MarkerBar> (*session);
+    addAndMakeVisible (*markerBar);
 
     masterStrip = std::make_unique<MasterStrip> (*session);
     addAndMakeVisible (*masterStrip);
@@ -220,6 +225,7 @@ juce::PopupMenu MainComponent::getMenuForIndex (int menuIndex, const juce::Strin
             m.addSeparator();
             add (cmdSplit, "Split at Playhead", "S", hasClip);
             add (cmdDelete, "Delete Clip", "Del", hasClip);
+            add (cmdSelectAll, "Select All Clips", "Ctrl+A", hasSession);
             break;
 
         case 2: // Track
@@ -231,6 +237,9 @@ juce::PopupMenu MainComponent::getMenuForIndex (int menuIndex, const juce::Strin
             add (cmdPlayStop, "Play / Stop", "Space", hasSession);
             add (cmdRecord, "Record", {}, hasSession);
             add (cmdGoToStart, "Go to Start", "Home", hasSession);
+            add (cmdAddMarker, "Add Marker at Playhead", {}, hasSession);
+            add (cmdPrevMarker, "Previous Marker", "[", hasSession);
+            add (cmdNextMarker, "Next Marker", "]", hasSession);
             m.addSeparator();
             add (cmdLoop, "Loop", {}, hasSession, hasSession && session->isLooping());
             add (cmdPunch, "Punch In/Out", {}, hasSession, hasSession && session->isPunchEnabled());
@@ -290,6 +299,7 @@ void MainComponent::menuItemSelected (int id, int)
         case cmdDuplicate:     session->duplicateSelectedClip(); break;
         case cmdSplit:         session->splitSelectedClipAtPlayhead(); break;
         case cmdDelete:        session->deleteSelectedClip(); break;
+        case cmdSelectAll:     session->selectAllClips(); break;
 
         case cmdAddAudioTrack: session->addTrack(); break;
         case cmdAddMidiTrack:  session->addMidiTrack(); break;
@@ -297,6 +307,9 @@ void MainComponent::menuItemSelected (int id, int)
         case cmdPlayStop:      togglePlayStop(); break;
         case cmdRecord:        session->record(); break;
         case cmdGoToStart:     session->getTransport().setPosition (tracktion::TimePosition()); break;
+        case cmdAddMarker:     session->addMarkerAt (session->getTransport().getPosition().inSeconds()); break;
+        case cmdPrevMarker:    session->jumpToMarker (-1); break;
+        case cmdNextMarker:    session->jumpToMarker (1); break;
         case cmdLoop:          session->setLooping (! session->isLooping()); break;
         case cmdPunch:         session->setPunchEnabled (! session->isPunchEnabled()); break;
         case cmdClick:         session->setClickEnabled (! session->isClickEnabled()); break;
@@ -523,6 +536,12 @@ void MainComponent::resized()
 
     // Ruler lines up with the track lanes (TracksView headerWidth 240 + gap 4)
     constexpr int laneOffset = 244;
+    auto markerRow = area.removeFromTop (18);
+
+    if (markerBar != nullptr)
+        markerBar->setBounds (markerRow.withTrimmedLeft (laneOffset)
+                                       .withTrimmedRight (tracksViewport.getScrollBarThickness()));
+
     auto rulerRow = area.removeFromTop (24);
 
     if (ruler != nullptr)
@@ -570,6 +589,7 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
         if (code == 'D' || code == 'd')  { session->duplicateSelectedClip(); return true; }
         if (code == 'C' || code == 'c')  { session->copySelectedClip();      return true; }
         if (code == 'V' || code == 'v')  { session->pasteClip();             return true; }
+        if (code == 'A' || code == 'a')  { session->selectAllClips();        return true; }
 
         if (code == '=' || code == '+')
         {
@@ -590,6 +610,19 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
     if (code == 'M' || code == 'm')
     {
         toggleMixer();
+        return true;
+    }
+
+    // [ and ] jump between markers
+    if (code == '[')
+    {
+        session->jumpToMarker (-1);
+        return true;
+    }
+
+    if (code == ']')
+    {
+        session->jumpToMarker (1);
         return true;
     }
 
@@ -637,4 +670,21 @@ void MainComponent::updateDeviceLabel()
     {
         deviceLabel.setText ("No audio device", juce::dontSendNotification);
     }
+}
+
+void MainComponent::showClipProps (tracktion::AudioClipBase& clip)
+{
+    if (session == nullptr)
+        return;
+
+    auto* comp = new ClipPropsComponent (*session, clip);
+
+    juce::DialogWindow::LaunchOptions options;
+    options.content.setOwned (comp);
+    options.dialogTitle = "Stretch, Pitch & Gain";
+    options.dialogBackgroundColour = juce::Colour (0xff2b2f33);
+    options.escapeKeyTriggersCloseButton = true;
+    options.useNativeTitleBar = true;
+    options.resizable = false;
+    options.launchAsync();
 }

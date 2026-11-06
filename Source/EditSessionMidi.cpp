@@ -46,7 +46,7 @@ te::MidiClip* EditSession::createMidiClip (int trackIndex, double startSeconds)
     if (clip == nullptr)
         return nullptr;
 
-    selectedClip = clip.get();
+    selectClip (clip.get());
     save();
     return clip.get();
 }

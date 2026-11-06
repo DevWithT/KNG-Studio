@@ -117,7 +117,7 @@ void EditSession::undo()
     if (getTransport().isRecording())
         return;
 
-    selectedClip = nullptr;
+    clearSelection();
     edit->undo();
     syncTrackState();
 }
@@ -127,7 +127,7 @@ void EditSession::redo()
     if (getTransport().isRecording())
         return;
 
-    selectedClip = nullptr;
+    clearSelection();
     edit->redo();
     syncTrackState();
 }
