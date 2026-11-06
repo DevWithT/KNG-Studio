@@ -25,12 +25,14 @@ public:
     int getNumTracks();
     tracktion::AudioTrack* getTrack (int index);
     void addTrack();
+    void addMidiTrack();
+    bool isMidiTrack (int index);
     void deleteTrack (int index);
     void moveTrack (int index, int direction);
     void setFocusedTrack (int index)            { focusedTrack = index; }
 
-    // Inputs
-    juce::StringArray getInputNames();
+    // Inputs (audio inputs for audio tracks, MIDI inputs for MIDI tracks)
+    juce::StringArray getInputNames (int trackIndex);
     int getTrackInput (int trackIndex) const;
     void setTrackInput (int trackIndex, int inputIndex);
 
@@ -52,6 +54,15 @@ public:
     void copySelectedClip();
     void pasteClip();
     void beginEdit();
+
+    // MIDI and instruments
+    tracktion::MidiClip* createMidiClip (int trackIndex, double startSeconds);
+    void setInstrument (int trackIndex, const juce::PluginDescription& desc);
+    tracktion::Plugin* getInstrument (int trackIndex);
+    void removeInstrument (int trackIndex);
+
+    // Lets the UI open a piano roll (MainComponent sets this)
+    std::function<void (tracktion::MidiClip&)> onShowPianoRoll;
 
     // Tempo, click, count-in
     void setBpm (double bpm);
@@ -123,7 +134,7 @@ public:
 
 private:
     void syncTrackState();
-    juce::Array<tracktion::InputDeviceInstance*> getWaveInputs();
+    juce::Array<tracktion::InputDeviceInstance*> getInputsFor (int trackIndex);
     void applyArm (int trackIndex, bool shouldBeArmed);
     tracktion::AuxSendPlugin* findSend (tracktion::AudioTrack& track);
     void ensureReverbBus();

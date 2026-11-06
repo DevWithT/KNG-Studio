@@ -37,7 +37,9 @@ target_sources(KNGStudio PRIVATE
     Source/ExportDialog.cpp
     Source/EditSessionLatency.cpp
     Source/LatencyTester.cpp
-    Source/LatencyDialog.cpp)
+    Source/LatencyDialog.cpp
+    Source/EditSessionMidi.cpp
+    Source/PianoRoll.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0

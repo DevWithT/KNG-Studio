@@ -18,6 +18,7 @@ EditSession::EditSession (te::Engine& engineToUse, const juce::File& editFileToU
     // Restore this project's zoom
     viewStart  = juce::jmax (0.0, (double) edit->state.getProperty ("kngViewStart", 0.0));
     viewLength = juce::jlimit (1.0, 600.0, (double) edit->state.getProperty ("kngViewLength", 60.0));
+
     edit->ensureNumberOfAudioTracks (1);
 
     syncTrackState();
@@ -84,22 +85,28 @@ void EditSession::deleteTrack (int index)
 }
 
 //==============================================================================
-juce::Array<te::InputDeviceInstance*> EditSession::getWaveInputs()
+juce::Array<te::InputDeviceInstance*> EditSession::getInputsFor (int trackIndex)
 {
+    const bool wantMidi = isMidiTrack (trackIndex);
     juce::Array<te::InputDeviceInstance*> result;
 
     for (auto instance : edit->getAllInputDevices())
-        if (instance->getInputDevice().getDeviceType() == te::InputDevice::waveDevice)
+    {
+        const auto type = instance->getInputDevice().getDeviceType();
+
+        if (wantMidi ? type == te::InputDevice::physicalMidiDevice
+                     : type == te::InputDevice::waveDevice)
             result.add (instance);
+    }
 
     return result;
 }
 
-juce::StringArray EditSession::getInputNames()
+juce::StringArray EditSession::getInputNames (int trackIndex)
 {
     juce::StringArray names;
 
-    for (auto* input : getWaveInputs())
+    for (auto* input : getInputsFor (trackIndex))
         names.add (input->getInputDevice().getName());
 
     return names;
@@ -154,10 +161,13 @@ void EditSession::setArmed (int trackIndex, bool shouldBeArmed)
 
     if (shouldBeArmed)
     {
-        // One input can only feed one armed track, so disarm any other track using it
+        // One input can only feed one armed track, so disarm any other track of the same kind using it
+        const bool midi = isMidiTrack (trackIndex);
+
         for (int j = 0; j < (int) trackArmed.size(); ++j)
             if (j != trackIndex
                 && trackArmed[(size_t) j]
+                && isMidiTrack (j) == midi
                 && trackInputs[(size_t) j] == trackInputs[(size_t) trackIndex])
                 applyArm (j, false);
     }
@@ -168,7 +178,7 @@ void EditSession::setArmed (int trackIndex, bool shouldBeArmed)
 void EditSession::applyArm (int trackIndex, bool shouldBeArmed)
 {
     auto* track = getTrack (trackIndex);
-    auto inputs = getWaveInputs();
+    auto inputs = getInputsFor (trackIndex);
     auto* input = inputs[trackInputs[(size_t) trackIndex]];
 
     trackArmed[(size_t) trackIndex] = shouldBeArmed && track != nullptr && input != nullptr;
@@ -209,14 +219,22 @@ void EditSession::refreshInputs()
         }
     }
 
+    // MIDI keyboards always monitor when armed, so you hear the instrument while you play
+    for (int i = 0; i < dm.getNumMidiInDevices(); ++i)
+    {
+        if (auto mid = dm.getMidiInDevice (i))
+        {
+            mid->setEnabled (true);
+            mid->setMonitorMode (te::InputDevice::MonitorMode::automatic);
+        }
+    }
+
     edit->getTransport().ensureContextAllocated();
     syncTrackState();
 
-    const int numInputs = getWaveInputs().size();
-
-    for (auto& in : trackInputs)
-        if (in >= numInputs)
-            in = 0;
+    for (int i = 0; i < (int) trackInputs.size(); ++i)
+        if (trackInputs[(size_t) i] >= getInputsFor (i).size())
+            trackInputs[(size_t) i] = 0;
 
     for (int i = 0; i < (int) trackArmed.size(); ++i)
         if (trackArmed[(size_t) i])
