@@ -38,6 +38,7 @@ private:
     enum CommandIDs
     {
         cmdNew = 1, cmdOpen, cmdSave, cmdImport, cmdExport, cmdAudioSettings, cmdScanPlugins, cmdLatency, cmdExit,
+        cmdBackupNow, cmdRestoreBackup,
         cmdUndo = 100, cmdRedo, cmdCopy, cmdPaste, cmdDuplicate, cmdSplit, cmdDelete, cmdSelectAll,
         cmdAddAudioTrack = 200, cmdAddMidiTrack,
         cmdPlayStop = 300, cmdRecord, cmdGoToStart, cmdLoop, cmdClick, cmdSnap, cmdMonitor, cmdAutoWrite, cmdPunch,
@@ -55,6 +56,7 @@ private:
     void showPianoRoll (tracktion::MidiClip& clip);
     void showComp (tracktion::WaveAudioClip& clip);
     void showClipProps (tracktion::AudioClipBase& clip);
+    void restoreBackup();
     void showShortcuts();
     void toggleMixer();
     void togglePlayStop();

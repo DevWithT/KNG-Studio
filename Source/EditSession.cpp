@@ -7,6 +7,9 @@ EditSession::EditSession (te::Engine& engineToUse, const juce::File& editFileToU
 {
     editFile.getParentDirectory().createDirectory();
 
+    // A leftover lock file means the last session didn't close cleanly
+    recoveredFromCrash = getLockFile().existsAsFile();
+
     if (editFile.existsAsFile())
         edit = te::loadEditFromFile (engine, editFile);
     else
@@ -23,13 +26,23 @@ EditSession::EditSession (te::Engine& engineToUse, const juce::File& editFileToU
 
     syncTrackState();
     refreshInputs();
+
+    // Mark this session as open, and start the autosave clock
+    getLockFile().replaceWithText (juce::Time::getCurrentTime().toString (true, true));
+    lastBackupTime = juce::Time::getCurrentTime();
+    startTimer (60 * 1000);
+
     save();
 }
 
 EditSession::~EditSession()
 {
+    stopTimer();
     getTransport().stop (false, false);
     save();
+
+    // Clean exit, so no crash warning next time
+    getLockFile().deleteFile();
 }
 
 //==============================================================================

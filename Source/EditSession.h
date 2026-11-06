@@ -2,7 +2,7 @@
 
 #include <tracktion_engine/tracktion_engine.h>
 
-class EditSession
+class EditSession : private juce::Timer
 {
 public:
     EditSession (tracktion::Engine& engineToUse, const juce::File& editFileToUse);
@@ -114,6 +114,11 @@ public:
     void addMarkerAt (double seconds);
     void jumpToMarker (int direction);
 
+    // Autosave and crash recovery
+    bool didRecoverFromCrash() const            { return recoveredFromCrash; }
+    juce::File getBackupsFolder() const;
+    void makeBackup();
+
     // Tempo, click, count-in
     void setBpm (double bpm);
     double getBpm() const;
@@ -193,6 +198,9 @@ private:
     tracktion::TimeRange getExportRange (bool loopOnly);
     juce::File copyIntoProject (const juce::File& file);
     int getFirstFxIndex (tracktion::AudioTrack& track);
+    void timerCallback() override;
+    juce::File getLockFile() const;
+    void pruneBackups();
 
     tracktion::Engine& engine;
     juce::File editFile;
@@ -210,6 +218,8 @@ private:
     double viewStart = 0.0;
     double viewLength = 60.0;
     bool snapEnabled = true;
+    bool recoveredFromCrash = false;
+    juce::Time lastBackupTime;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EditSession)
 };

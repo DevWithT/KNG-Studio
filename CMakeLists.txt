@@ -48,7 +48,8 @@ target_sources(KNGStudio PRIVATE
     Source/EditSessionSelection.cpp
     Source/EditSessionClips.cpp
     Source/MarkerBar.cpp
-    Source/ClipProps.cpp)
+    Source/ClipProps.cpp
+    Source/EditSessionBackup.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0

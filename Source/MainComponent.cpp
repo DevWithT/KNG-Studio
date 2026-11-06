@@ -118,6 +118,12 @@ void MainComponent::loadProject (const juce::File& editFile)
     projectLabel.setText ("Project: " + session->getProjectName(), juce::dontSendNotification);
     setLastProjectFile (editFile);
 
+    // Heads-up if the last session crashed
+    if (session->didRecoverFromCrash())
+        juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::InfoIcon, "Recovered",
+            "KNG Studio didn't close cleanly last time. Everything up to the last autosave (within a minute) is here.\n\n"
+            "If something looks wrong, use File > Restore Backup.");
+
     resized();
 }
 
@@ -204,6 +210,8 @@ juce::PopupMenu MainComponent::getMenuForIndex (int menuIndex, const juce::Strin
             add (cmdNew, "New Project...", "Ctrl+N");
             add (cmdOpen, "Open Project...", "Ctrl+O");
             add (cmdSave, "Save", "Ctrl+S", hasSession);
+            add (cmdBackupNow, "Save Backup Now", {}, hasSession);
+            add (cmdRestoreBackup, "Restore Backup...", {}, hasSession);
             m.addSeparator();
             add (cmdImport, "Import Audio...", {}, hasSession);
             add (cmdExport, "Export...", {}, hasSession);
@@ -288,6 +296,8 @@ void MainComponent::menuItemSelected (int id, int)
     switch (id)
     {
         case cmdSave:          saveProject(); break;
+        case cmdBackupNow:     session->makeBackup(); break;
+        case cmdRestoreBackup: restoreBackup(); break;
         case cmdImport:        if (transportBar != nullptr) transportBar->importBeat(); break;
         case cmdExport:        if (transportBar != nullptr) transportBar->showExportDialog(); break;
         case cmdLatency:       showLatencyDialog(); break;
@@ -687,4 +697,30 @@ void MainComponent::showClipProps (tracktion::AudioClipBase& clip)
     options.useNativeTitleBar = true;
     options.resizable = false;
     options.launchAsync();
+}
+
+void MainComponent::restoreBackup()
+{
+    if (session == nullptr || isBusyRecording())
+        return;
+
+    chooser = std::make_unique<juce::FileChooser> ("Restore Backup", session->getBackupsFolder(), "*.tracktionedit");
+
+    chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+                          [this] (const juce::FileChooser& fc)
+                          {
+                              auto backup = fc.getResult();
+
+                              if (! backup.existsAsFile() || session == nullptr)
+                                  return;
+
+                              // Back up what you have now, so a restore can always be undone
+                              session->makeBackup();
+
+                              const auto projectFile = session->getProjectFile();
+                              closeProject();
+
+                              backup.copyFileTo (projectFile);
+                              loadProject (projectFile);
+                          });
 }
