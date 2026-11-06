@@ -41,7 +41,8 @@ target_sources(KNGStudio PRIVATE
     Source/EditSessionMidi.cpp
     Source/PianoRoll.cpp
     Source/EditSessionAutomation.cpp
-    Source/AutomationLane.cpp)
+    Source/AutomationLane.cpp
+    Source/MixerView.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0

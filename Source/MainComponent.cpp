@@ -5,7 +5,7 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
 {
     setWantsKeyboardFocus (true);
 
-    for (auto* b : { &settingsButton, &scanButton, &latencyButton, &newButton, &openButton, &saveButton })
+    for (auto* b : { &settingsButton, &scanButton, &latencyButton, &newButton, &openButton, &saveButton, &mixerButton })
         addAndMakeVisible (b);
 
     settingsButton.onClick = [this] { showAudioSettings(); };
@@ -14,6 +14,7 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
     newButton.onClick      = [this] { newProject(); };
     openButton.onClick     = [this] { openProject(); };
     saveButton.onClick     = [this] { saveProject(); };
+    mixerButton.onClick    = [this] { toggleMixer(); };
 
     addAndMakeVisible (projectLabel);
     projectLabel.setFont (juce::Font (juce::FontOptions (16.0f)));
@@ -82,6 +83,7 @@ void MainComponent::closeProject()
 {
     fxWindows.clear();
     pianoRollWindows.clear();
+    mixerWindow = nullptr;
     tracksViewport.setViewedComponent (nullptr, false);
     tracksView = nullptr;
     masterStrip = nullptr;
@@ -236,6 +238,8 @@ void MainComponent::resized()
     openButton.setBounds (topBar.removeFromLeft (60));
     topBar.removeFromLeft (4);
     saveButton.setBounds (topBar.removeFromLeft (60));
+    topBar.removeFromLeft (4);
+    mixerButton.setBounds (topBar.removeFromLeft (70));
     topBar.removeFromLeft (12);
     projectLabel.setBounds (topBar.removeFromLeft (200));
     topBar.removeFromLeft (10);
@@ -303,6 +307,13 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
         if (code == 'D' || code == 'd')  { session->duplicateSelectedClip(); return true; }
         if (code == 'C' || code == 'c')  { session->copySelectedClip();      return true; }
         if (code == 'V' || code == 'v')  { session->pasteClip();             return true; }
+    }
+
+    // M opens and closes the mixer
+    if (! mods.isAnyModifierKeyDown() && (code == 'M' || code == 'm'))
+    {
+        toggleMixer();
+        return true;
     }
 
     // Space toggles play/stop
@@ -406,4 +417,21 @@ void MainComponent::showPianoRoll (tracktion::MidiClip& clip)
     }
 
     pianoRollWindows.add (new PianoRollWindow (*session, clip));
+}
+
+void MainComponent::toggleMixer()
+{
+    if (session == nullptr)
+        return;
+
+    if (mixerWindow == nullptr)
+    {
+        mixerWindow = std::make_unique<MixerWindow> (*session);
+        return;
+    }
+
+    mixerWindow->setVisible (! mixerWindow->isVisible());
+
+    if (mixerWindow->isVisible())
+        mixerWindow->toFront (true);
 }

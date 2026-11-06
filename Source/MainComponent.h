@@ -11,6 +11,7 @@
 #include "FxChainComponent.h"
 #include "LatencyDialog.h"
 #include "PianoRoll.h"
+#include "MixerView.h"
 
 class MainComponent : public juce::Component,
                       private juce::ChangeListener
@@ -30,6 +31,7 @@ private:
     void showPluginScanner();
     void showLatencyDialog();
     void showPianoRoll (tracktion::MidiClip& clip);
+    void toggleMixer();
     void showFxChain (tracktion::PluginList& list, const juce::String& title);
     void updateDeviceLabel();
 
@@ -49,7 +51,7 @@ private:
     tracktion::Engine& engine;
 
     juce::TextButton settingsButton { "Audio Settings" }, scanButton { "Scan Plugins" }, latencyButton { "Latency Check" };
-    juce::TextButton newButton { "New" }, openButton { "Open" }, saveButton { "Save" };
+    juce::TextButton newButton { "New" }, openButton { "Open" }, saveButton { "Save" }, mixerButton { "Mixer" };
     juce::Label projectLabel, deviceLabel;
 
     std::unique_ptr<EditSession> session;
@@ -62,6 +64,7 @@ private:
 
     juce::OwnedArray<FxChainWindow> fxWindows;
     juce::OwnedArray<PianoRollWindow> pianoRollWindows;
+    std::unique_ptr<MixerWindow> mixerWindow;
     std::unique_ptr<juce::FileChooser> chooser;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
