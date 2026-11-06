@@ -13,6 +13,13 @@ void EditSession::record()
     if (! isAnyTrackArmed())
         setArmed (0, true);
 
+    // Punching in: start 2 bars early so you hear the lead-in
+    if (isPunchEnabled() && getLoopEnd() > getLoopStart() && ! getTransport().isPlaying())
+    {
+        const double bar = 4.0 * 60.0 / juce::jmax (1.0, getBpm());
+        getTransport().setPosition (te::TimePosition::fromSeconds (juce::jmax (0.0, getLoopStart() - bar * 2.0)));
+    }
+
     getTransport().record (false);
 }
 

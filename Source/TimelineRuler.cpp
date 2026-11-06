@@ -45,8 +45,10 @@ void TimelineRuler::paint (juce::Graphics& g)
         const int x1 = timeToX (loopStart);
         const int x2 = timeToX (loopEnd);
 
-        g.setColour (session.isLooping() ? juce::Colour (0xff2e7d32).withAlpha (0.8f)
-                                         : juce::Colours::grey.withAlpha (0.35f));
+        // Red for punch, green for loop, grey when neither is on
+        g.setColour (session.isPunchEnabled() ? juce::Colour (0xffb03030).withAlpha (0.8f)
+                   : session.isLooping()      ? juce::Colour (0xff2e7d32).withAlpha (0.8f)
+                                              : juce::Colours::grey.withAlpha (0.35f));
         g.fillRect (x1, 0, juce::jmax (1, x2 - x1), getHeight());
     }
 

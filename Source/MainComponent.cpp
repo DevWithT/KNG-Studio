@@ -233,6 +233,7 @@ juce::PopupMenu MainComponent::getMenuForIndex (int menuIndex, const juce::Strin
             add (cmdGoToStart, "Go to Start", "Home", hasSession);
             m.addSeparator();
             add (cmdLoop, "Loop", {}, hasSession, hasSession && session->isLooping());
+            add (cmdPunch, "Punch In/Out", {}, hasSession, hasSession && session->isPunchEnabled());
             add (cmdClick, "Click", {}, hasSession, hasSession && session->isClickEnabled());
             add (cmdSnap, "Snap", {}, hasSession, hasSession && session->isSnapEnabled());
             add (cmdMonitor, "Monitor", {}, hasSession, hasSession && session->isMonitoring());
@@ -297,6 +298,7 @@ void MainComponent::menuItemSelected (int id, int)
         case cmdRecord:        session->record(); break;
         case cmdGoToStart:     session->getTransport().setPosition (tracktion::TimePosition()); break;
         case cmdLoop:          session->setLooping (! session->isLooping()); break;
+        case cmdPunch:         session->setPunchEnabled (! session->isPunchEnabled()); break;
         case cmdClick:         session->setClickEnabled (! session->isClickEnabled()); break;
         case cmdSnap:          session->setSnapEnabled (! session->isSnapEnabled()); break;
         case cmdMonitor:       session->setMonitoring (! session->isMonitoring()); break;

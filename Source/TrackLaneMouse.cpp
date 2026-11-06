@@ -314,6 +314,18 @@ void TrackLane::showClipMenu (te::Clip* clip)
         menu.addSeparator();
     }
 
+    if (dynamic_cast<te::WaveAudioClip*> (clip) != nullptr)
+    {
+        menu.addItem ("Tune with KngTune", [s = &session, idx = trackIndex]
+        {
+            if (! s->addKngTune (idx))
+                juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::WarningIcon, "KngTune not found",
+                                                        "Put KngTune in your VST3 folder, then use File > Scan Plugins.");
+        });
+
+        menu.addSeparator();
+    }
+
     menu.addItem ("Duplicate (Ctrl+D)",  [s = &session] { s->duplicateSelectedClip(); });
     menu.addItem ("Copy (Ctrl+C)",       [s = &session] { s->copySelectedClip(); });
     menu.addItem ("Paste (Ctrl+V)",      [s = &session] { s->pasteClip(); });

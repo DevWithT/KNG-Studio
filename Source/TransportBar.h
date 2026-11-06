@@ -27,7 +27,7 @@ private:
     juce::Label timeLabel;
     juce::Slider tempoSlider;
     juce::ComboBox countInBox;
-    juce::ToggleButton clickButton { "Click" }, loopButton { "Loop" }, snapButton { "Snap" },
+    juce::ToggleButton clickButton { "Click" }, loopButton { "Loop" }, punchButton { "Punch" }, snapButton { "Snap" },
                        monitorButton { "Monitor" }, writeButton { "Auto Write" };
 
     std::unique_ptr<juce::FileChooser> chooser;

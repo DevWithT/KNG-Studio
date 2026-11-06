@@ -43,7 +43,8 @@ target_sources(KNGStudio PRIVATE
     Source/EditSessionAutomation.cpp
     Source/AutomationLane.cpp
     Source/MixerView.cpp
-    Source/CompView.cpp)
+    Source/CompView.cpp
+    Source/EditSessionExtras.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0

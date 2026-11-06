@@ -6,7 +6,7 @@ TransportBar::TransportBar (EditSession& sessionToUse)
 {
     for (auto* c : std::initializer_list<juce::Component*> { &playButton, &stopButton, &recordButton, &timeLabel,
                                                              &tempoSlider, &countInBox, &clickButton,
-                                                             &loopButton, &snapButton, &monitorButton, &writeButton })
+                                                             &loopButton, &punchButton, &snapButton, &monitorButton, &writeButton })
         addAndMakeVisible (c);
 
     // Transport
@@ -40,6 +40,7 @@ TransportBar::TransportBar (EditSession& sessionToUse)
     // Toggles
     clickButton.onClick   = [this] { session.setClickEnabled (clickButton.getToggleState()); };
     loopButton.onClick    = [this] { session.setLooping (loopButton.getToggleState()); };
+    punchButton.onClick   = [this] { session.setPunchEnabled (punchButton.getToggleState()); };
     snapButton.onClick    = [this] { session.setSnapEnabled (snapButton.getToggleState()); };
     monitorButton.onClick = [this] { session.setMonitoring (monitorButton.getToggleState()); };
     writeButton.onClick   = [this] { session.setAutomationWrite (writeButton.getToggleState()); };
@@ -97,6 +98,7 @@ void TransportBar::timerCallback()
 
     clickButton.setToggleState (session.isClickEnabled(), juce::dontSendNotification);
     loopButton.setToggleState (session.isLooping(), juce::dontSendNotification);
+    punchButton.setToggleState (session.isPunchEnabled(), juce::dontSendNotification);
     snapButton.setToggleState (session.isSnapEnabled(), juce::dontSendNotification);
     monitorButton.setToggleState (session.isMonitoring(), juce::dontSendNotification);
     writeButton.setToggleState (session.isAutomationWrite(), juce::dontSendNotification);
@@ -162,6 +164,7 @@ void TransportBar::resized()
     divider();
 
     place (loopButton, 64);
+    place (punchButton, 70);
     place (snapButton, 64);
     divider();
 

@@ -83,6 +83,19 @@ public:
     // Lets the UI open the comp window for a clip with takes (MainComponent sets this)
     std::function<void (tracktion::WaveAudioClip&)> onShowComp;
 
+    // Punch in/out (uses the same region as the loop)
+    void setPunchEnabled (bool shouldPunch);
+    bool isPunchEnabled();
+
+    // Track chain templates
+    static juce::File getTemplatesFolder();
+    juce::StringArray getTemplateNames();
+    bool saveChainTemplate (int trackIndex, const juce::String& name);
+    bool loadChainTemplate (int trackIndex, const juce::String& name);
+
+    // KngTune
+    bool addKngTune (int trackIndex);
+
     // Tempo, click, count-in
     void setBpm (double bpm);
     double getBpm() const;
@@ -161,6 +174,7 @@ private:
                                                       juce::AudioFormat& format);
     tracktion::TimeRange getExportRange (bool loopOnly);
     juce::File copyIntoProject (const juce::File& file);
+    int getFirstFxIndex (tracktion::AudioTrack& track);
 
     tracktion::Engine& engine;
     juce::File editFile;

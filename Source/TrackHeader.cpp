@@ -377,6 +377,41 @@ void TrackHeader::mouseDown (const juce::MouseEvent& e)
         });
     }
 
+    // KngTune
+    menu.addItem ("Add KngTune", [s, idx]
+    {
+        if (! s->addKngTune (idx))
+            juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::WarningIcon, "KngTune not found",
+                                                    "Put KngTune in your VST3 folder, then use File > Scan Plugins.");
+    });
+
+    // Chain templates
+    juce::PopupMenu templates;
+
+    templates.addItem ("Save Chain as Template...", [s, idx]
+    {
+        auto* w = new juce::AlertWindow ("Save Template", "Name this FX chain:", juce::MessageBoxIconType::NoIcon);
+        w->addTextEditor ("name", "Vocal Chain");
+        w->addButton ("Save", 1, juce::KeyPress (juce::KeyPress::returnKey));
+        w->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
+
+        w->enterModalState (true, juce::ModalCallbackFunction::create ([s, idx, w] (int result)
+        {
+            if (result == 1)
+                s->saveChainTemplate (idx, w->getTextEditorContents ("name"));
+        }), true);
+    });
+
+    const auto templateNames = session.getTemplateNames();
+
+    if (! templateNames.isEmpty())
+        templates.addSeparator();
+
+    for (auto& name : templateNames)
+        templates.addItem (name, [s, idx, name] { s->loadChainTemplate (idx, name); });
+
+    menu.addSubMenu ("Templates", templates);
+
     menu.addSubMenu ("Color", colours);
     menu.addSeparator();
 
