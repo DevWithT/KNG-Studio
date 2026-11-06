@@ -84,6 +84,7 @@ void MainComponent::closeProject()
     fxWindows.clear();
     pianoRollWindows.clear();
     mixerWindow = nullptr;
+    compWindows.clear();
     tracksViewport.setViewedComponent (nullptr, false);
     tracksView = nullptr;
     masterStrip = nullptr;
@@ -104,6 +105,7 @@ void MainComponent::loadProject (const juce::File& editFile)
 
     session->onShowPianoRoll = [this] (tracktion::MidiClip& clip) { showPianoRoll (clip); };
 
+    session->onShowComp = [this] (tracktion::WaveAudioClip& clip) { showComp (clip); };
     transportBar = std::make_unique<TransportBar> (*session);
     addAndMakeVisible (*transportBar);
 
@@ -434,4 +436,23 @@ void MainComponent::toggleMixer()
 
     if (mixerWindow->isVisible())
         mixerWindow->toFront (true);
+}
+
+void MainComponent::showComp (tracktion::WaveAudioClip& clip)
+{
+    if (session == nullptr)
+        return;
+
+    // Reuse the window if this clip is already open
+    for (auto* w : compWindows)
+    {
+        if (w->getClip() == &clip)
+        {
+            w->setVisible (true);
+            w->toFront (true);
+            return;
+        }
+    }
+
+    compWindows.add (new CompWindow (*session, clip));
 }

@@ -80,6 +80,9 @@ public:
     void setAutomationWrite (bool shouldWrite);
     bool isAutomationWrite();
 
+    // Lets the UI open the comp window for a clip with takes (MainComponent sets this)
+    std::function<void (tracktion::WaveAudioClip&)> onShowComp;
+
     // Tempo, click, count-in
     void setBpm (double bpm);
     double getBpm() const;

@@ -288,6 +288,13 @@ void TrackLane::showClipMenu (te::Clip* clip)
                                [clipPtr, i] { clipPtr->setCurrentTake (i); });
 
             menu.addSubMenu ("Takes", takes);
+
+            te::WaveAudioClip::Ptr compPtr (wac);
+            menu.addItem ("Comp Takes...", [s = &session, compPtr]
+            {
+                if (s->onShowComp)
+                    s->onShowComp (*compPtr);
+            });
             menu.addSeparator();
         }
     }

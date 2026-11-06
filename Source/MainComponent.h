@@ -12,6 +12,7 @@
 #include "LatencyDialog.h"
 #include "PianoRoll.h"
 #include "MixerView.h"
+#include "CompView.h"
 
 class MainComponent : public juce::Component,
                       private juce::ChangeListener
@@ -32,6 +33,7 @@ private:
     void showLatencyDialog();
     void showPianoRoll (tracktion::MidiClip& clip);
     void toggleMixer();
+    void showComp (tracktion::WaveAudioClip& clip);
     void showFxChain (tracktion::PluginList& list, const juce::String& title);
     void updateDeviceLabel();
 
@@ -65,6 +67,7 @@ private:
     juce::OwnedArray<FxChainWindow> fxWindows;
     juce::OwnedArray<PianoRollWindow> pianoRollWindows;
     std::unique_ptr<MixerWindow> mixerWindow;
+    juce::OwnedArray<CompWindow> compWindows;
     std::unique_ptr<juce::FileChooser> chooser;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
