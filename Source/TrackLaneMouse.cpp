@@ -276,34 +276,50 @@ void TrackLane::showClipMenu (te::Clip* clip)
     if (auto* wac = dynamic_cast<te::WaveAudioClip*> (clip))
     {
         const int numTakes = wac->getNumTakes (false);
+        te::WaveAudioClip::Ptr clipPtr (wac);
 
         if (numTakes > 1)
         {
             juce::PopupMenu takes;
             const int current = wac->getCurrentTake();
-            te::WaveAudioClip::Ptr clipPtr (wac);
 
             for (int i = 0; i < numTakes; ++i)
                 takes.addItem ("Take " + juce::String (i + 1), true, i == current,
                                [clipPtr, i] { clipPtr->setCurrentTake (i); });
 
             menu.addSubMenu ("Takes", takes);
-
-            te::WaveAudioClip::Ptr compPtr (wac);
-            menu.addItem ("Comp Takes...", [s = &session, compPtr]
+            menu.addItem ("Comp Takes...", [s = &session, clipPtr]
             {
                 if (s->onShowComp)
-                    s->onShowComp (*compPtr);
+                    s->onShowComp (*clipPtr);
             });
-            menu.addSeparator();
         }
+        else
+        {
+            menu.addItem ("Comp Takes (loop-record to get takes)", false, false, nullptr);
+        }
+
+        menu.addSeparator();
     }
 
-    menu.addItem ("Duplicate (Ctrl+D)", [s = &session] { s->duplicateSelectedClip(); });
-    menu.addItem ("Copy (Ctrl+C)",      [s = &session] { s->copySelectedClip(); });
-    menu.addItem ("Paste (Ctrl+V)",     [s = &session] { s->pasteClip(); });
-    menu.addItem ("Split at Playhead", [s = &session] { s->splitSelectedClipAtPlayhead(); });
-    menu.addItem ("Delete Clip",       [s = &session] { s->deleteSelectedClip(); });
+    if (auto* mc = dynamic_cast<te::MidiClip*> (clip))
+    {
+        te::MidiClip::Ptr midiPtr (mc);
+        menu.addItem ("Open Piano Roll", [s = &session, midiPtr]
+        {
+            if (s->onShowPianoRoll)
+                s->onShowPianoRoll (*midiPtr);
+        });
+
+        menu.addSeparator();
+    }
+
+    menu.addItem ("Duplicate (Ctrl+D)",  [s = &session] { s->duplicateSelectedClip(); });
+    menu.addItem ("Copy (Ctrl+C)",       [s = &session] { s->copySelectedClip(); });
+    menu.addItem ("Paste (Ctrl+V)",      [s = &session] { s->pasteClip(); });
+    menu.addSeparator();
+    menu.addItem ("Split at Playhead (S)", [s = &session] { s->splitSelectedClipAtPlayhead(); });
+    menu.addItem ("Delete Clip (Del)",     [s = &session] { s->deleteSelectedClip(); });
     menu.showMenuAsync ({});
 }
 

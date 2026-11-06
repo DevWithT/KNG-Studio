@@ -11,6 +11,8 @@ public:
 
     void initialise (const juce::String&) override
     {
+        lookAndFeel = std::make_unique<KngLookAndFeel>();
+        juce::LookAndFeel::setDefaultLookAndFeel (lookAndFeel.get());
         engine = std::make_unique<tracktion::Engine> (getApplicationName(), std::make_unique<KngUIBehaviour>(), nullptr);
         mainWindow = std::make_unique<MainWindow> (getApplicationName(), *engine);
     }
@@ -19,6 +21,8 @@ public:
     {
         mainWindow = nullptr;
         engine = nullptr;
+        juce::LookAndFeel::setDefaultLookAndFeel (nullptr);
+        lookAndFeel = nullptr;
     }
 
     void systemRequestedQuit() override { quit(); }
@@ -66,6 +70,7 @@ public:
 private:
     std::unique_ptr<tracktion::Engine> engine;
     std::unique_ptr<MainWindow> mainWindow;
+    std::unique_ptr<KngLookAndFeel> lookAndFeel;
 };
 
 START_JUCE_APPLICATION (KngStudioApplication)

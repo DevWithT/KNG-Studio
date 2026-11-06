@@ -4,11 +4,9 @@
 TransportBar::TransportBar (EditSession& sessionToUse)
     : session (sessionToUse)
 {
-    for (auto* c : std::initializer_list<juce::Component*> { &playButton, &stopButton, &recordButton,
-                                                             &timeLabel, &monitorButton, &clickButton,
-                                                             &countInBox, &tempoSlider,
-                                                             &undoButton, &redoButton, &loopButton,
-                                                             &importButton, &snapButton, &exportButton, &writeButton })
+    for (auto* c : std::initializer_list<juce::Component*> { &playButton, &stopButton, &recordButton, &timeLabel,
+                                                             &tempoSlider, &countInBox, &clickButton,
+                                                             &loopButton, &snapButton, &monitorButton, &writeButton })
         addAndMakeVisible (c);
 
     // Transport
@@ -16,26 +14,13 @@ TransportBar::TransportBar (EditSession& sessionToUse)
     stopButton.onClick   = [this] { session.stop(); };
     recordButton.onClick = [this] { session.record(); };
 
+    playButton.setColour (juce::TextButton::buttonOnColourId, juce::Colour (0xff2e8b57));
     recordButton.setColour (juce::TextButton::buttonOnColourId, juce::Colours::red);
-    playButton.setColour (juce::TextButton::buttonOnColourId, juce::Colours::green);
+    recordButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xffff6b6b));
 
     timeLabel.setJustificationType (juce::Justification::centred);
     timeLabel.setFont (juce::Font (juce::FontOptions (20.0f)));
     timeLabel.setText (formatTime (0.0), juce::dontSendNotification);
-
-    // Monitor and click
-    monitorButton.setToggleState (session.isMonitoring(), juce::dontSendNotification);
-    monitorButton.onClick = [this] { session.setMonitoring (monitorButton.getToggleState()); };
-
-    clickButton.setToggleState (session.isClickEnabled(), juce::dontSendNotification);
-    clickButton.onClick = [this] { session.setClickEnabled (clickButton.getToggleState()); };
-
-    // Count-in
-    countInBox.addItem ("No count-in", 1);
-    countInBox.addItem ("1 bar count-in", 2);
-    countInBox.addItem ("2 bar count-in", 3);
-    countInBox.setSelectedId (session.getCountInBars() + 1, juce::dontSendNotification);
-    countInBox.onChange = [this] { session.setCountInBars (countInBox.getSelectedId() - 1); };
 
     // Tempo
     tempoSlider.setSliderStyle (juce::Slider::IncDecButtons);
@@ -45,21 +30,21 @@ TransportBar::TransportBar (EditSession& sessionToUse)
     tempoSlider.setValue (session.getBpm(), juce::dontSendNotification);
     tempoSlider.onValueChange = [this] { session.setBpm (tempoSlider.getValue()); };
 
-    // Row 2
-    undoButton.onClick   = [this] { session.undo(); };
-    redoButton.onClick   = [this] { session.redo(); };
-    importButton.onClick = [this] { importBeat(); };
-    exportButton.onClick = [this] { showExportDialog(); };
+    // Count-in
+    countInBox.addItem ("No count-in", 1);
+    countInBox.addItem ("1 bar count-in", 2);
+    countInBox.addItem ("2 bar count-in", 3);
+    countInBox.setSelectedId (session.getCountInBars() + 1, juce::dontSendNotification);
+    countInBox.onChange = [this] { session.setCountInBars (countInBox.getSelectedId() - 1); };
 
-    loopButton.setToggleState (session.isLooping(), juce::dontSendNotification);
-    loopButton.onClick = [this] { session.setLooping (loopButton.getToggleState()); };
+    // Toggles
+    clickButton.onClick   = [this] { session.setClickEnabled (clickButton.getToggleState()); };
+    loopButton.onClick    = [this] { session.setLooping (loopButton.getToggleState()); };
+    snapButton.onClick    = [this] { session.setSnapEnabled (snapButton.getToggleState()); };
+    monitorButton.onClick = [this] { session.setMonitoring (monitorButton.getToggleState()); };
+    writeButton.onClick   = [this] { session.setAutomationWrite (writeButton.getToggleState()); };
 
-    snapButton.setToggleState (session.isSnapEnabled(), juce::dontSendNotification);
-    snapButton.onClick = [this] { session.setSnapEnabled (snapButton.getToggleState()); };
-
-    writeButton.setToggleState (session.isAutomationWrite(), juce::dontSendNotification);
-    writeButton.onClick = [this] { session.setAutomationWrite (writeButton.getToggleState()); };
-
+    timerCallback();
     startTimerHz (30);
 }
 
@@ -68,11 +53,12 @@ TransportBar::~TransportBar()
     stopTimer();
 }
 
+//==============================================================================
 void TransportBar::importBeat()
 {
-    chooser = std::make_unique<juce::FileChooser> ("Import a beat",
+    chooser = std::make_unique<juce::FileChooser> ("Import audio",
                                                    juce::File::getSpecialLocation (juce::File::userMusicDirectory),
-                                                   "*.wav;*.mp3;*.aif;*.aiff;*.flac");
+                                                   "*.wav;*.mp3;*.aif;*.aiff;*.flac;*.ogg");
 
     chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
                           [this] (const juce::FileChooser& fc)
@@ -84,69 +70,6 @@ void TransportBar::importBeat()
                                                                           "Import failed",
                                                                           "Couldn't read that file.");
                           });
-}
-
-void TransportBar::resized()
-{
-    auto area = getLocalBounds();
-    auto row1 = area.removeFromTop (36);
-    area.removeFromTop (4);
-    auto row2 = area.removeFromTop (36);
-
-    playButton.setBounds (row1.removeFromLeft (80).reduced (2));
-    stopButton.setBounds (row1.removeFromLeft (80).reduced (2));
-    recordButton.setBounds (row1.removeFromLeft (80).reduced (2));
-    row1.removeFromLeft (10);
-    timeLabel.setBounds (row1.removeFromLeft (140));
-    row1.removeFromLeft (10);
-    monitorButton.setBounds (row1.removeFromLeft (90).reduced (2));
-    clickButton.setBounds (row1.removeFromLeft (70).reduced (2));
-    row1.removeFromLeft (6);
-    countInBox.setBounds (row1.removeFromLeft (140).reduced (2));
-    row1.removeFromLeft (10);
-    tempoSlider.setBounds (row1.removeFromLeft (150).reduced (2));
-
-    undoButton.setBounds (row2.removeFromLeft (80).reduced (2));
-    redoButton.setBounds (row2.removeFromLeft (80).reduced (2));
-    row2.removeFromLeft (10);
-    loopButton.setBounds (row2.removeFromLeft (70).reduced (2));
-    snapButton.setBounds (row2.removeFromLeft (70).reduced (2));
-    writeButton.setBounds (row2.removeFromLeft (100).reduced (2));
-    row2.removeFromLeft (10);
-    importButton.setBounds (row2.removeFromLeft (120).reduced (2));
-    row2.removeFromLeft (10);
-    exportButton.setBounds (row2.removeFromLeft (100).reduced (2));
-}
-
-void TransportBar::timerCallback()
-{
-    auto& transport = session.getTransport();
-
-    timeLabel.setText (formatTime (transport.getPosition().inSeconds()), juce::dontSendNotification);
-    recordButton.setToggleState (transport.isRecording(), juce::dontSendNotification);
-    playButton.setToggleState (transport.isPlaying() && ! transport.isRecording(), juce::dontSendNotification);
-
-    monitorButton.setToggleState (session.isMonitoring(), juce::dontSendNotification);
-    clickButton.setToggleState (session.isClickEnabled(), juce::dontSendNotification);
-    loopButton.setToggleState (session.isLooping(), juce::dontSendNotification);
-    snapButton.setToggleState (session.isSnapEnabled(), juce::dontSendNotification);
-
-    if (! countInBox.isPopupActive())
-        countInBox.setSelectedId (session.getCountInBars() + 1, juce::dontSendNotification);
-
-    writeButton.setToggleState (session.isAutomationWrite(), juce::dontSendNotification);
-    if (! tempoSlider.isMouseButtonDown())
-        tempoSlider.setValue (session.getBpm(), juce::dontSendNotification);
-}
-
-juce::String TransportBar::formatTime (double seconds)
-{
-    const int totalMs = (int) (seconds * 1000.0);
-    const int mins = totalMs / 60000;
-    const int secs = (totalMs / 1000) % 60;
-    const int ms   = totalMs % 1000;
-
-    return juce::String::formatted ("%02d:%02d.%03d", mins, secs, ms);
 }
 
 void TransportBar::showExportDialog()
@@ -161,4 +84,87 @@ void TransportBar::showExportDialog()
     options.useNativeTitleBar = true;
     options.resizable = false;
     options.launchAsync();
+}
+
+//==============================================================================
+void TransportBar::timerCallback()
+{
+    auto& transport = session.getTransport();
+
+    timeLabel.setText (formatTime (transport.getPosition().inSeconds()), juce::dontSendNotification);
+    recordButton.setToggleState (transport.isRecording(), juce::dontSendNotification);
+    playButton.setToggleState (transport.isPlaying() && ! transport.isRecording(), juce::dontSendNotification);
+
+    clickButton.setToggleState (session.isClickEnabled(), juce::dontSendNotification);
+    loopButton.setToggleState (session.isLooping(), juce::dontSendNotification);
+    snapButton.setToggleState (session.isSnapEnabled(), juce::dontSendNotification);
+    monitorButton.setToggleState (session.isMonitoring(), juce::dontSendNotification);
+    writeButton.setToggleState (session.isAutomationWrite(), juce::dontSendNotification);
+
+    if (! countInBox.isPopupActive())
+        countInBox.setSelectedId (session.getCountInBars() + 1, juce::dontSendNotification);
+
+    if (! tempoSlider.isMouseButtonDown())
+        tempoSlider.setValue (session.getBpm(), juce::dontSendNotification);
+}
+
+juce::String TransportBar::formatTime (double seconds)
+{
+    const int totalMs = (int) (seconds * 1000.0);
+    const int mins = totalMs / 60000;
+    const int secs = (totalMs / 1000) % 60;
+    const int ms   = totalMs % 1000;
+
+    return juce::String::formatted ("%02d:%02d.%03d", mins, secs, ms);
+}
+
+//==============================================================================
+void TransportBar::paint (juce::Graphics& g)
+{
+    g.setColour (juce::Colour (0xff24282c));
+    g.fillRoundedRectangle (getLocalBounds().toFloat(), 6.0f);
+
+    g.setColour (juce::Colours::white.withAlpha (0.08f));
+
+    for (int x : dividers)
+        g.drawVerticalLine (x, 6.0f, (float) getHeight() - 6.0f);
+}
+
+void TransportBar::resized()
+{
+    auto r = getLocalBounds().reduced (6, 4);
+    dividers.clear();
+
+    auto place = [&r] (juce::Component& c, int w)
+    {
+        c.setBounds (r.removeFromLeft (w));
+        r.removeFromLeft (4);
+    };
+
+    auto divider = [this, &r]
+    {
+        r.removeFromLeft (4);
+        dividers.add (r.getX());
+        r.removeFromLeft (10);
+    };
+
+    place (playButton, 64);
+    place (stopButton, 64);
+    place (recordButton, 64);
+    divider();
+
+    place (timeLabel, 130);
+    divider();
+
+    place (tempoSlider, 150);
+    place (countInBox, 130);
+    place (clickButton, 70);
+    divider();
+
+    place (loopButton, 64);
+    place (snapButton, 64);
+    divider();
+
+    place (monitorButton, 90);
+    place (writeButton, 100);
 }

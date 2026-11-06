@@ -10,28 +10,28 @@ public:
     explicit TransportBar (EditSession& sessionToUse);
     ~TransportBar() override;
 
+    void paint (juce::Graphics&) override;
     void resized() override;
+
+    // Called from the File menu
+    void importBeat();
+    void showExportDialog();
 
 private:
     void timerCallback() override;
-    void importBeat();
-    void showExportDialog();
     static juce::String formatTime (double seconds);
 
     EditSession& session;
 
-    // Row 1
-    juce::TextButton playButton { "Play" }, stopButton { "Stop" }, recordButton { "Record" };
+    juce::TextButton playButton { "Play" }, stopButton { "Stop" }, recordButton { "Rec" };
     juce::Label timeLabel;
-    juce::ToggleButton monitorButton { "Monitor" }, clickButton { "Click" };
-    juce::ComboBox countInBox;
     juce::Slider tempoSlider;
-
-    // Row 2
-    juce::TextButton undoButton { "Undo" }, redoButton { "Redo" }, importButton { "Import Beat" }, exportButton { "Export" };
-    juce::ToggleButton loopButton { "Loop" }, snapButton { "Snap" }, writeButton { "Auto Write" };
+    juce::ComboBox countInBox;
+    juce::ToggleButton clickButton { "Click" }, loopButton { "Loop" }, snapButton { "Snap" },
+                       monitorButton { "Monitor" }, writeButton { "Auto Write" };
 
     std::unique_ptr<juce::FileChooser> chooser;
+    juce::Array<int> dividers;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TransportBar)
 };
