@@ -64,6 +64,22 @@ public:
     // Lets the UI open a piano roll (MainComponent sets this)
     std::function<void (tracktion::MidiClip&)> onShowPianoRoll;
 
+    // Automation
+    struct AutomationTarget
+    {
+        juce::String id, name;
+        tracktion::AutomatableParameter* param = nullptr;
+    };
+
+    std::vector<AutomationTarget> getAutomationTargets (int trackIndex);
+    tracktion::AutomatableParameter* getAutomationParam (int trackIndex);
+    juce::String getAutomationParamId (int trackIndex);
+    void setAutomationParamId (int trackIndex, const juce::String& id);
+    bool isAutomationShown (int trackIndex);
+    void setAutomationShown (int trackIndex, bool shouldShow);
+    void setAutomationWrite (bool shouldWrite);
+    bool isAutomationWrite();
+
     // Tempo, click, count-in
     void setBpm (double bpm);
     double getBpm() const;
