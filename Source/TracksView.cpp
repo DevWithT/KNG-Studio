@@ -18,6 +18,16 @@ TracksView::TracksView (EditSession& sessionToUse)
     };
 
     rebuild();
+    addAndMakeVisible (addDrumTrackButton);
+    addDrumTrackButton.onClick = [this]
+    {
+        session.addDrumTrack();
+
+        if (session.onShowDrumRack)
+            session.onShowDrumRack (session.getNumTracks() - 1);
+
+        rebuild();
+    };
     startTimerHz (5);
 }
 
@@ -129,4 +139,5 @@ void TracksView::resized()
 
     addTrackButton.setBounds (0, y + 4, 140, 28);
     addMidiTrackButton.setBounds (146, y + 4, 170, 28);
+    addDrumTrackButton.setBounds (322, y + 4, 170, 28);
 }

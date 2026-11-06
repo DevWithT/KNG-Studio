@@ -18,6 +18,9 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
     projectLabel.setJustificationType (juce::Justification::centredLeft);
     deviceLabel.setJustificationType (juce::Justification::centredRight);
 
+    kitBrowser = std::make_unique<KitBrowser> (engine.getDeviceManager().deviceManager);
+    addAndMakeVisible (*kitBrowser);
+
     tracksViewport.setScrollBarsShown (true, false);
     addAndMakeVisible (tracksViewport);
 
@@ -81,6 +84,7 @@ void MainComponent::closeProject()
     pianoRollWindows.clear();
     mixerWindow = nullptr;
     compWindows.clear();
+    drumRackWindows.clear();
     tracksViewport.setViewedComponent (nullptr, false);
     tracksView = nullptr;
     masterStrip = nullptr;
@@ -99,6 +103,7 @@ void MainComponent::loadProject (const juce::File& editFile)
     session->onShowPianoRoll = [this] (tracktion::MidiClip& clip) { showPianoRoll (clip); };
     session->onShowComp      = [this] (tracktion::WaveAudioClip& clip) { showComp (clip); };
     session->onShowClipProps = [this] (tracktion::AudioClipBase& clip) { showClipProps (clip); };
+    session->onShowDrumRack  = [this] (int trackIndex) { showDrumRack (trackIndex); };
 
     transportBar = std::make_unique<TransportBar> (*session);
     addAndMakeVisible (*transportBar);
@@ -239,6 +244,7 @@ juce::PopupMenu MainComponent::getMenuForIndex (int menuIndex, const juce::Strin
         case 2: // Track
             add (cmdAddAudioTrack, "Add Audio Track", {}, hasSession);
             add (cmdAddMidiTrack, "Add MIDI Track", {}, hasSession);
+            add (cmdAddDrumTrack, "Add Drum Track", {}, hasSession);
             break;
 
         case 3: // Transport
@@ -259,6 +265,7 @@ juce::PopupMenu MainComponent::getMenuForIndex (int menuIndex, const juce::Strin
 
         case 4: // View
             add (cmdMixer, "Mixer", "M", hasSession, mixerWindow != nullptr && mixerWindow->isVisible());
+            add (cmdBrowser, "Browser", "B", true, browserVisible);
             m.addSeparator();
             add (cmdZoomIn, "Zoom In", "Ctrl+=", hasSession);
             add (cmdZoomOut, "Zoom Out", "Ctrl+-", hasSession);
@@ -286,6 +293,7 @@ void MainComponent::menuItemSelected (int id, int)
         case cmdAudioSettings: showAudioSettings(); return;
         case cmdScanPlugins:   showPluginScanner(); return;
         case cmdShortcuts:     showShortcuts();     return;
+        case cmdBrowser:       browserVisible = ! browserVisible; resized(); return;
         case cmdExit:          juce::JUCEApplication::getInstance()->systemRequestedQuit(); return;
         default: break;
     }
@@ -313,6 +321,7 @@ void MainComponent::menuItemSelected (int id, int)
 
         case cmdAddAudioTrack: session->addTrack(); break;
         case cmdAddMidiTrack:  session->addMidiTrack(); break;
+        case cmdAddDrumTrack:  addDrumTrack(); break;
 
         case cmdPlayStop:      togglePlayStop(); break;
         case cmdRecord:        session->record(); break;
@@ -538,6 +547,18 @@ void MainComponent::resized()
 
     area.removeFromTop (8);
 
+    // Browser down the left side
+    if (kitBrowser != nullptr)
+    {
+        kitBrowser->setVisible (browserVisible);
+
+        if (browserVisible)
+        {
+            kitBrowser->setBounds (area.removeFromLeft (230));
+            area.removeFromLeft (8);
+        }
+    }
+
     // Master strip along the bottom
     if (masterStrip != nullptr)
         masterStrip->setBounds (area.removeFromBottom (40));
@@ -614,6 +635,14 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
         }
 
         return false;
+    }
+
+    // B shows and hides the browser
+    if (code == 'B' || code == 'b')
+    {
+        browserVisible = ! browserVisible;
+        resized();
+        return true;
     }
 
     // M opens and closes the mixer
@@ -723,4 +752,37 @@ void MainComponent::restoreBackup()
                               backup.copyFileTo (projectFile);
                               loadProject (projectFile);
                           });
+}
+
+void MainComponent::addDrumTrack()
+{
+    if (session == nullptr)
+        return;
+
+    session->addDrumTrack();
+    showDrumRack (session->getNumTracks() - 1);
+}
+
+void MainComponent::showDrumRack (int trackIndex)
+{
+    if (session == nullptr)
+        return;
+
+    auto* track = session->getTrack (trackIndex);
+
+    if (track == nullptr)
+        return;
+
+    // Reuse the window if this track's rack is already open
+    for (auto* w : drumRackWindows)
+    {
+        if (w->getTrack() == track)
+        {
+            w->setVisible (true);
+            w->toFront (true);
+            return;
+        }
+    }
+
+    drumRackWindows.add (new DrumRackWindow (*session, *track));
 }

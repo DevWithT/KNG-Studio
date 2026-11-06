@@ -119,6 +119,25 @@ public:
     juce::File getBackupsFolder() const;
     void makeBackup();
 
+    // Drums
+    static juce::File getKitsFolder();
+    static int getPadNote (int pad)             { return 36 + pad; }
+    void addDrumTrack();
+    bool isDrumTrack (int trackIndex);
+    tracktion::SamplerPlugin* getDrumSampler (int trackIndex);
+    juce::String getPadName (int trackIndex, int pad);
+    void setPadName (int trackIndex, int pad, const juce::String& name);
+    bool setPadSample (int trackIndex, int pad, const juce::File& file);
+    void clearPad (int trackIndex, int pad);
+    float getPadGain (int trackIndex, int pad);
+    float getPadPan (int trackIndex, int pad);
+    void setPadGainAndPan (int trackIndex, int pad, float gainDb, float pan);
+    int getPadPitch (int trackIndex, int pad);
+    void setPadPitch (int trackIndex, int pad, int semitones);
+    int loadKitFolder (int trackIndex, const juce::File& folder);
+    void playPad (int trackIndex, int pad, int velocity);
+    std::function<void (int)> onShowDrumRack;
+
     // Tempo, click, count-in
     void setBpm (double bpm);
     double getBpm() const;

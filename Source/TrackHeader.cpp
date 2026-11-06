@@ -68,7 +68,14 @@ TrackHeader::TrackHeader (EditSession& sessionToUse, int trackIndexToUse)
     };
     addAndMakeVisible (instrumentButton);
     instrumentButton.setVisible (isMidi);
-    instrumentButton.onClick = [this] { showInstrumentMenu(); };
+    instrumentButton.onClick = [this]
+    {
+        // Drum tracks open their Drum Rack, other MIDI tracks pick an instrument
+        if (session.isDrumTrack (trackIndex) && session.onShowDrumRack)
+            session.onShowDrumRack (trackIndex);
+        else
+            showInstrumentMenu();
+    };
 
     addAndMakeVisible (inputBox);
     inputBox.setTextWhenNoChoicesAvailable (isMidi ? "No MIDI inputs" : "No inputs");

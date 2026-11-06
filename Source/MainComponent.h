@@ -15,9 +15,12 @@
 #include "CompView.h"
 #include "MarkerBar.h"
 #include "ClipProps.h"
+#include "KitBrowser.h"
+#include "DrumRack.h"
 
 class MainComponent : public juce::Component,
                       public juce::MenuBarModel,
+                      public juce::DragAndDropContainer,
                       private juce::ChangeListener
 {
 public:
@@ -40,10 +43,10 @@ private:
         cmdNew = 1, cmdOpen, cmdSave, cmdImport, cmdExport, cmdAudioSettings, cmdScanPlugins, cmdLatency, cmdExit,
         cmdBackupNow, cmdRestoreBackup,
         cmdUndo = 100, cmdRedo, cmdCopy, cmdPaste, cmdDuplicate, cmdSplit, cmdDelete, cmdSelectAll,
-        cmdAddAudioTrack = 200, cmdAddMidiTrack,
+        cmdAddAudioTrack = 200, cmdAddMidiTrack, cmdAddDrumTrack,
         cmdPlayStop = 300, cmdRecord, cmdGoToStart, cmdLoop, cmdClick, cmdSnap, cmdMonitor, cmdAutoWrite, cmdPunch,
         cmdAddMarker, cmdPrevMarker, cmdNextMarker,
-        cmdMixer = 400, cmdZoomIn, cmdZoomOut, cmdZoomFit,
+        cmdMixer = 400, cmdZoomIn, cmdZoomOut, cmdZoomFit, cmdBrowser,
         cmdShortcuts = 500
     };
 
@@ -57,6 +60,8 @@ private:
     void showComp (tracktion::WaveAudioClip& clip);
     void showClipProps (tracktion::AudioClipBase& clip);
     void restoreBackup();
+    void showDrumRack (int trackIndex);
+    void addDrumTrack();
     void showShortcuts();
     void toggleMixer();
     void togglePlayStop();
@@ -94,6 +99,9 @@ private:
     juce::OwnedArray<PianoRollWindow> pianoRollWindows;
     std::unique_ptr<MixerWindow> mixerWindow;
     juce::OwnedArray<CompWindow> compWindows;
+    juce::OwnedArray<DrumRackWindow> drumRackWindows;
+    std::unique_ptr<KitBrowser> kitBrowser;
+    bool browserVisible = true;
     std::unique_ptr<juce::FileChooser> chooser;
 
     static constexpr int statusHeight = 22;

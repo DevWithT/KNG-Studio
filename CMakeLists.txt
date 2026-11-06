@@ -49,7 +49,10 @@ target_sources(KNGStudio PRIVATE
     Source/EditSessionClips.cpp
     Source/MarkerBar.cpp
     Source/ClipProps.cpp
-    Source/EditSessionBackup.cpp)
+    Source/EditSessionBackup.cpp
+    Source/EditSessionDrums.cpp
+    Source/KitBrowser.cpp
+    Source/DrumRack.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0
