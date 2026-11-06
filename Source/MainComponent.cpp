@@ -5,23 +5,18 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
 {
     setWantsKeyboardFocus (true);
 
-    for (auto* b : { &settingsButton, &scanButton, &latencyButton, &newButton, &openButton, &saveButton, &mixerButton })
-        addAndMakeVisible (b);
+    menuBar.setModel (this);
+    addAndMakeVisible (menuBar);
 
-    settingsButton.onClick = [this] { showAudioSettings(); };
-    scanButton.onClick     = [this] { showPluginScanner(); };
-    latencyButton.onClick  = [this] { showLatencyDialog(); };
-    newButton.onClick      = [this] { newProject(); };
-    openButton.onClick     = [this] { openProject(); };
-    saveButton.onClick     = [this] { saveProject(); };
-    mixerButton.onClick    = [this] { toggleMixer(); };
+    for (auto* l : { &projectLabel, &deviceLabel })
+    {
+        addAndMakeVisible (l);
+        l->setFont (juce::Font (juce::FontOptions (12.0f)));
+        l->setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.6f));
+    }
 
-    addAndMakeVisible (projectLabel);
-    projectLabel.setFont (juce::Font (juce::FontOptions (16.0f)));
     projectLabel.setJustificationType (juce::Justification::centredLeft);
-
-    addAndMakeVisible (deviceLabel);
-    deviceLabel.setJustificationType (juce::Justification::centredLeft);
+    deviceLabel.setJustificationType (juce::Justification::centredRight);
 
     tracksViewport.setScrollBarsShown (true, false);
     addAndMakeVisible (tracksViewport);
@@ -36,6 +31,7 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
 
 MainComponent::~MainComponent()
 {
+    menuBar.setModel (nullptr);
     engine.getDeviceManager().deviceManager.removeChangeListener (this);
     closeProject();
 }
@@ -98,14 +94,10 @@ void MainComponent::loadProject (const juce::File& editFile)
     closeProject();
 
     session = std::make_unique<EditSession> (engine, editFile);
-    session->onShowFxChain = [this] (tracktion::PluginList& list, const juce::String& title)
-    {
-        showFxChain (list, title);
-    };
-
+    session->onShowFxChain   = [this] (tracktion::PluginList& list, const juce::String& title) { showFxChain (list, title); };
     session->onShowPianoRoll = [this] (tracktion::MidiClip& clip) { showPianoRoll (clip); };
+    session->onShowComp      = [this] (tracktion::WaveAudioClip& clip) { showComp (clip); };
 
-    session->onShowComp = [this] (tracktion::WaveAudioClip& clip) { showComp (clip); };
     transportBar = std::make_unique<TransportBar> (*session);
     addAndMakeVisible (*transportBar);
 
@@ -118,7 +110,7 @@ void MainComponent::loadProject (const juce::File& editFile)
     tracksView = std::make_unique<TracksView> (*session);
     tracksViewport.setViewedComponent (tracksView.get(), false);
 
-    projectLabel.setText (session->getProjectName(), juce::dontSendNotification);
+    projectLabel.setText ("Project: " + session->getProjectName(), juce::dontSendNotification);
     setLastProjectFile (editFile);
 
     resized();
@@ -178,12 +170,195 @@ void MainComponent::saveProject()
 }
 
 //==============================================================================
+juce::StringArray MainComponent::getMenuBarNames()
+{
+    return { "File", "Edit", "Track", "Transport", "View", "Help" };
+}
+
+juce::PopupMenu MainComponent::getMenuForIndex (int menuIndex, const juce::String&)
+{
+    juce::PopupMenu m;
+
+    auto add = [&m] (int id, const juce::String& text, const juce::String& keys = {},
+                     bool enabled = true, bool ticked = false)
+    {
+        juce::PopupMenu::Item item (text);
+        item.itemID = id;
+        item.shortcutKeyDescription = keys;
+        item.isEnabled = enabled;
+        item.isTicked = ticked;
+        m.addItem (std::move (item));
+    };
+
+    const bool hasSession = session != nullptr;
+    const bool hasClip = hasSession && session->getSelectedClip() != nullptr;
+
+    switch (menuIndex)
+    {
+        case 0: // File
+            add (cmdNew, "New Project...", "Ctrl+N");
+            add (cmdOpen, "Open Project...", "Ctrl+O");
+            add (cmdSave, "Save", "Ctrl+S", hasSession);
+            m.addSeparator();
+            add (cmdImport, "Import Audio...", {}, hasSession);
+            add (cmdExport, "Export...", {}, hasSession);
+            m.addSeparator();
+            add (cmdAudioSettings, "Audio Settings...");
+            add (cmdScanPlugins, "Scan Plugins...");
+            add (cmdLatency, "Latency Check...", {}, hasSession);
+            m.addSeparator();
+            add (cmdExit, "Exit");
+            break;
+
+        case 1: // Edit
+            add (cmdUndo, "Undo", "Ctrl+Z", hasSession);
+            add (cmdRedo, "Redo", "Ctrl+Y", hasSession);
+            m.addSeparator();
+            add (cmdCopy, "Copy Clip", "Ctrl+C", hasClip);
+            add (cmdPaste, "Paste Clip", "Ctrl+V", hasSession);
+            add (cmdDuplicate, "Duplicate Clip", "Ctrl+D", hasClip);
+            m.addSeparator();
+            add (cmdSplit, "Split at Playhead", "S", hasClip);
+            add (cmdDelete, "Delete Clip", "Del", hasClip);
+            break;
+
+        case 2: // Track
+            add (cmdAddAudioTrack, "Add Audio Track", {}, hasSession);
+            add (cmdAddMidiTrack, "Add MIDI Track", {}, hasSession);
+            break;
+
+        case 3: // Transport
+            add (cmdPlayStop, "Play / Stop", "Space", hasSession);
+            add (cmdRecord, "Record", {}, hasSession);
+            add (cmdGoToStart, "Go to Start", "Home", hasSession);
+            m.addSeparator();
+            add (cmdLoop, "Loop", {}, hasSession, hasSession && session->isLooping());
+            add (cmdClick, "Click", {}, hasSession, hasSession && session->isClickEnabled());
+            add (cmdSnap, "Snap", {}, hasSession, hasSession && session->isSnapEnabled());
+            add (cmdMonitor, "Monitor", {}, hasSession, hasSession && session->isMonitoring());
+            add (cmdAutoWrite, "Auto Write", {}, hasSession, hasSession && session->isAutomationWrite());
+            break;
+
+        case 4: // View
+            add (cmdMixer, "Mixer", "M", hasSession, mixerWindow != nullptr && mixerWindow->isVisible());
+            m.addSeparator();
+            add (cmdZoomIn, "Zoom In", "Ctrl+=", hasSession);
+            add (cmdZoomOut, "Zoom Out", "Ctrl+-", hasSession);
+            add (cmdZoomFit, "Zoom to Fit", {}, hasSession);
+            break;
+
+        case 5: // Help
+            add (cmdShortcuts, "Keyboard Shortcuts");
+            break;
+
+        default:
+            break;
+    }
+
+    return m;
+}
+
+void MainComponent::menuItemSelected (int id, int)
+{
+    // These work with or without a project open
+    switch (id)
+    {
+        case cmdNew:           newProject();        return;
+        case cmdOpen:          openProject();       return;
+        case cmdAudioSettings: showAudioSettings(); return;
+        case cmdScanPlugins:   showPluginScanner(); return;
+        case cmdShortcuts:     showShortcuts();     return;
+        case cmdExit:          juce::JUCEApplication::getInstance()->systemRequestedQuit(); return;
+        default: break;
+    }
+
+    if (session == nullptr)
+        return;
+
+    switch (id)
+    {
+        case cmdSave:          saveProject(); break;
+        case cmdImport:        if (transportBar != nullptr) transportBar->importBeat(); break;
+        case cmdExport:        if (transportBar != nullptr) transportBar->showExportDialog(); break;
+        case cmdLatency:       showLatencyDialog(); break;
+
+        case cmdUndo:          session->undo(); break;
+        case cmdRedo:          session->redo(); break;
+        case cmdCopy:          session->copySelectedClip(); break;
+        case cmdPaste:         session->pasteClip(); break;
+        case cmdDuplicate:     session->duplicateSelectedClip(); break;
+        case cmdSplit:         session->splitSelectedClipAtPlayhead(); break;
+        case cmdDelete:        session->deleteSelectedClip(); break;
+
+        case cmdAddAudioTrack: session->addTrack(); break;
+        case cmdAddMidiTrack:  session->addMidiTrack(); break;
+
+        case cmdPlayStop:      togglePlayStop(); break;
+        case cmdRecord:        session->record(); break;
+        case cmdGoToStart:     session->getTransport().setPosition (tracktion::TimePosition()); break;
+        case cmdLoop:          session->setLooping (! session->isLooping()); break;
+        case cmdClick:         session->setClickEnabled (! session->isClickEnabled()); break;
+        case cmdSnap:          session->setSnapEnabled (! session->isSnapEnabled()); break;
+        case cmdMonitor:       session->setMonitoring (! session->isMonitoring()); break;
+        case cmdAutoWrite:     session->setAutomationWrite (! session->isAutomationWrite()); break;
+
+        case cmdMixer:         toggleMixer(); break;
+        case cmdZoomIn:        session->zoomAround (session->getViewStart() + session->getViewLength() * 0.5, 0.8); break;
+        case cmdZoomOut:       session->zoomAround (session->getViewStart() + session->getViewLength() * 0.5, 1.25); break;
+        case cmdZoomFit:       zoomToFit(); break;
+
+        default: break;
+    }
+}
+
+//==============================================================================
+void MainComponent::togglePlayStop()
+{
+    if (session == nullptr)
+        return;
+
+    if (session->getTransport().isPlaying())
+        session->stop();
+    else
+        session->play();
+}
+
+void MainComponent::zoomToFit()
+{
+    if (session == nullptr)
+        return;
+
+    const double length = juce::jmax (10.0, session->getEdit().getLength().inSeconds());
+    session->setView (0.0, length * 1.05);
+}
+
+void MainComponent::showShortcuts()
+{
+    juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::InfoIcon, "Keyboard Shortcuts",
+        "Space\tPlay / Stop\n"
+        "Home\tGo to start\n"
+        "M\tMixer\n"
+        "S\tSplit selected clip at playhead\n"
+        "Del\tDelete selected clip\n"
+        "Ctrl+Z / Ctrl+Y\tUndo / Redo\n"
+        "Ctrl+C / Ctrl+V\tCopy / Paste clip\n"
+        "Ctrl+D\tDuplicate clip\n"
+        "Ctrl+N / O / S\tNew / Open / Save\n"
+        "Ctrl+Scroll\tZoom\n"
+        "Shift+Scroll\tScroll sideways\n"
+        "Ctrl+= / Ctrl+-\tZoom in / out\n"
+        "Alt+Drag\tMove without snapping\n\n"
+        "Piano roll:\n"
+        "Q\tQuantize\n"
+        "Ctrl+A\tSelect all notes");
+}
+
+//==============================================================================
 void MainComponent::showFxChain (tracktion::PluginList& list, const juce::String& title)
 {
     if (session == nullptr)
         return;
 
-    // Reuse the window if this chain is already open
     for (auto* w : fxWindows)
     {
         if (w->getList() == &list)
@@ -195,6 +370,59 @@ void MainComponent::showFxChain (tracktion::PluginList& list, const juce::String
     }
 
     fxWindows.add (new FxChainWindow (title, *session, list));
+}
+
+void MainComponent::showPianoRoll (tracktion::MidiClip& clip)
+{
+    if (session == nullptr)
+        return;
+
+    for (auto* w : pianoRollWindows)
+    {
+        if (w->getClip() == &clip)
+        {
+            w->setVisible (true);
+            w->toFront (true);
+            return;
+        }
+    }
+
+    pianoRollWindows.add (new PianoRollWindow (*session, clip));
+}
+
+void MainComponent::showComp (tracktion::WaveAudioClip& clip)
+{
+    if (session == nullptr)
+        return;
+
+    for (auto* w : compWindows)
+    {
+        if (w->getClip() == &clip)
+        {
+            w->setVisible (true);
+            w->toFront (true);
+            return;
+        }
+    }
+
+    compWindows.add (new CompWindow (*session, clip));
+}
+
+void MainComponent::toggleMixer()
+{
+    if (session == nullptr)
+        return;
+
+    if (mixerWindow == nullptr)
+    {
+        mixerWindow = std::make_unique<MixerWindow> (*session);
+        return;
+    }
+
+    mixerWindow->setVisible (! mixerWindow->isVisible());
+
+    if (mixerWindow->isVisible())
+        mixerWindow->toFront (true);
 }
 
 void MainComponent::showPluginScanner()
@@ -211,48 +439,79 @@ void MainComponent::showPluginScanner()
     juce::DialogWindow::LaunchOptions options;
     options.content.setOwned (comp);
     options.dialogTitle = "Plugins";
-    options.dialogBackgroundColour = getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId);
+    options.dialogBackgroundColour = juce::Colour (0xff2b2f33);
     options.escapeKeyTriggersCloseButton = true;
     options.useNativeTitleBar = true;
     options.resizable = true;
     options.launchAsync();
 }
 
+void MainComponent::showLatencyDialog()
+{
+    if (session == nullptr)
+        return;
+
+    auto* dialog = new LatencyDialog (*session, engine.getDeviceManager().deviceManager);
+
+    juce::DialogWindow::LaunchOptions options;
+    options.content.setOwned (dialog);
+    options.dialogTitle = "Latency Check";
+    options.dialogBackgroundColour = juce::Colour (0xff2b2f33);
+    options.escapeKeyTriggersCloseButton = true;
+    options.useNativeTitleBar = true;
+    options.resizable = false;
+    options.launchAsync();
+}
+
+void MainComponent::showAudioSettings()
+{
+    auto* selector = new juce::AudioDeviceSelectorComponent (
+        engine.getDeviceManager().deviceManager,
+        0, 256,   // input channels min/max
+        0, 256,   // output channels min/max
+        true,     // show MIDI inputs
+        false,    // show MIDI output selector
+        false,    // show channels as stereo pairs
+        false);   // hide advanced options behind a button
+
+    selector->setSize (500, 450);
+
+    juce::DialogWindow::LaunchOptions options;
+    options.content.setOwned (selector);
+    options.dialogTitle = "Audio Settings";
+    options.dialogBackgroundColour = juce::Colour (0xff2b2f33);
+    options.escapeKeyTriggersCloseButton = true;
+    options.useNativeTitleBar = true;
+    options.resizable = false;
+    options.launchAsync();
+}
+
 //==============================================================================
 void MainComponent::paint (juce::Graphics& g)
 {
-    g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
+    g.fillAll (juce::Colour (0xff1e2124));
+
+    // Status bar
+    g.setColour (juce::Colour (0xff17191b));
+    g.fillRect (getLocalBounds().removeFromBottom (statusHeight));
 }
 
 void MainComponent::resized()
 {
-    auto area = getLocalBounds().reduced (10);
-    auto topBar = area.removeFromTop (30);
+    auto area = getLocalBounds();
 
-    settingsButton.setBounds (topBar.removeFromLeft (130));
-    topBar.removeFromLeft (6);
-    scanButton.setBounds (topBar.removeFromLeft (110));
-    topBar.removeFromLeft (6);
-    latencyButton.setBounds (topBar.removeFromLeft (110));
-    topBar.removeFromLeft (10);
-    newButton.setBounds (topBar.removeFromLeft (60));
-    topBar.removeFromLeft (4);
-    openButton.setBounds (topBar.removeFromLeft (60));
-    topBar.removeFromLeft (4);
-    saveButton.setBounds (topBar.removeFromLeft (60));
-    topBar.removeFromLeft (4);
-    mixerButton.setBounds (topBar.removeFromLeft (70));
-    topBar.removeFromLeft (12);
-    projectLabel.setBounds (topBar.removeFromLeft (200));
-    topBar.removeFromLeft (10);
-    deviceLabel.setBounds (topBar);
+    menuBar.setBounds (area.removeFromTop (24));
 
-    area.removeFromTop (10);
+    auto status = area.removeFromBottom (statusHeight);
+    projectLabel.setBounds (status.removeFromLeft (320).reduced (8, 0));
+    deviceLabel.setBounds (status.reduced (8, 0));
+
+    area = area.reduced (10, 8);
 
     if (transportBar != nullptr)
-        transportBar->setBounds (area.removeFromTop (76));
+        transportBar->setBounds (area.removeFromTop (40));
 
-    area.removeFromTop (10);
+    area.removeFromTop (8);
 
     // Master strip along the bottom
     if (masterStrip != nullptr)
@@ -302,30 +561,46 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
             return true;
         }
 
-        if (code == 'Y' || code == 'y')  { session->redo(); return true; }
-        if (code == 'S' || code == 's')  { saveProject();   return true; }
-        if (code == 'O' || code == 'o')  { openProject();   return true; }
-        if (code == 'N' || code == 'n')  { newProject();    return true; }
+        if (code == 'Y' || code == 'y')  { session->redo();                  return true; }
+        if (code == 'S' || code == 's')  { saveProject();                    return true; }
+        if (code == 'O' || code == 'o')  { openProject();                    return true; }
+        if (code == 'N' || code == 'n')  { newProject();                     return true; }
         if (code == 'D' || code == 'd')  { session->duplicateSelectedClip(); return true; }
         if (code == 'C' || code == 'c')  { session->copySelectedClip();      return true; }
         if (code == 'V' || code == 'v')  { session->pasteClip();             return true; }
+
+        if (code == '=' || code == '+')
+        {
+            session->zoomAround (session->getViewStart() + session->getViewLength() * 0.5, 0.8);
+            return true;
+        }
+
+        if (code == '-')
+        {
+            session->zoomAround (session->getViewStart() + session->getViewLength() * 0.5, 1.25);
+            return true;
+        }
+
+        return false;
     }
 
     // M opens and closes the mixer
-    if (! mods.isAnyModifierKeyDown() && (code == 'M' || code == 'm'))
+    if (code == 'M' || code == 'm')
     {
         toggleMixer();
+        return true;
+    }
+
+    if (code == juce::KeyPress::homeKey)
+    {
+        session->getTransport().setPosition (tracktion::TimePosition());
         return true;
     }
 
     // Space toggles play/stop
     if (code == juce::KeyPress::spaceKey)
     {
-        if (session->getTransport().isPlaying())
-            session->stop();
-        else
-            session->play();
-
+        togglePlayStop();
         return true;
     }
 
@@ -360,99 +635,4 @@ void MainComponent::updateDeviceLabel()
     {
         deviceLabel.setText ("No audio device", juce::dontSendNotification);
     }
-}
-
-void MainComponent::showAudioSettings()
-{
-    auto* selector = new juce::AudioDeviceSelectorComponent (
-        engine.getDeviceManager().deviceManager,
-        0, 256,   // input channels min/max
-        0, 256,   // output channels min/max
-        true,     // show MIDI inputs
-        false,    // show MIDI output selector
-        false,    // show channels as stereo pairs
-        false);   // hide advanced options behind a button
-
-    selector->setSize (500, 450);
-
-    juce::DialogWindow::LaunchOptions options;
-    options.content.setOwned (selector);
-    options.dialogTitle = "Audio Settings";
-    options.dialogBackgroundColour = getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId);
-    options.escapeKeyTriggersCloseButton = true;
-    options.useNativeTitleBar = true;
-    options.resizable = false;
-    options.launchAsync();
-}
-
-void MainComponent::showLatencyDialog()
-{
-    if (session == nullptr)
-        return;
-
-    auto* dialog = new LatencyDialog (*session, engine.getDeviceManager().deviceManager);
-
-    juce::DialogWindow::LaunchOptions options;
-    options.content.setOwned (dialog);
-    options.dialogTitle = "Latency Check";
-    options.dialogBackgroundColour = juce::Colour (0xff2b2f33);
-    options.escapeKeyTriggersCloseButton = true;
-    options.useNativeTitleBar = true;
-    options.resizable = false;
-    options.launchAsync();
-}
-
-void MainComponent::showPianoRoll (tracktion::MidiClip& clip)
-{
-    if (session == nullptr)
-        return;
-
-    // Reuse the window if this clip is already open
-    for (auto* w : pianoRollWindows)
-    {
-        if (w->getClip() == &clip)
-        {
-            w->setVisible (true);
-            w->toFront (true);
-            return;
-        }
-    }
-
-    pianoRollWindows.add (new PianoRollWindow (*session, clip));
-}
-
-void MainComponent::toggleMixer()
-{
-    if (session == nullptr)
-        return;
-
-    if (mixerWindow == nullptr)
-    {
-        mixerWindow = std::make_unique<MixerWindow> (*session);
-        return;
-    }
-
-    mixerWindow->setVisible (! mixerWindow->isVisible());
-
-    if (mixerWindow->isVisible())
-        mixerWindow->toFront (true);
-}
-
-void MainComponent::showComp (tracktion::WaveAudioClip& clip)
-{
-    if (session == nullptr)
-        return;
-
-    // Reuse the window if this clip is already open
-    for (auto* w : compWindows)
-    {
-        if (w->getClip() == &clip)
-        {
-            w->setVisible (true);
-            w->toFront (true);
-            return;
-        }
-    }
-
-    compWindows.add (new CompWindow (*session, clip));
 }

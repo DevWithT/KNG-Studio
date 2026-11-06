@@ -15,6 +15,7 @@
 #include "CompView.h"
 
 class MainComponent : public juce::Component,
+                      public juce::MenuBarModel,
                       private juce::ChangeListener
 {
 public:
@@ -26,15 +27,34 @@ public:
     void mouseDown (const juce::MouseEvent&) override;
     bool keyPressed (const juce::KeyPress&) override;
 
+    // Menu bar
+    juce::StringArray getMenuBarNames() override;
+    juce::PopupMenu getMenuForIndex (int menuIndex, const juce::String& menuName) override;
+    void menuItemSelected (int menuItemID, int topLevelMenuIndex) override;
+
 private:
+    enum CommandIDs
+    {
+        cmdNew = 1, cmdOpen, cmdSave, cmdImport, cmdExport, cmdAudioSettings, cmdScanPlugins, cmdLatency, cmdExit,
+        cmdUndo = 100, cmdRedo, cmdCopy, cmdPaste, cmdDuplicate, cmdSplit, cmdDelete,
+        cmdAddAudioTrack = 200, cmdAddMidiTrack,
+        cmdPlayStop = 300, cmdRecord, cmdGoToStart, cmdLoop, cmdClick, cmdSnap, cmdMonitor, cmdAutoWrite,
+        cmdMixer = 400, cmdZoomIn, cmdZoomOut, cmdZoomFit,
+        cmdShortcuts = 500
+    };
+
     void changeListenerCallback (juce::ChangeBroadcaster*) override;
+
     void showAudioSettings();
     void showPluginScanner();
     void showLatencyDialog();
-    void showPianoRoll (tracktion::MidiClip& clip);
-    void toggleMixer();
-    void showComp (tracktion::WaveAudioClip& clip);
     void showFxChain (tracktion::PluginList& list, const juce::String& title);
+    void showPianoRoll (tracktion::MidiClip& clip);
+    void showComp (tracktion::WaveAudioClip& clip);
+    void showShortcuts();
+    void toggleMixer();
+    void togglePlayStop();
+    void zoomToFit();
     void updateDeviceLabel();
 
     // Projects
@@ -52,8 +72,7 @@ private:
 
     tracktion::Engine& engine;
 
-    juce::TextButton settingsButton { "Audio Settings" }, scanButton { "Scan Plugins" }, latencyButton { "Latency Check" };
-    juce::TextButton newButton { "New" }, openButton { "Open" }, saveButton { "Save" }, mixerButton { "Mixer" };
+    juce::MenuBarComponent menuBar;
     juce::Label projectLabel, deviceLabel;
 
     std::unique_ptr<EditSession> session;
@@ -69,6 +88,8 @@ private:
     std::unique_ptr<MixerWindow> mixerWindow;
     juce::OwnedArray<CompWindow> compWindows;
     std::unique_ptr<juce::FileChooser> chooser;
+
+    static constexpr int statusHeight = 22;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

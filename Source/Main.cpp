@@ -1,5 +1,6 @@
 #include "MainComponent.h"
 #include "PluginWindow.h"
+#include "KngLookAndFeel.h"
 
 class KngStudioApplication : public juce::JUCEApplication
 {
