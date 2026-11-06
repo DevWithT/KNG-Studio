@@ -27,7 +27,7 @@ TrackHeader::TrackHeader (EditSession& sessionToUse, int trackIndexToUse)
         }
     };
 
-    for (auto* b : { &armButton, &muteButton, &soloButton, &fxButton })
+    for (auto* b : { &armButton, &muteButton, &soloButton, &fxButton, &autoButton })
     {
         addAndMakeVisible (b);
         b->setClickingTogglesState (false);
@@ -61,6 +61,11 @@ TrackHeader::TrackHeader (EditSession& sessionToUse, int trackIndexToUse)
                 session.onShowFxChain (t->pluginList, t->getName() + " FX");
     };
 
+    autoButton.setColour (juce::TextButton::buttonOnColourId, juce::Colour (0xffe6a23a));
+    autoButton.onClick = [this]
+    {
+        session.setAutomationShown (trackIndex, ! session.isAutomationShown (trackIndex));
+    };
     addAndMakeVisible (instrumentButton);
     instrumentButton.setVisible (isMidi);
     instrumentButton.onClick = [this] { showInstrumentMenu(); };
@@ -208,11 +213,25 @@ void TrackHeader::timerCallback()
     refreshInputList();
 
     armButton.setToggleState (session.isArmed (trackIndex), juce::dontSendNotification);
+    autoButton.setToggleState (session.isAutomationShown (trackIndex), juce::dontSendNotification);
 
     if (auto* t = session.getTrack (trackIndex))
     {
         muteButton.setToggleState (t->isMuted (false), juce::dontSendNotification);
         soloButton.setToggleState (t->isSolo (false), juce::dontSendNotification);
+
+        // Follow automation during playback
+        if (auto* vp = t->getVolumePlugin())
+        {
+            if (! volumeSlider.isMouseButtonDown())
+                volumeSlider.setValue (vp->getVolumeDb(), juce::dontSendNotification);
+
+            if (! panSlider.isMouseButtonDown())
+                panSlider.setValue (vp->getPan(), juce::dontSendNotification);
+        }
+
+        if (! sendSlider.isMouseButtonDown())
+            sendSlider.setValue (session.getSendDb (trackIndex), juce::dontSendNotification);
 
         // Picks up undo/redo of a rename
         if (! nameLabel.isBeingEdited() && nameLabel.getText() != t->getName())
@@ -272,6 +291,8 @@ void TrackHeader::resized()
 
     auto row1 = r.removeFromTop (22);
     fxButton.setBounds (row1.removeFromRight (32));
+    row1.removeFromRight (3);
+    autoButton.setBounds (row1.removeFromRight (24));
     row1.removeFromRight (3);
     soloButton.setBounds (row1.removeFromRight (26));
     row1.removeFromRight (3);

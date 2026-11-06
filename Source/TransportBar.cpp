@@ -8,7 +8,7 @@ TransportBar::TransportBar (EditSession& sessionToUse)
                                                              &timeLabel, &monitorButton, &clickButton,
                                                              &countInBox, &tempoSlider,
                                                              &undoButton, &redoButton, &loopButton,
-                                                             &importButton, &snapButton, &exportButton })
+                                                             &importButton, &snapButton, &exportButton, &writeButton })
         addAndMakeVisible (c);
 
     // Transport
@@ -56,6 +56,9 @@ TransportBar::TransportBar (EditSession& sessionToUse)
 
     snapButton.setToggleState (session.isSnapEnabled(), juce::dontSendNotification);
     snapButton.onClick = [this] { session.setSnapEnabled (snapButton.getToggleState()); };
+
+    writeButton.setToggleState (session.isAutomationWrite(), juce::dontSendNotification);
+    writeButton.onClick = [this] { session.setAutomationWrite (writeButton.getToggleState()); };
 
     startTimerHz (30);
 }
@@ -108,6 +111,7 @@ void TransportBar::resized()
     row2.removeFromLeft (10);
     loopButton.setBounds (row2.removeFromLeft (70).reduced (2));
     snapButton.setBounds (row2.removeFromLeft (70).reduced (2));
+    writeButton.setBounds (row2.removeFromLeft (100).reduced (2));
     row2.removeFromLeft (10);
     importButton.setBounds (row2.removeFromLeft (120).reduced (2));
     row2.removeFromLeft (10);
@@ -130,6 +134,7 @@ void TransportBar::timerCallback()
     if (! countInBox.isPopupActive())
         countInBox.setSelectedId (session.getCountInBars() + 1, juce::dontSendNotification);
 
+    writeButton.setToggleState (session.isAutomationWrite(), juce::dontSendNotification);
     if (! tempoSlider.isMouseButtonDown())
         tempoSlider.setValue (session.getBpm(), juce::dontSendNotification);
 }

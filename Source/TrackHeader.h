@@ -27,7 +27,7 @@ private:
     const bool isMidi;
 
     juce::Label nameLabel, sendLabel;
-    juce::TextButton armButton { "R" }, muteButton { "M" }, soloButton { "S" }, fxButton { "FX" };
+    juce::TextButton armButton { "R" }, muteButton { "M" }, soloButton { "S" }, fxButton { "FX" }, autoButton { "A" };
     juce::TextButton instrumentButton { "No instrument" };
     juce::ComboBox inputBox;
     juce::Slider volumeSlider, panSlider, sendSlider;
