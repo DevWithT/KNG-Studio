@@ -3,7 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "EditSession.h"
 
-/** One instrument in the Rack: controls on the left, its pattern on the right. */
+/** One sound or instrument in the Rack: controls on the left, its pattern on the right. */
 class RackRow : public juce::Component,
                 public juce::DragAndDropTarget,
                 public juce::FileDragAndDropTarget,
@@ -27,13 +27,12 @@ public:
     void mouseUp (const juce::MouseEvent&) override;
     void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails&) override;
 
-    // Drags from the Browser
+    // A sample dropped on a row swaps its sound
     bool isInterestedInDragSource (const SourceDetails&) override;
     void itemDragEnter (const SourceDetails&) override   { hovering = true;  repaint(); }
     void itemDragExit (const SourceDetails&) override    { hovering = false; repaint(); }
     void itemDropped (const SourceDetails&) override;
 
-    // Drags from Windows Explorer
     bool isInterestedInFileDrag (const juce::StringArray&) override;
     void fileDragEnter (const juce::StringArray&, int, int) override   { hovering = true;  repaint(); }
     void fileDragExit (const juce::StringArray&) override              { hovering = false; repaint(); }
@@ -44,25 +43,31 @@ private:
     int getTrackIndex();
     tracktion::AudioTrack* getAudioTrack();
     bool isDrum();
+    bool isChannel();
     bool isExpanded();
     void setExpanded (bool shouldBeOpen);
     juce::Array<int> getVisiblePads();
     int getNumSteps();
+    int getChannelNote();
     tracktion::MidiClip* getClip (bool createIfMissing);
 
     juce::Rectangle<int> getLaneArea() const;
     juce::Rectangle<int> getStepBounds (int subRow, int step);
     bool stepAt (juce::Point<int>, int& pad, int& step);
+    bool hitAt (juce::Point<int>, int& note, int& step);
     int getPlayStep (tracktion::MidiClip* clip);
+    void preview (int note);
 
     void syncControls();
     void openInstrument();
     void showInstrumentMenu();
-    void chooseKit();
-    void dropFile (const juce::File& file, int y);
+    void showRowMenu();
+    void chooseSample();
+    void dropFile (const juce::File& file);
 
     void paintDrumSummary (juce::Graphics&, tracktion::MidiClip*);
     void paintDrumRows (juce::Graphics&, tracktion::MidiClip*);
+    void paintChannelSteps (juce::Graphics&, tracktion::MidiClip*);
     void paintMelodic (juce::Graphics&, tracktion::MidiClip*);
 
     EditSession& session;
@@ -75,7 +80,7 @@ private:
     std::unique_ptr<juce::FileChooser> chooser;
     bool hovering = false;
     bool painting = false, paintOn = true;
-    int lastPad = -1, lastStep = -1;
+    int lastNote = -1, lastStep = -1;
 
     static constexpr int headerWidth  = 300;
     static constexpr int rowHeight    = 36;

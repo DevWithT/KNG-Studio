@@ -200,7 +200,8 @@ void RackRow::syncControls()
     }
 
     auto* inst = session.getInstrument (idx);
-    const auto text = isDrum()                                           ? juce::String (getVisiblePads().isEmpty() ? "Load Kit" : "Kit")
+    const auto text = isChannel()                                        ? juce::String ("Sample")
+                    : isDrum()                                           ? juce::String (getVisiblePads().isEmpty() ? "Load Kit" : "Kit")
                     : dynamic_cast<te::SamplerPlugin*> (inst) != nullptr ? juce::String ("Sampler")
                     : inst != nullptr                                    ? inst->getName()
                                                                          : juce::String ("+ Inst");
@@ -299,7 +300,11 @@ void RackRow::paint (juce::Graphics& g)
 
     auto* clip = getClip (false);
 
-    if (isDrum())
+    if (isChannel())
+    {
+        paintChannelSteps (g, clip);
+    }
+    else if (isDrum())
     {
         paintDrumSummary (g, clip);
 
@@ -503,10 +508,17 @@ void RackRow::mouseDown (const juce::MouseEvent& e)
 
     const auto p = e.getPosition();
     auto lane = getLaneArea();
+    const bool rightButton = e.mods.isRightButtonDown() || e.mods.isPopupMenu();
 
-    // Clicking a pad name plays it
+    // Left side: right-click for the menu, left-click to hear the sound
     if (p.x < lane.getX())
     {
+        if (rightButton && p.y < rowHeight)
+        {
+            showRowMenu();
+            return;
+        }
+
         if (isDrum() && isExpanded() && p.y >= rowHeight)
         {
             auto pads = getVisiblePads();
@@ -515,12 +527,16 @@ void RackRow::mouseDown (const juce::MouseEvent& e)
             if (juce::isPositiveAndBelow (sub, pads.size()))
                 session.playPad (idx, pads[sub], 110);
         }
+        else if (isChannel() && ! rightButton)
+        {
+            preview (getChannelNote());
+        }
 
         return;
     }
 
     // Melodic rows open the piano roll for this pattern
-    if (! isDrum())
+    if (! isDrum() && ! isChannel())
     {
         if (auto* clip = getClip (true))
             if (session.onShowPianoRoll)
@@ -530,7 +546,7 @@ void RackRow::mouseDown (const juce::MouseEvent& e)
     }
 
     // Clicking the summary strip opens a closed drum row
-    if (p.y < rowHeight)
+    if (isDrum() && p.y < rowHeight)
     {
         if (! isExpanded())
             setExpanded (true);
@@ -538,9 +554,9 @@ void RackRow::mouseDown (const juce::MouseEvent& e)
         return;
     }
 
-    int pad = 0, step = 0;
+    int note = 0, step = 0;
 
-    if (! stepAt (p, pad, step))
+    if (! hitAt (p, note, step))
         return;
 
     auto* clip = getClip (true);
@@ -548,18 +564,17 @@ void RackRow::mouseDown (const juce::MouseEvent& e)
     if (clip == nullptr)
         return;
 
-    const bool rightButton = e.mods.isRightButtonDown() || e.mods.isPopupMenu();
-    paintOn = ! rightButton && PatternGrid::findNote (*clip, EditSession::getPadNote (pad), step) == nullptr;
+    paintOn = ! rightButton && PatternGrid::findNote (*clip, note, step) == nullptr;
 
     session.beginEdit();
     painting = true;
-    lastPad = pad;
+    lastNote = note;
     lastStep = step;
 
-    PatternGrid::setStep (*clip, EditSession::getPadNote (pad), step, paintOn, &session.getEdit().getUndoManager());
+    PatternGrid::setStep (*clip, note, step, paintOn, &session.getEdit().getUndoManager());
 
     if (paintOn)
-        session.playPad (idx, pad, 100);
+        preview (note);
 
     repaint();
 }
@@ -569,15 +584,15 @@ void RackRow::mouseDrag (const juce::MouseEvent& e)
     if (! painting)
         return;
 
-    int pad = 0, step = 0;
+    int note = 0, step = 0;
 
-    if (stepAt (e.getPosition(), pad, step) && (pad != lastPad || step != lastStep))
+    if (hitAt (e.getPosition(), note, step) && (note != lastNote || step != lastStep))
     {
-        lastPad = pad;
+        lastNote = note;
         lastStep = step;
 
         if (auto* clip = getClip (false))
-            PatternGrid::setStep (*clip, EditSession::getPadNote (pad), step, paintOn, &session.getEdit().getUndoManager());
+            PatternGrid::setStep (*clip, note, step, paintOn, &session.getEdit().getUndoManager());
 
         repaint();
     }

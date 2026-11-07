@@ -2,13 +2,18 @@
 
 namespace te = tracktion;
 
+static bool isAudioFile (const juce::File& f)
+{
+    return f.hasFileExtension ("wav;aif;aiff;flac;mp3;ogg");
+}
+
+//==============================================================================
 RackView::RackView (EditSession& sessionToUse)
     : session (sessionToUse)
 {
     for (auto* c : std::initializer_list<juce::Component*> { &patternLabel, &patternBox, &barsLabel, &barsBox,
-                                                             &placeButton, &loopButton, &addDrumButton,
-                                                             &addSamplerButton, &addInstrumentButton, &hintLabel,
-                                                             &viewport })
+                                                             &placeButton, &loopButton, &addSampleButton,
+                                                             &addInstrumentButton, &hintLabel, &viewport })
         addAndMakeVisible (c);
 
     patternBox.onChange = [this]
@@ -36,17 +41,20 @@ RackView::RackView (EditSession& sessionToUse)
 
     loopButton.onClick = [this] { session.loopPattern (session.getCurrentPattern()); };
 
-    addDrumButton.onClick       = [this] { session.addDrumTrack(); };
-    addInstrumentButton.onClick = [this] { session.addMidiTrack(); };
-    addSamplerButton.onClick    = [this]
+    addSampleButton.onClick = [this]
     {
-        session.addMidiTrack();
-        session.setBuiltInSampler (session.getNumTracks() - 1);
+        chooser = std::make_unique<juce::FileChooser> ("Add Samples", EditSession::getKitsFolder(),
+                                                       "*.wav;*.aif;*.aiff;*.flac;*.mp3;*.ogg");
+        chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles
+                                  | juce::FileBrowserComponent::canSelectMultipleItems,
+                              [this] (const juce::FileChooser& fc) { addSamples (fc.getResults()); });
     };
+
+    addInstrumentButton.onClick = [this] { session.addMidiTrack(); };
 
     hintLabel.setFont (juce::Font (juce::FontOptions (12.0f)));
     hintLabel.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.5f));
-    hintLabel.setText ("Click steps for drums, click a melodic row for notes. Copies on the timeline stay linked.",
+    hintLabel.setText ("Drag samples in from the Browser. Right-click a row for options. Timeline copies stay linked.",
                        juce::dontSendNotification);
 
     viewport.setViewedComponent (&content, false);
@@ -75,6 +83,14 @@ juce::Array<te::Track*> RackView::getRackTracks()
     return result;
 }
 
+void RackView::addSamples (const juce::Array<juce::File>& files)
+{
+    for (auto& f : files)
+        if (f.existsAsFile() && isAudioFile (f))
+            session.addSampleChannel (f);
+}
+
+//==============================================================================
 void RackView::timerCallback()
 {
     if (getRackTracks() != builtTracks)
@@ -83,7 +99,7 @@ void RackView::timerCallback()
         return;
     }
 
-    // Rows grow when a kit loads or a drum row opens
+    // Rows grow when a drum row opens
     juce::String sig;
 
     for (auto* row : rows)
@@ -108,6 +124,7 @@ void RackView::rebuild()
     }
 
     layoutRows();
+    repaint();
 }
 
 void RackView::layoutRows()
@@ -152,6 +169,52 @@ void RackView::syncToolbar()
         barsBox.setSelectedId (session.getPatternBars (current), juce::dontSendNotification);
 }
 
+//==============================================================================
+bool RackView::isInterestedInDragSource (const SourceDetails& details)
+{
+    return dynamic_cast<juce::FileTreeComponent*> (details.sourceComponent.get()) != nullptr;
+}
+
+void RackView::itemDropped (const SourceDetails& details)
+{
+    hovering = false;
+
+    if (auto* tree = dynamic_cast<juce::FileTreeComponent*> (details.sourceComponent.get()))
+    {
+        juce::Array<juce::File> files;
+
+        for (int i = 0; i < tree->getNumSelectedFiles(); ++i)
+            files.add (tree->getSelectedFile (i));
+
+        addSamples (files);
+    }
+
+    repaint();
+}
+
+bool RackView::isInterestedInFileDrag (const juce::StringArray& files)
+{
+    for (auto& f : files)
+        if (isAudioFile (juce::File (f)))
+            return true;
+
+    return false;
+}
+
+void RackView::filesDropped (const juce::StringArray& files, int, int)
+{
+    hovering = false;
+
+    juce::Array<juce::File> list;
+
+    for (auto& f : files)
+        list.add (juce::File (f));
+
+    addSamples (list);
+    repaint();
+}
+
+//==============================================================================
 void RackView::paint (juce::Graphics& g)
 {
     g.fillAll (juce::Colour (0xff1b1d20));
@@ -162,9 +225,20 @@ void RackView::paint (juce::Graphics& g)
     if (rows.isEmpty())
     {
         g.setColour (juce::Colours::white.withAlpha (0.4f));
-        g.setFont (juce::Font (juce::FontOptions (14.0f)));
-        g.drawText ("No instruments yet. Add Drums, a Sampler, or an Instrument up top.",
+        g.setFont (juce::Font (juce::FontOptions (15.0f)));
+        g.drawText ("Drag samples here from the Browser (B), or click + Sample.",
                     getLocalBounds().withTrimmedTop (toolbarHeight), juce::Justification::centred);
+    }
+}
+
+void RackView::paintOverChildren (juce::Graphics& g)
+{
+    if (hovering)
+    {
+        g.setColour (juce::Colour (0xff3a8ee6).withAlpha (0.12f));
+        g.fillRect (getLocalBounds().withTrimmedTop (toolbarHeight));
+        g.setColour (juce::Colour (0xff3a8ee6));
+        g.drawRect (getLocalBounds().withTrimmedTop (toolbarHeight), 2);
     }
 }
 
@@ -182,9 +256,7 @@ void RackView::resized()
     tb.removeFromLeft (4);
     loopButton.setBounds (tb.removeFromLeft (110));
     tb.removeFromLeft (16);
-    addDrumButton.setBounds (tb.removeFromLeft (80));
-    tb.removeFromLeft (4);
-    addSamplerButton.setBounds (tb.removeFromLeft (90));
+    addSampleButton.setBounds (tb.removeFromLeft (90));
     tb.removeFromLeft (4);
     addInstrumentButton.setBounds (tb.removeFromLeft (110));
     tb.removeFromLeft (12);

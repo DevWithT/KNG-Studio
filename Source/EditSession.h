@@ -153,6 +153,9 @@ public:
     void openPianoRollForTrack (int trackIndex);
     std::function<void (int)> onShowSampler;
 
+    /** One sound in the Rack: a new track with a one-shot KNG Sampler. Returns the track index, or -1. */
+    int addSampleChannel (const juce::File& sample);
+
     // Patterns (the Rack). Copies of a pattern are linked: edit one, they all update.
     int getCurrentPattern() const               { return currentPattern; }
     void setCurrentPattern (int pattern)        { currentPattern = juce::jmax (1, pattern); }
