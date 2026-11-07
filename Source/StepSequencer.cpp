@@ -36,7 +36,7 @@ StepSequencer::StepSequencer (EditSession& sessionToUse, te::Track& trackToUse)
 
     hintLabel.setFont (juce::Font (juce::FontOptions (12.0f)));
     hintLabel.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.55f));
-    hintLabel.setText ("Click to add, drag to paint, right-drag to erase, scroll a hit for velocity",
+    hintLabel.setText ("Click or drag to add. Hold right-click and drag to erase. Scroll a hit for velocity.",
                        juce::dontSendNotification);
 
     timerCallback();
@@ -157,7 +157,7 @@ int StepSequencer::beatToStep (double beatFromClipStart) const
 //==============================================================================
 juce::Rectangle<int> StepSequencer::getGridArea() const
 {
-    return getLocalBounds().withTrimmedTop (toolbarHeight).reduced (8).withTrimmedLeft (labelWidth);
+    return getLocalBounds().withTrimmedTop (toolbarHeight + headerHeight).reduced (10).withTrimmedLeft (labelWidth);
 }
 
 juce::Rectangle<int> StepSequencer::getCellBounds (int row, int step) const
@@ -288,14 +288,15 @@ void StepSequencer::applySwing (double newPercent)
 //==============================================================================
 void StepSequencer::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colour (0xff1e2124));
+    g.fillAll (juce::Colour (0xff1b1d20));
 
-    g.setColour (juce::Colour (0xff2b2f33));
+    g.setColour (juce::Colour (0xff26292d));
     g.fillRect (getLocalBounds().removeFromTop (toolbarHeight));
 
     if (clip == nullptr)
     {
         g.setColour (juce::Colours::white.withAlpha (0.5f));
+        g.setFont (juce::Font (juce::FontOptions (15.0f)));
         g.drawText ("No pattern yet. Click New Pattern to start one at the playhead.",
                     getLocalBounds().withTrimmedTop (toolbarHeight), juce::Justification::centred);
         return;
@@ -323,50 +324,92 @@ void StepSequencer::paint (juce::Graphics& g)
             velocity[row][step] = n->getVelocity();
     }
 
-    g.setFont (juce::Font (juce::FontOptions (12.0f)));
+    // Step numbers across the top, with a light on the playing step
+    g.setFont (juce::Font (juce::FontOptions (11.0f)));
+
+    for (int step = 0; step < steps; ++step)
+    {
+        auto cell = getCellBounds (0, step);
+        juce::Rectangle<int> head (cell.getX(), grid.getY() - headerHeight, cell.getWidth(), headerHeight - 4);
+
+        if (step == playStep)
+        {
+            g.setColour (juce::Colour (0xffffb84d));
+            g.fillRoundedRectangle (head.reduced (juce::jmax (2, head.getWidth() / 2 - 6), 5).toFloat(), 3.0f);
+        }
+        else
+        {
+            const bool beat = step % 4 == 0;
+            g.setColour (juce::Colours::white.withAlpha (beat ? 0.6f : 0.22f));
+            g.drawText (juce::String (step % 16 + 1), head, juce::Justification::centred);
+        }
+    }
 
     for (int row = 0; row < 16; ++row)
     {
-        // Row label
         auto first = getCellBounds (row, 0);
-        juce::Rectangle<int> label (grid.getX() - labelWidth, first.getY(), labelWidth - 6, first.getHeight());
 
-        g.setColour (juce::Colour (row % 2 == 0 ? 0xff2b2f33 : 0xff272a2e));
-        g.fillRect (label);
-
+        // Row label: key badge plus the sample name
+        juce::Rectangle<int> label (grid.getX() - labelWidth, first.getY() + 2, labelWidth - 8, first.getHeight() - 4);
         const auto name = session.getPadName (idx, row);
-        g.setColour (juce::Colours::white.withAlpha (name.isNotEmpty() ? 0.9f : 0.35f));
-        g.drawFittedText (padKeys.substring (row, row + 1) + "  " + (name.isNotEmpty() ? name : "Pad " + juce::String (row + 1)),
+
+        g.setColour (juce::Colour (0xff2a2e33));
+        g.fillRoundedRectangle (label.toFloat(), 5.0f);
+
+        auto badge = label.removeFromLeft (label.getHeight()).reduced (4);
+        g.setColour (juce::Colour (0xff3a3f45));
+        g.fillRoundedRectangle (badge.toFloat(), 3.0f);
+        g.setColour (juce::Colours::white.withAlpha (0.7f));
+        g.setFont (juce::Font (juce::FontOptions (11.0f)));
+        g.drawText (padKeys.substring (row, row + 1), badge, juce::Justification::centred);
+
+        g.setColour (juce::Colours::white.withAlpha (name.isNotEmpty() ? 0.92f : 0.3f));
+        g.setFont (juce::Font (juce::FontOptions (13.0f)));
+        g.drawFittedText (name.isNotEmpty() ? name : "Pad " + juce::String (row + 1),
                           label.reduced (6, 0), juce::Justification::centredLeft, 1);
 
-        // Steps
+        // Step buttons
         for (int step = 0; step < steps; ++step)
         {
-            auto cell = getCellBounds (row, step).reduced (1);
-
-            g.setColour ((step / 4) % 2 == 0 ? juce::Colour (0xff2e3338) : juce::Colour (0xff25292d));
-            g.fillRect (cell);
-
-            if (step == playStep)
-            {
-                g.setColour (juce::Colours::white.withAlpha (0.08f));
-                g.fillRect (cell);
-            }
+            auto cell = getCellBounds (row, step).reduced (2).toFloat();
+            const bool groupA = (step / 4) % 2 == 0;
 
             if (velocity[row][step] > 0)
             {
                 const float v = velocity[row][step] / 127.0f;
-                g.setColour (juce::Colour (0xff3a8ee6).withAlpha (0.35f + 0.65f * v));
-                g.fillRoundedRectangle (cell.reduced (2).toFloat(), 3.0f);
+                const auto lit = juce::Colour (0xff3a8ee6).interpolatedWith (juce::Colour (0xff9fd4ff), v * 0.6f);
+
+                juce::ColourGradient grad (lit.brighter (0.25f), cell.getX(), cell.getY(),
+                                           lit.darker (0.25f), cell.getX(), cell.getBottom(), false);
+                g.setGradientFill (grad);
+                g.fillRoundedRectangle (cell, 4.0f);
+
+                // Velocity strip along the bottom
+                g.setColour (juce::Colours::white.withAlpha (0.55f));
+                g.fillRect (cell.getX() + 3.0f, cell.getBottom() - 4.0f, (cell.getWidth() - 6.0f) * v, 2.0f);
             }
+            else
+            {
+                g.setColour (groupA ? juce::Colour (0xff353a40) : juce::Colour (0xff43363a));
+                g.fillRoundedRectangle (cell, 4.0f);
+            }
+
+            if (step == playStep)
+            {
+                g.setColour (juce::Colours::white.withAlpha (0.16f));
+                g.fillRoundedRectangle (cell, 4.0f);
+            }
+
+            g.setColour (juce::Colours::black.withAlpha (0.35f));
+            g.drawRoundedRectangle (cell, 4.0f, 1.0f);
         }
     }
 
     // Bar lines
-    g.setColour (juce::Colours::white.withAlpha (0.25f));
+    g.setColour (juce::Colours::white.withAlpha (0.3f));
 
     for (int step = 16; step < steps; step += 16)
-        g.drawVerticalLine (getCellBounds (0, step).getX(), (float) grid.getY(), (float) grid.getBottom());
+        g.fillRect (getCellBounds (0, step).getX() - 1, grid.getY(), 2, grid.getHeight());
 }
 
 void StepSequencer::resized()
@@ -411,8 +454,9 @@ void StepSequencer::mouseDown (const juce::MouseEvent& e)
     if (! cellAt (p, row, step))
         return;
 
-    // Left on an empty step paints hits, anything else erases
-    paintOn = ! e.mods.isPopupMenu() && findNote (row, step) == nullptr;
+    // Right button always erases. Left adds on an empty step, or erases if you start on a hit.
+    const bool rightButton = e.mods.isRightButtonDown() || e.mods.isPopupMenu();
+    paintOn = ! rightButton && findNote (row, step) == nullptr;
 
     session.beginEdit();
     painting = true;

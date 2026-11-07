@@ -1,12 +1,7 @@
 #include "PianoRoll.h"
+#include "TheoryHelper.h"
 
 namespace te = tracktion;
-
-static bool isBlackKey (int note)
-{
-    const int n = note % 12;
-    return n == 1 || n == 3 || n == 6 || n == 8 || n == 10;
-}
 
 //==============================================================================
 PianoRoll::PianoRoll (EditSession& sessionToUse, te::MidiClip& clipToEdit)
@@ -14,7 +9,12 @@ PianoRoll::PianoRoll (EditSession& sessionToUse, te::MidiClip& clipToEdit)
 {
     setWantsKeyboardFocus (true);
 
-    addAndMakeVisible (gridBox);
+    for (auto* c : std::initializer_list<juce::Component*> { &gridBox, &quantiseButton, &hintLabel,
+                                                             &keyLabel, &keyBox, &scaleBox, &chordLabel,
+                                                             &chordRootBox, &chordTypeBox, &stampButton, &theory })
+        addAndMakeVisible (c);
+
+    // Grid
     gridBox.addItem ("Grid 1/4", 1);
     gridBox.addItem ("Grid 1/8", 2);
     gridBox.addItem ("Grid 1/16", 3);
@@ -23,13 +23,41 @@ PianoRoll::PianoRoll (EditSession& sessionToUse, te::MidiClip& clipToEdit)
     gridBox.setSelectedId (3, juce::dontSendNotification);
     gridBox.onChange = [this] { repaint(); };
 
-    addAndMakeVisible (quantiseButton);
     quantiseButton.onClick = [this] { quantise(); };
 
-    addAndMakeVisible (hintLabel);
     hintLabel.setFont (juce::Font (juce::FontOptions (12.0f)));
-    hintLabel.setText ("Click to add. Drag to move, drag right edge to resize. Right-click or Del deletes. Alt = no snap.",
+    hintLabel.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.55f));
+    hintLabel.setText ("Click to add, drag to move, drag the right edge to resize. Hold right-click and drag to erase.",
                        juce::dontSendNotification);
+
+    // Theory controls
+    for (int i = 0; i < 12; ++i)
+    {
+        keyBox.addItem (Theory::pitchName (i), i + 1);
+        chordRootBox.addItem (Theory::pitchName (i), i + 1);
+    }
+
+    scaleBox.addItem ("No scale", 1);
+
+    for (size_t i = 0; i < Theory::scales().size(); ++i)
+        scaleBox.addItem (Theory::scales()[i].name, (int) i + 2);
+
+    chordTypeBox.addItem ("No chord", 1);
+
+    for (size_t i = 0; i < Theory::chordTypes().size(); ++i)
+        chordTypeBox.addItem (Theory::chordTypes()[i].name, (int) i + 2);
+
+    // Restore what this clip used last time
+    keyBox.setSelectedId       ((int) clip->state.getProperty ("kngKey", 0) + 1, juce::dontSendNotification);
+    scaleBox.setSelectedId     ((int) clip->state.getProperty ("kngScale", -1) + 2, juce::dontSendNotification);
+    chordRootBox.setSelectedId ((int) clip->state.getProperty ("kngChordRoot", 0) + 1, juce::dontSendNotification);
+    chordTypeBox.setSelectedId ((int) clip->state.getProperty ("kngChordType", -1) + 2, juce::dontSendNotification);
+    stampButton.setToggleState ((bool) clip->state.getProperty ("kngStamp", false), juce::dontSendNotification);
+
+    for (auto* box : { &keyBox, &scaleBox, &chordRootBox, &chordTypeBox })
+        box->onChange = [this] { theoryChanged(); };
+
+    stampButton.onClick = [this] { clip->state.setProperty ("kngStamp", stampButton.getToggleState(), nullptr); };
 
     viewBeat = getClipStartBeat();
 
@@ -39,8 +67,11 @@ PianoRoll::PianoRoll (EditSession& sessionToUse, te::MidiClip& clipToEdit)
     if (seq.getNumNotes() > 0)
         topNote = juce::jlimit (12, 127, seq.getNoteNumberRange().getEnd() + 6);
 
+    rebuildChordButtons();
+    updateTheoryPanel();
+
     startTimerHz (30);
-    setSize (960, 600);
+    setSize (1240, 700);
 }
 
 PianoRoll::~PianoRoll()
@@ -49,9 +80,81 @@ PianoRoll::~PianoRoll()
 }
 
 //==============================================================================
+// Theory
+
+int PianoRoll::getKeyRoot() const      { return juce::jmax (0, keyBox.getSelectedId() - 1); }
+int PianoRoll::getScaleIndex() const   { return scaleBox.getSelectedId() - 2; }
+int PianoRoll::getChordRoot() const    { return juce::jmax (0, chordRootBox.getSelectedId() - 1); }
+int PianoRoll::getChordType() const    { return chordTypeBox.getSelectedId() - 2; }
+
+void PianoRoll::theoryChanged()
+{
+    clip->state.setProperty ("kngKey", getKeyRoot(), nullptr);
+    clip->state.setProperty ("kngScale", getScaleIndex(), nullptr);
+    clip->state.setProperty ("kngChordRoot", getChordRoot(), nullptr);
+    clip->state.setProperty ("kngChordType", getChordType(), nullptr);
+
+    // Only rebuild the chord buttons when the key changes
+    if (getKeyRoot() != builtKey || getScaleIndex() != builtScale)
+        rebuildChordButtons();
+
+    for (int i = 0; i < chordButtons.size(); ++i)
+        chordButtons[i]->setToggleState ((bool) chordButtons[i]->getProperties()["root"].equals (getChordRoot())
+                                         && (bool) chordButtons[i]->getProperties()["type"].equals (getChordType()),
+                                         juce::dontSendNotification);
+
+    updateTheoryPanel();
+    repaint();
+}
+
+void PianoRoll::rebuildChordButtons()
+{
+    chordButtons.clear();
+    builtKey = getKeyRoot();
+    builtScale = getScaleIndex();
+
+    if (builtScale >= 0)
+    {
+        for (auto& dc : Theory::diatonicChords (builtKey, Theory::scales()[(size_t) builtScale]))
+        {
+            auto* b = chordButtons.add (new juce::TextButton (dc.numeral + " " + Theory::chordName (dc.root, Theory::chordTypes()[(size_t) dc.type])));
+            b->getProperties().set ("root", dc.root);
+            b->getProperties().set ("type", dc.type);
+            b->setClickingTogglesState (false);
+            b->setToggleState (dc.root == getChordRoot() && dc.type == getChordType(), juce::dontSendNotification);
+
+            const int root = dc.root, type = dc.type;
+            b->onClick = [this, root, type]
+            {
+                chordRootBox.setSelectedId (root + 1, juce::dontSendNotification);
+                chordTypeBox.setSelectedId (type + 2, juce::dontSendNotification);
+                theoryChanged();
+            };
+
+            addAndMakeVisible (b);
+        }
+    }
+
+    resized();
+}
+
+void PianoRoll::updateTheoryPanel()
+{
+    theory.update (getKeyRoot(), getScaleIndex(), getChordRoot(), getChordType(), hoverNote);
+}
+
+//==============================================================================
+// Geometry
+
+juce::Rectangle<int> PianoRoll::getTheoryArea() const
+{
+    auto r = getLocalBounds().withTrimmedTop (toolbarHeight);
+    return r.removeFromRight (theoryWidth);
+}
+
 juce::Rectangle<int> PianoRoll::getKeyboardArea() const
 {
-    auto r = getLocalBounds().withTrimmedTop (toolbarHeight).withTrimmedBottom (velocityHeight);
+    auto r = getLocalBounds().withTrimmedTop (toolbarHeight).withTrimmedBottom (velocityHeight).withTrimmedRight (theoryWidth);
     return r.removeFromLeft (keyboardWidth);
 }
 
@@ -59,12 +162,13 @@ juce::Rectangle<int> PianoRoll::getGridArea() const
 {
     return getLocalBounds().withTrimmedTop (toolbarHeight)
                            .withTrimmedBottom (velocityHeight)
-                           .withTrimmedLeft (keyboardWidth);
+                           .withTrimmedLeft (keyboardWidth)
+                           .withTrimmedRight (theoryWidth);
 }
 
 juce::Rectangle<int> PianoRoll::getVelocityArea() const
 {
-    auto r = getLocalBounds();
+    auto r = getLocalBounds().withTrimmedTop (toolbarHeight).withTrimmedRight (theoryWidth);
     return r.removeFromBottom (velocityHeight).withTrimmedLeft (keyboardWidth);
 }
 
@@ -97,6 +201,8 @@ juce::Rectangle<int> PianoRoll::getNoteRect (te::MidiNote& n) const
 }
 
 //==============================================================================
+// Grid
+
 double PianoRoll::getGridBeats() const
 {
     switch (gridBox.getSelectedId())
@@ -122,6 +228,8 @@ double PianoRoll::snapFloor (double beat) const
 }
 
 //==============================================================================
+// Clip
+
 double PianoRoll::getClipStartBeat() const
 {
     return clip->getContentBeatAtTime (clip->getPosition().getStart()).inBeats();
@@ -148,6 +256,8 @@ juce::UndoManager* PianoRoll::um()
 }
 
 //==============================================================================
+// Notes
+
 bool PianoRoll::isValid (te::MidiNote* n) const
 {
     return n != nullptr && clip->getSequence().getNotes().contains (n);
@@ -178,12 +288,32 @@ te::MidiNote* PianoRoll::findNoteAt (juce::Point<int> p, bool& onRightEdge)
     return nullptr;
 }
 
-void PianoRoll::previewNote (int note, int velocity)
+void PianoRoll::previewNotes (const juce::Array<int>& notes, int velocity)
 {
-    if (auto* at = dynamic_cast<te::AudioTrack*> (clip->getClipTrack()))
-        at->playGuideNote (note, te::MidiChannel (1), velocity, true, false, true);
+    auto* at = dynamic_cast<te::AudioTrack*> (clip->getClipTrack());
 
-    lastPreviewNote = note;
+    if (at == nullptr || notes.isEmpty())
+        return;
+
+    if (notes.size() == 1)
+    {
+        at->playGuideNote (notes[0], te::MidiChannel (1), velocity, true, false, true);
+    }
+    else
+    {
+        juce::Array<int> velocities;
+
+        for (int i = 0; i < notes.size(); ++i)
+            velocities.add (velocity);
+
+        at->playGuideNotes (notes, te::MidiChannel (1), velocities, true);
+
+        // Chords don't release on their own, so let go after a moment
+        te::AudioTrack::Ptr trackPtr (at);
+        juce::Timer::callAfterDelay (500, [trackPtr] { trackPtr->turnOffGuideNotes(); });
+    }
+
+    lastPreviewNote = notes.getLast();
 }
 
 void PianoRoll::applyVelocity (juce::Point<int> p)
@@ -263,6 +393,18 @@ void PianoRoll::deleteSelected()
     repaint();
 }
 
+void PianoRoll::eraseAt (juce::Point<int> p)
+{
+    bool edge = false;
+
+    if (auto* n = findNoteAt (p, edge))
+    {
+        selected.removeFirstMatchingValue (n);
+        clip->getSequence().removeNote (*n, um());
+        repaint();
+    }
+}
+
 //==============================================================================
 void PianoRoll::timerCallback()
 {
@@ -279,157 +421,71 @@ void PianoRoll::timerCallback()
     repaint();
 }
 
-void PianoRoll::paint (juce::Graphics& g)
-{
-    g.fillAll (juce::Colour (0xff1e2124));
-
-    // Toolbar
-    g.setColour (juce::Colour (0xff2b2f33));
-    g.fillRect (getLocalBounds().removeFromTop (toolbarHeight));
-
-    auto grid = getGridArea();
-    const double startBeat = getClipStartBeat();
-    const double endBeat   = getClipEndBeat();
-
-    //==========================================================================
-    {
-        juce::Graphics::ScopedSaveState saveState (g);
-        g.reduceClipRegion (grid);
-
-        // Rows
-        for (int note = topNote; note >= 0 && noteToY (note) < grid.getBottom(); --note)
-        {
-            const int y = noteToY (note);
-            g.setColour (isBlackKey (note) ? juce::Colour (0xff262a2e) : juce::Colour (0xff2e3338));
-            g.fillRect (grid.getX(), y, grid.getWidth(), noteHeight);
-
-            if (note % 12 == 0)
-            {
-                g.setColour (juce::Colours::white.withAlpha (0.12f));
-                g.drawHorizontalLine (y + noteHeight - 1, (float) grid.getX(), (float) grid.getRight());
-            }
-        }
-
-        // Shade outside the clip
-        g.setColour (juce::Colours::black.withAlpha (0.35f));
-        const int cx1 = beatToX (startBeat);
-        const int cx2 = beatToX (endBeat);
-
-        if (cx1 > grid.getX())
-            g.fillRect (grid.getX(), grid.getY(), cx1 - grid.getX(), grid.getHeight());
-
-        if (cx2 < grid.getRight())
-            g.fillRect (cx2, grid.getY(), grid.getRight() - cx2, grid.getHeight());
-
-        // Grid lines
-        const double step = getGridBeats() > 0.0 ? getGridBeats() : 0.25;
-        const double visibleEnd = xToBeat (grid.getRight());
-
-        for (int i = (int) std::floor (viewBeat / step); i * step <= visibleEnd; ++i)
-        {
-            const double b = i * step;
-            const bool isBeat = std::abs (b - std::round (b)) < 1e-6;
-            const bool isBar  = isBeat && ((int) std::round (b) % 4) == 0;
-
-            if (step * pxPerBeat < 4.0 && ! isBeat)
-                continue;
-
-            g.setColour (juce::Colours::white.withAlpha (isBar ? 0.25f : isBeat ? 0.12f : 0.05f));
-            g.drawVerticalLine (beatToX (b), (float) grid.getY(), (float) grid.getBottom());
-        }
-
-        // Notes
-        for (auto* n : clip->getSequence().getNotes())
-        {
-            auto r = getNoteRect (*n);
-
-            if (! r.intersects (grid))
-                continue;
-
-            const float vel = n->getVelocity() / 127.0f;
-            const bool sel = selected.contains (n);
-
-            g.setColour (juce::Colour (0xff3a8ee6).interpolatedWith (juce::Colour (0xffe6893a), vel));
-            g.fillRoundedRectangle (r.toFloat(), 2.0f);
-
-            g.setColour (sel ? juce::Colours::white : juce::Colours::black.withAlpha (0.6f));
-            g.drawRoundedRectangle (r.toFloat(), 2.0f, sel ? 2.0f : 1.0f);
-        }
-
-        // Playhead
-        const double playBeat = clip->getContentBeatAtTime (session.getTransport().getPosition()).inBeats();
-        g.setColour (juce::Colours::yellow);
-        g.fillRect (beatToX (playBeat), grid.getY(), 2, grid.getHeight());
-    }
-
-    //==========================================================================
-    // Keyboard
-    auto kb = getKeyboardArea();
-
-    {
-        juce::Graphics::ScopedSaveState saveState (g);
-        g.reduceClipRegion (kb);
-        g.setFont (juce::Font (juce::FontOptions (10.0f)));
-
-        for (int note = topNote; note >= 0 && noteToY (note) < kb.getBottom(); --note)
-        {
-            const int y = noteToY (note);
-            const bool black = isBlackKey (note);
-
-            g.setColour (black ? juce::Colour (0xff1b1b1b) : juce::Colour (0xffe8e8e8));
-            g.fillRect (kb.getX(), y, kb.getWidth(), noteHeight);
-
-            g.setColour (juce::Colours::black.withAlpha (0.4f));
-            g.drawHorizontalLine (y + noteHeight - 1, (float) kb.getX(), (float) kb.getRight());
-
-            if (note % 12 == 0)
-            {
-                g.setColour (juce::Colours::black);
-                g.drawText (juce::MidiMessage::getMidiNoteName (note, true, true, 4),
-                            kb.getX() + 2, y, kb.getWidth() - 4, noteHeight, juce::Justification::centredRight);
-            }
-        }
-    }
-
-    //==========================================================================
-    // Velocity lane
-    auto va = getVelocityArea();
-    g.setColour (juce::Colour (0xff181a1d));
-    g.fillRect (va);
-    g.setColour (juce::Colours::white.withAlpha (0.1f));
-    g.drawHorizontalLine (va.getY(), (float) va.getX(), (float) va.getRight());
-
-    {
-        juce::Graphics::ScopedSaveState saveState (g);
-        g.reduceClipRegion (va);
-
-        for (auto* n : clip->getSequence().getNotes())
-        {
-            const int x = beatToX (n->getStartBeat().inBeats());
-            const int h = juce::roundToInt (n->getVelocity() / 127.0 * (va.getHeight() - 6));
-
-            g.setColour (selected.contains (n) ? juce::Colours::white : juce::Colour (0xff3a8ee6));
-            g.fillRect (x, va.getBottom() - h, 4, h);
-        }
-    }
-}
-
 void PianoRoll::resized()
 {
-    gridBox.setBounds (6, 5, 110, 24);
-    quantiseButton.setBounds (122, 5, 110, 24);
-    hintLabel.setBounds (240, 5, getWidth() - 246, 24);
+    auto tb = getLocalBounds().removeFromTop (toolbarHeight).reduced (6, 4);
+    auto row1 = tb.removeFromTop (28);
+    tb.removeFromTop (4);
+    auto row2 = tb.removeFromTop (28);
+
+    gridBox.setBounds (row1.removeFromLeft (110));
+    row1.removeFromLeft (6);
+    quantiseButton.setBounds (row1.removeFromLeft (110));
+    row1.removeFromLeft (12);
+    hintLabel.setBounds (row1);
+
+    keyLabel.setBounds (row2.removeFromLeft (32));
+    keyBox.setBounds (row2.removeFromLeft (60));
+    row2.removeFromLeft (4);
+    scaleBox.setBounds (row2.removeFromLeft (150));
+    row2.removeFromLeft (14);
+    chordLabel.setBounds (row2.removeFromLeft (44));
+    chordRootBox.setBounds (row2.removeFromLeft (60));
+    row2.removeFromLeft (4);
+    chordTypeBox.setBounds (row2.removeFromLeft (120));
+    row2.removeFromLeft (8);
+    stampButton.setBounds (row2.removeFromLeft (120));
+    row2.removeFromLeft (8);
+
+    for (auto* b : chordButtons)
+    {
+        b->setBounds (row2.removeFromLeft (76));
+        row2.removeFromLeft (3);
+    }
+
+    theory.setBounds (getTheoryArea());
 }
 
 //==============================================================================
 void PianoRoll::mouseMove (const juce::MouseEvent& e)
 {
+    const auto p = e.getPosition();
     bool edge = false;
 
-    if (getGridArea().contains (e.getPosition()) && findNoteAt (e.getPosition(), edge) != nullptr)
+    if (getGridArea().contains (p) && findNoteAt (p, edge) != nullptr)
         setMouseCursor (edge ? juce::MouseCursor::LeftRightResizeCursor : juce::MouseCursor::DraggingHandCursor);
     else
         setMouseCursor (juce::MouseCursor::NormalCursor);
+
+    // Teach what's under the mouse
+    const int newHover = (getGridArea().contains (p) || getKeyboardArea().contains (p)) ? yToNote (p.y) : -1;
+
+    if (newHover != hoverNote)
+    {
+        hoverNote = newHover;
+        updateTheoryPanel();
+        repaint();
+    }
+}
+
+void PianoRoll::mouseExit (const juce::MouseEvent&)
+{
+    if (hoverNote != -1)
+    {
+        hoverNote = -1;
+        updateTheoryPanel();
+        repaint();
+    }
 }
 
 void PianoRoll::mouseDown (const juce::MouseEvent& e)
@@ -442,7 +498,7 @@ void PianoRoll::mouseDown (const juce::MouseEvent& e)
     // Keyboard previews notes
     if (getKeyboardArea().contains (p))
     {
-        previewNote (yToNote (p.y), 100);
+        previewNotes ({ yToNote (p.y) }, 100);
         return;
     }
 
@@ -458,25 +514,17 @@ void PianoRoll::mouseDown (const juce::MouseEvent& e)
     if (! getGridArea().contains (p))
         return;
 
-    bool edge = false;
-    auto* note = findNoteAt (p, edge);
-
-    // Right-click deletes
-    if (e.mods.isPopupMenu())
+    // Hold right-click and drag to erase
+    if (e.mods.isRightButtonDown() || e.mods.isPopupMenu())
     {
-        if (note != nullptr)
-        {
-            if (! selected.contains (note))
-            {
-                selected.clear();
-                selected.add (note);
-            }
-
-            deleteSelected();
-        }
-
+        session.beginEdit();
+        erasing = true;
+        eraseAt (p);
         return;
     }
+
+    bool edge = false;
+    auto* note = findNoteAt (p, edge);
 
     session.beginEdit();
     dragStartBeat = xToBeat (p.x);
@@ -504,26 +552,44 @@ void PianoRoll::mouseDown (const juce::MouseEvent& e)
             origs.push_back ({ n, n->getStartBeat().inBeats(), n->getLengthBeats().inBeats(), n->getNoteNumber() });
 
         lastLength = note->getLengthBeats().inBeats();
-        previewNote (note->getNoteNumber(), note->getVelocity());
+        previewNotes ({ note->getNoteNumber() }, note->getVelocity());
     }
     else
     {
-        // Add a new note at the start of the grid cell you clicked
+        // Add a note (or a whole chord) at the start of the grid cell you clicked
         selected.clear();
 
         const double start = juce::jmax (getClipStartBeat(), snapFloor (dragStartBeat));
-        auto* n = clip->getSequence().addNote (dragStartNote,
-                                               te::BeatPosition::fromBeats (start),
-                                               te::BeatDuration::fromBeats (lastLength),
-                                               100, 0, um());
+        juce::Array<int> pitches { dragStartNote };
 
-        if (n != nullptr)
+        if (stampButton.getToggleState() && getChordType() >= 0)
         {
-            selected.add (n);
-            origs.push_back ({ n, start, lastLength, dragStartNote });
+            pitches.clear();
+
+            for (int interval : Theory::chordTypes()[(size_t) getChordType()].intervals)
+                if (dragStartNote + interval <= 127)
+                    pitches.add (dragStartNote + interval);
+        }
+
+        for (int pitch : pitches)
+        {
+            auto* n = clip->getSequence().addNote (pitch,
+                                                   te::BeatPosition::fromBeats (start),
+                                                   te::BeatDuration::fromBeats (lastLength),
+                                                   100, 0, um());
+
+            if (n != nullptr)
+            {
+                selected.add (n);
+                origs.push_back ({ n, start, lastLength, pitch });
+            }
+        }
+
+        if (! origs.empty())
+        {
             dragMode = DragMode::resize;
             ensureClipCovers (start + lastLength);
-            previewNote (dragStartNote, 100);
+            previewNotes (pitches, 100);
         }
     }
 
@@ -532,6 +598,12 @@ void PianoRoll::mouseDown (const juce::MouseEvent& e)
 
 void PianoRoll::mouseDrag (const juce::MouseEvent& e)
 {
+    if (erasing)
+    {
+        eraseAt (e.getPosition());
+        return;
+    }
+
     if (dragMode == DragMode::none)
         return;
 
@@ -584,7 +656,7 @@ void PianoRoll::mouseDrag (const juce::MouseEvent& e)
         const int pitch = origs.front().note->getNoteNumber();
 
         if (pitch != lastPreviewNote)
-            previewNote (pitch, origs.front().note->getVelocity());
+            previewNotes ({ pitch }, origs.front().note->getVelocity());
     }
 
     repaint();
@@ -592,9 +664,10 @@ void PianoRoll::mouseDrag (const juce::MouseEvent& e)
 
 void PianoRoll::mouseUp (const juce::MouseEvent&)
 {
-    if (dragMode != DragMode::none)
+    if (erasing || dragMode != DragMode::none)
         session.save();
 
+    erasing = false;
     dragMode = DragMode::none;
     origs.clear();
 }
@@ -686,7 +759,7 @@ bool PianoRoll::keyPressed (const juce::KeyPress& key)
 
 //==============================================================================
 PianoRollWindow::PianoRollWindow (EditSession& session, te::MidiClip& c)
-    : DocumentWindow ("Piano Roll", juce::Colour (0xff1e2124), DocumentWindow::allButtons),
+    : DocumentWindow ("Piano Roll", juce::Colour (0xff1b1d20), DocumentWindow::allButtons),
       clip (&c)
 {
     if (auto* t = c.getTrack())
@@ -695,6 +768,6 @@ PianoRollWindow::PianoRollWindow (EditSession& session, te::MidiClip& c)
     setUsingNativeTitleBar (true);
     setContentOwned (new PianoRoll (session, c), true);
     setResizable (true, false);
-    centreWithSize (960, 600);
+    centreWithSize (1240, 700);
     setVisible (true);
 }

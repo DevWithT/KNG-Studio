@@ -61,7 +61,8 @@ private:
     int lastRow = -1, lastStep = -1;
 
     static constexpr int toolbarHeight = 40;
-    static constexpr int labelWidth    = 150;
+    static constexpr int labelWidth    = 170;
+    static constexpr int headerHeight  = 22;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (StepSequencer)
 };

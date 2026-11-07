@@ -53,7 +53,9 @@ target_sources(KNGStudio PRIVATE
     Source/EditSessionDrums.cpp
     Source/KitBrowser.cpp
     Source/DrumRack.cpp
-    Source/StepSequencer.cpp)
+    Source/StepSequencer.cpp
+    Source/PianoRollPaint.cpp
+    Source/TheoryPanel.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0
