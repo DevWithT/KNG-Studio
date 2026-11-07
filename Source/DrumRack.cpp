@@ -1,4 +1,5 @@
 #include "DrumRack.h"
+#include "StepSequencer.h"
 
 namespace te = tracktion;
 
@@ -409,13 +410,33 @@ void DrumRackComponent::resized()
 }
 
 //==============================================================================
+namespace
+{
+    // The drum window: Sequencer and Pads as tabs
+    struct DrumRackTabs : public juce::Component
+    {
+        DrumRackTabs (EditSession& session, te::Track& t)
+        {
+            tabs.setTabBarDepth (30);
+            tabs.addTab ("Sequencer", juce::Colour (0xff2b2f33), new StepSequencer (session, t), true);
+            tabs.addTab ("Pads",      juce::Colour (0xff2b2f33), new DrumRackComponent (session, t), true);
+            addAndMakeVisible (tabs);
+            setSize (920, 620);
+        }
+
+        void resized() override   { tabs.setBounds (getLocalBounds()); }
+
+        juce::TabbedComponent tabs { juce::TabbedButtonBar::TabsAtTop };
+    };
+}
+
 DrumRackWindow::DrumRackWindow (EditSession& session, te::Track& t)
-    : DocumentWindow ("Drum Rack - " + t.getName(), juce::Colour (0xff1e2124), DocumentWindow::allButtons),
+    : DocumentWindow ("Drums - " + t.getName(), juce::Colour (0xff1e2124), DocumentWindow::allButtons),
       track (&t)
 {
     setUsingNativeTitleBar (true);
-    setContentOwned (new DrumRackComponent (session, t), true);
+    setContentOwned (new DrumRackTabs (session, t), true);
     setResizable (true, false);
-    centreWithSize (520, 560);
+    centreWithSize (920, 620);
     setVisible (true);
 }

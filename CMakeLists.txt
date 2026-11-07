@@ -52,7 +52,8 @@ target_sources(KNGStudio PRIVATE
     Source/EditSessionBackup.cpp
     Source/EditSessionDrums.cpp
     Source/KitBrowser.cpp
-    Source/DrumRack.cpp)
+    Source/DrumRack.cpp
+    Source/StepSequencer.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0

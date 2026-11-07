@@ -136,6 +136,7 @@ public:
     void setPadPitch (int trackIndex, int pad, int semitones);
     int loadKitFolder (int trackIndex, const juce::File& folder);
     void playPad (int trackIndex, int pad, int velocity);
+    tracktion::MidiClip* createPatternClip (int trackIndex, double startSeconds, int bars);
     std::function<void (int)> onShowDrumRack;
 
     // Tempo, click, count-in

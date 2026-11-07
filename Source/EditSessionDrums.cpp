@@ -285,3 +285,30 @@ int EditSession::loadKitFolder (int trackIndex, const juce::File& folder)
     save();
     return filled;
 }
+
+//==============================================================================
+te::MidiClip* EditSession::createPatternClip (int trackIndex, double startSeconds, int bars)
+{
+    auto* track = getTrack (trackIndex);
+
+    if (track == nullptr || getTransport().isRecording())
+        return nullptr;
+
+    // Start on the bar the playhead is in
+    const double bar = 4.0 * 60.0 / juce::jmax (1.0, getBpm());
+    const double start = juce::jmax (0.0, std::floor (startSeconds / bar) * bar);
+
+    beginEdit();
+
+    auto clip = track->insertMIDIClip (te::TimeRange (te::TimePosition::fromSeconds (start),
+                                                      te::TimePosition::fromSeconds (start + bar * juce::jmax (1, bars))),
+                                       nullptr);
+
+    if (clip == nullptr)
+        return nullptr;
+
+    clip->setName ("Pattern");
+    selectClip (clip.get());
+    save();
+    return clip.get();
+}
