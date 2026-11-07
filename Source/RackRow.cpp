@@ -200,7 +200,7 @@ void RackRow::syncControls()
     }
 
     auto* inst = session.getInstrument (idx);
-    const auto text = isDrum()                                           ? juce::String ("Drums")
+    const auto text = isDrum()                                           ? juce::String (getVisiblePads().isEmpty() ? "Load Kit" : "Kit")
                     : dynamic_cast<te::SamplerPlugin*> (inst) != nullptr ? juce::String ("Sampler")
                     : inst != nullptr                                    ? inst->getName()
                                                                          : juce::String ("+ Inst");
@@ -221,7 +221,10 @@ void RackRow::openInstrument()
 
     if (isDrum())
     {
-        if (session.onShowDrumRack)
+        // No kit yet: pick a folder. Kit loaded: open the Drum Kit tab.
+        if (getVisiblePads().isEmpty())
+            chooseKit();
+        else if (session.onShowDrumRack)
             session.onShowDrumRack (idx);
 
         return;
@@ -361,7 +364,7 @@ void RackRow::paintDrumRows (juce::Graphics& g, te::MidiClip* clip)
     {
         g.setColour (juce::Colours::white.withAlpha (0.4f));
         g.setFont (juce::Font (juce::FontOptions (12.0f)));
-        g.drawText ("No kit loaded yet. Click Drums to load one.",
+        g.drawText ("Drop a kit folder here from the Browser, or click Load Kit.",
                     getLocalBounds().withTrimmedTop (rowHeight).withHeight (padRowHeight).reduced (30, 0),
                     juce::Justification::centredLeft);
         return;
@@ -593,4 +596,142 @@ void RackRow::mouseUp (const juce::MouseEvent&)
             clip->updateLinkedClips();
 
     session.save();
+}
+
+//==============================================================================
+void RackRow::paintOverChildren (juce::Graphics& g)
+{
+    if (hovering)
+    {
+        g.setColour (juce::Colour (0xff3a8ee6));
+        g.drawRoundedRectangle (getLocalBounds().toFloat().reduced (1.0f), 5.0f, 2.0f);
+    }
+}
+
+void RackRow::mouseWheelMove (const juce::MouseEvent& e, const juce::MouseWheelDetails& wheel)
+{
+    int pad = 0, step = 0;
+
+    // Scroll a hit to change its velocity
+    if (isDrum() && isExpanded() && stepAt (e.getPosition(), pad, step))
+    {
+        if (auto* clip = getClip (false))
+        {
+            if (auto* n = PatternGrid::findNote (*clip, EditSession::getPadNote (pad), step))
+            {
+                n->setVelocity (juce::jlimit (1, 127, n->getVelocity() + (wheel.deltaY > 0.0f ? 8 : -8)),
+                                &session.getEdit().getUndoManager());
+
+                if (clip->isLinked())
+                    clip->updateLinkedClips();
+
+                repaint();
+                return;
+            }
+        }
+    }
+
+    // Anywhere else, let the Rack scroll
+    juce::Component::mouseWheelMove (e, wheel);
+}
+
+void RackRow::chooseKit()
+{
+    chooser = std::make_unique<juce::FileChooser> ("Choose a kit folder", EditSession::getKitsFolder());
+    chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectDirectories,
+                          [this] (const juce::FileChooser& fc)
+                          {
+                              if (fc.getResult().isDirectory())
+                                  dropFile (fc.getResult(), 0);
+                          });
+}
+
+void RackRow::dropFile (const juce::File& file, int y)
+{
+    const int idx = getTrackIndex();
+
+    if (idx < 0)
+        return;
+
+    const bool isAudio = file.hasFileExtension ("wav;aif;aiff;flac;mp3;ogg");
+
+    // Melodic rows: a sample goes into the KNG Sampler
+    if (! isDrum())
+    {
+        if (! isAudio)
+            return;
+
+        if (dynamic_cast<te::SamplerPlugin*> (session.getInstrument (idx)) == nullptr)
+            session.setBuiltInSampler (idx);
+
+        session.setSamplerSample (idx, file, session.getSamplerRoot (idx));
+        return;
+    }
+
+    // Drum rows: a folder loads a whole kit
+    if (file.isDirectory())
+    {
+        session.loadKitFolder (idx, file);
+        setExpanded (true);
+        return;
+    }
+
+    if (! isAudio)
+        return;
+
+    // A single sample goes on the pad under the mouse, or the first empty pad
+    int pad = -1;
+    auto pads = getVisiblePads();
+    const int sub = (y - rowHeight) / padRowHeight;
+
+    if (isExpanded() && y >= rowHeight && juce::isPositiveAndBelow (sub, pads.size()))
+        pad = pads[sub];
+
+    if (pad < 0)
+    {
+        for (int p = 0; p < 16; ++p)
+        {
+            if (session.getPadName (idx, p).isEmpty())
+            {
+                pad = p;
+                break;
+            }
+        }
+    }
+
+    if (pad >= 0)
+    {
+        session.setPadSample (idx, pad, file);
+        setExpanded (true);
+    }
+}
+
+bool RackRow::isInterestedInDragSource (const SourceDetails& details)
+{
+    return dynamic_cast<juce::FileTreeComponent*> (details.sourceComponent.get()) != nullptr;
+}
+
+void RackRow::itemDropped (const SourceDetails& details)
+{
+    hovering = false;
+
+    if (auto* tree = dynamic_cast<juce::FileTreeComponent*> (details.sourceComponent.get()))
+        dropFile (tree->getSelectedFile(), details.localPosition.y);
+
+    repaint();
+}
+
+bool RackRow::isInterestedInFileDrag (const juce::StringArray& files)
+{
+    return files.size() == 1;
+}
+
+void RackRow::filesDropped (const juce::StringArray& files, int, int y)
+{
+    hovering = false;
+
+    if (! files.isEmpty())
+        dropFile (juce::File (files[0]), y);
+
+    repaint();
 }

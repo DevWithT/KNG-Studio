@@ -5,6 +5,8 @@
 
 /** One instrument in the Rack: controls on the left, its pattern on the right. */
 class RackRow : public juce::Component,
+                public juce::DragAndDropTarget,
+                public juce::FileDragAndDropTarget,
                 private juce::Timer
 {
 public:
@@ -18,10 +20,24 @@ public:
     std::function<void()> onLayoutChanged;
 
     void paint (juce::Graphics&) override;
+    void paintOverChildren (juce::Graphics&) override;
     void resized() override;
     void mouseDown (const juce::MouseEvent&) override;
     void mouseDrag (const juce::MouseEvent&) override;
     void mouseUp (const juce::MouseEvent&) override;
+    void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails&) override;
+
+    // Drags from the Browser
+    bool isInterestedInDragSource (const SourceDetails&) override;
+    void itemDragEnter (const SourceDetails&) override   { hovering = true;  repaint(); }
+    void itemDragExit (const SourceDetails&) override    { hovering = false; repaint(); }
+    void itemDropped (const SourceDetails&) override;
+
+    // Drags from Windows Explorer
+    bool isInterestedInFileDrag (const juce::StringArray&) override;
+    void fileDragEnter (const juce::StringArray&, int, int) override   { hovering = true;  repaint(); }
+    void fileDragExit (const juce::StringArray&) override              { hovering = false; repaint(); }
+    void filesDropped (const juce::StringArray&, int x, int y) override;
 
 private:
     void timerCallback() override;
@@ -42,6 +58,8 @@ private:
     void syncControls();
     void openInstrument();
     void showInstrumentMenu();
+    void chooseKit();
+    void dropFile (const juce::File& file, int y);
 
     void paintDrumSummary (juce::Graphics&, tracktion::MidiClip*);
     void paintDrumRows (juce::Graphics&, tracktion::MidiClip*);
@@ -54,6 +72,8 @@ private:
     juce::Label nameLabel;
     juce::Slider volKnob, panKnob;
 
+    std::unique_ptr<juce::FileChooser> chooser;
+    bool hovering = false;
     bool painting = false, paintOn = true;
     int lastPad = -1, lastStep = -1;
 
