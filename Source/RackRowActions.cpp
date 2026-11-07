@@ -55,7 +55,7 @@ void RackRow::preview (int note)
     }
 
     if (auto* at = getAudioTrack())
-        at->playGuideNote (note, te::MidiChannel (1), 100, true, false, true);
+        at->playGuideNote (note, te::MidiChannel (1), 100, true, true, true);
 }
 
 //==============================================================================
@@ -174,6 +174,18 @@ void RackRow::showRowMenu()
     if (hasSampler)
         menu.addItem ("Sampler Settings", [s, idx] { if (s->onShowSampler) s->onShowSampler (idx); });
 
+    if (hasSampler)
+    {
+        const bool oneShot = session.getSamplerOneShot (idx);
+
+        menu.addItem ("Cut at note end", true, ! oneShot, [s, idx, oneShot]
+        {
+            s->beginEdit();
+            s->setSamplerOneShot (idx, ! oneShot);
+            s->save();
+        });
+    }
+
     if (! isDrum() && ! hasSampler)
         menu.addItem ("Choose Instrument...", [safe] { if (safe != nullptr) safe->showInstrumentMenu(); });
 
@@ -185,7 +197,14 @@ void RackRow::showRowMenu()
             if (safe != nullptr)
             {
                 auto& state = safe->track->state;
-                state.setProperty ("kngChannel", ! (bool) state.getProperty ("kngChannel", false), nullptr);
+                const bool toSteps = ! (bool) state.getProperty ("kngChannel", false);
+                state.setProperty ("kngChannel", toSteps, nullptr);
+
+                // Steps play the whole sample; melodies stop at the end of each note
+                const int trackIndex = safe->getTrackIndex();
+                safe->session.beginEdit();
+                safe->session.setSamplerOneShot (trackIndex, toSteps);
+                safe->session.save();
                 safe->repaint();
             }
         });

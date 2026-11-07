@@ -36,6 +36,7 @@ private:
 
     // Geometry
     juce::Rectangle<int> getTheoryArea() const;
+    juce::Rectangle<int> getRulerArea() const;
     juce::Rectangle<int> getKeyboardArea() const;
     juce::Rectangle<int> getGridArea() const;
     juce::Rectangle<int> getVelocityArea() const;
@@ -74,6 +75,7 @@ private:
     void theoryChanged();
     void rebuildChordButtons();
     void updateTheoryPanel();
+    void setTheoryOpen (bool shouldBeOpen);
 
     // Painting (PianoRollPaint.cpp)
     void paintRows (juce::Graphics&, juce::Rectangle<int> grid);
@@ -81,6 +83,7 @@ private:
     void paintNotes (juce::Graphics&, juce::Rectangle<int> grid);
     void paintKeyboard (juce::Graphics&);
     void paintVelocity (juce::Graphics&);
+    void paintRuler (juce::Graphics&);
 
     EditSession& session;
     tracktion::MidiClip::Ptr clip;
@@ -88,9 +91,10 @@ private:
     // Row 1
     juce::ComboBox gridBox;
     juce::TextButton quantiseButton { "Quantize (Q)" };
+    juce::TextButton theoryButton { "Theory" };
     juce::Label hintLabel;
 
-    // Row 2: theory
+    // Row 2: theory, only while Theory is on
     juce::Label keyLabel { {}, "Key" }, chordLabel { {}, "Chord" };
     juce::ComboBox keyBox, scaleBox, chordRootBox, chordTypeBox;
     juce::ToggleButton stampButton { "Stamp chords" };
@@ -98,6 +102,7 @@ private:
     int builtKey = -1, builtScale = -2;
 
     TheoryPanel theory;
+    bool theoryOpen = false;
 
     juce::Array<tracktion::MidiNote*> selected;
     std::vector<Orig> origs;
@@ -113,12 +118,15 @@ private:
     double viewBeat = 0.0;
     double pxPerBeat = 80.0;
     int topNote = 84;
+    int noteHeight = 20;
 
-    static constexpr int toolbarHeight  = 70;
-    static constexpr int theoryWidth    = 270;
+    // These change when Theory opens and closes
+    int toolbarHeight = 38;
+    int theoryWidth = 0;
+
+    static constexpr int rulerHeight    = 22;
     static constexpr int keyboardWidth  = 70;
-    static constexpr int noteHeight     = 16;
-    static constexpr int velocityHeight = 70;
+    static constexpr int velocityHeight = 60;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PianoRoll)
 };

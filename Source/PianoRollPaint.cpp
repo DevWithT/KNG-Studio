@@ -29,6 +29,7 @@ void PianoRoll::paint (juce::Graphics& g)
     }
 
     paintKeyboard (g);
+    paintRuler (g);
     paintVelocity (g);
 }
 
@@ -221,4 +222,49 @@ void PianoRoll::paintVelocity (juce::Graphics& g)
         g.setColour (selected.contains (n) ? juce::Colours::white : juce::Colour (0xff3a8ee6));
         g.fillRect (x, va.getBottom() - h, 4, h);
     }
+}
+
+void PianoRoll::paintRuler (juce::Graphics& g)
+{
+    auto r = getRulerArea();
+
+    g.setColour (juce::Colour (0xff202326));
+    g.fillRect (r);
+    g.setColour (juce::Colours::black.withAlpha (0.4f));
+    g.drawHorizontalLine (r.getBottom() - 1, (float) r.getX(), (float) r.getRight());
+
+    juce::Graphics::ScopedSaveState saveState (g);
+    g.reduceClipRegion (r);
+
+    auto& tempo = session.getEdit().tempoSequence;
+    const double endBeat = xToBeat (r.getRight());
+    g.setFont (juce::Font (juce::FontOptions (11.0f)));
+
+    // Beat ticks
+    for (int b = (int) std::floor (viewBeat); b <= endBeat; ++b)
+    {
+        g.setColour (juce::Colours::white.withAlpha (0.2f));
+        g.drawVerticalLine (beatToX (b), (float) r.getBottom() - 5.0f, (float) r.getBottom());
+    }
+
+    // Bar numbers, counted the same as the main timeline
+    for (int b = (int) std::floor (viewBeat / 4.0) * 4; b <= endBeat; b += 4)
+    {
+        const int x = beatToX (b);
+        const double songBeat = tempo.toBeats (clip->getTimeOfContentBeat (te::BeatPosition::fromBeats (b))).inBeats();
+        const int bar = (int) std::round (songBeat / 4.0) + 1;
+
+        g.setColour (juce::Colours::white.withAlpha (0.35f));
+        g.drawVerticalLine (x, (float) r.getY() + 6.0f, (float) r.getBottom());
+        g.setColour (juce::Colours::white.withAlpha (0.8f));
+        g.drawText (juce::String (bar), x + 4, r.getY(), 40, r.getHeight(), juce::Justification::centredLeft);
+    }
+
+    // Playhead marker
+    const double playBeat = clip->getContentBeatAtTime (session.getTransport().getPosition()).inBeats();
+    const float px = (float) beatToX (playBeat);
+    juce::Path tri;
+    tri.addTriangle (px - 5.0f, (float) r.getY(), px + 5.0f, (float) r.getY(), px, (float) r.getY() + 8.0f);
+    g.setColour (juce::Colours::yellow);
+    g.fillPath (tri);
 }
