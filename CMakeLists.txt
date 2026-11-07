@@ -64,7 +64,9 @@ target_sources(KNGStudio PRIVATE
     Source/RackView.cpp
     Source/RackRowActions.cpp
     Source/EditSessionChannels.cpp
-    Source/EditSessionVolume.cpp)
+    Source/EditSessionVolume.cpp
+    Source/EditSessionPatternLane.cpp
+    Source/PatternLane.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0

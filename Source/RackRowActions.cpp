@@ -200,7 +200,7 @@ void RackRow::showRowMenu()
                 const bool toSteps = ! (bool) state.getProperty ("kngChannel", false);
                 state.setProperty ("kngChannel", toSteps, nullptr);
 
-                // Steps play the whole sample; melodies stop at the end of each note
+                // Notes control how long the sound plays, in both modes
                 const int trackIndex = safe->getTrackIndex();
                 safe->session.beginEdit();
                 safe->session.setSamplerOneShot (trackIndex, false);

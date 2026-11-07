@@ -176,6 +176,11 @@ public:
     void makePatternUnique (tracktion::MidiClip& clip);
     double getBarSeconds();
 
+    // The Patterns strip on the timeline
+    struct PatternBlock { int pattern = 0; double start = 0.0, end = 0.0; };
+    std::vector<PatternBlock> getPatternBlocks();
+    void removePatternAt (double seconds);
+
     // Tempo, click, count-in
     void setBpm (double bpm);
     double getBpm() const;
@@ -256,6 +261,7 @@ private:
     void timerCallback() override;
     juce::File getLockFile() const;
     void pruneBackups();
+    tracktion::MidiClip* restorePatternStash (int trackIndex, int pattern, double atSeconds);
 
     tracktion::Engine& engine;
     juce::File editFile;

@@ -118,6 +118,13 @@ te::MidiClip* EditSession::getPatternClip (int trackIndex, int pattern, bool cre
     if (first != nullptr || ! createIfMissing || getTransport().isRecording())
         return first;
 
+    // If every copy was erased, bring the pattern back instead of starting empty
+    if (auto* restored = restorePatternStash (trackIndex, pattern, home))
+    {
+        save();
+        return restored;
+    }
+
     beginEdit();
 
     const double length = getBarSeconds() * getPatternBars (pattern);
@@ -149,13 +156,9 @@ void EditSession::placePattern (int pattern, double atSeconds)
     for (int i = 0; i < getNumTracks(); ++i)
     {
         auto* track = getTrack (i);
-        auto* master = getPatternClip (i, pattern, false);
 
-        if (track == nullptr || master == nullptr)
+        if (track == nullptr)
             continue;
-
-        if (master->getLinkGroupID().isEmpty())
-            master->setLinkGroupID (linkIdFor (pattern, *track));
 
         // Don't stack a copy on top of one that's already there
         bool alreadyThere = false;
@@ -166,6 +169,21 @@ void EditSession::placePattern (int pattern, double atSeconds)
 
         if (alreadyThere)
             continue;
+
+        auto* master = getPatternClip (i, pattern, false);
+
+        // Every copy was erased earlier: bring the pattern back from its stash
+        if (master == nullptr)
+        {
+            if (auto* restored = restorePatternStash (i, pattern, start))
+                if (restored->getLinkGroupID().isEmpty())
+                    restored->setLinkGroupID (linkIdFor (pattern, *track));
+
+            continue;
+        }
+
+        if (master->getLinkGroupID().isEmpty())
+            master->setLinkGroupID (linkIdFor (pattern, *track));
 
         // The copy keeps the pattern number and link, so it stays in sync
         if (auto copy = te::duplicateClip (*master))

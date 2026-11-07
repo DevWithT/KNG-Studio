@@ -102,6 +102,7 @@ void MainComponent::closeProject()
     masterStrip = nullptr;
     ruler = nullptr;
     markerBar = nullptr;
+    patternLane = nullptr;
     transportBar = nullptr;
     session = nullptr;   // saves on the way out
 }
@@ -127,6 +128,9 @@ void MainComponent::loadProject (const juce::File& editFile)
 
     markerBar = std::make_unique<MarkerBar> (*session);
     addAndMakeVisible (*markerBar);
+
+    patternLane = std::make_unique<PatternLane> (*session);
+    addAndMakeVisible (*patternLane);
 
     masterStrip = std::make_unique<MasterStrip> (*session);
     addAndMakeVisible (*masterStrip);
@@ -571,6 +575,12 @@ void MainComponent::resized()
         markerBar->setBounds (markerRow.withTrimmedLeft (laneOffset)
                                        .withTrimmedRight (tracksViewport.getScrollBarThickness()));
 
+    auto patternRow = area.removeFromTop (24);
+
+    if (patternLane != nullptr)
+        patternLane->setBounds (patternRow.withTrimmedLeft (laneOffset)
+                                          .withTrimmedRight (tracksViewport.getScrollBarThickness()));
+
     auto rulerRow = area.removeFromTop (24);
 
     if (ruler != nullptr)
@@ -597,6 +607,23 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
 
     const auto mods = key.getModifiers();
     const int code  = key.getKeyCode();
+
+    // Left / Right move the playhead a beat (Ctrl: a bar). Hold to skim.
+    if (session != nullptr && (key.isKeyCode (juce::KeyPress::leftKey) || key.isKeyCode (juce::KeyPress::rightKey)))
+    {
+        auto& tempo = session->getEdit().tempoSequence;
+        auto& transport = session->getTransport();
+
+        const double step = key.getModifiers().isCommandDown() ? 4.0 : 1.0;
+        const double beat = tempo.toBeats (transport.getPosition()).inBeats();
+        const bool forward = key.isKeyCode (juce::KeyPress::rightKey);
+
+        const double target = forward ? (std::floor (beat / step + 1e-6) + 1.0) * step
+                                      : (std::ceil (beat / step - 1e-6) - 1.0) * step;
+
+        transport.setPosition (tempo.toTime (tracktion::BeatPosition::fromBeats (juce::jmax (0.0, target))));
+        return true;
+    }
 
     if (mods.isCommandDown())
     {
@@ -633,23 +660,6 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
         }
 
         return false;
-    }
-
-    // Left / Right move the playhead a beat (Ctrl: a bar). Hold to skim.
-    if (session != nullptr && (key.isKeyCode (juce::KeyPress::leftKey) || key.isKeyCode (juce::KeyPress::rightKey)))
-    {
-        auto& tempo = session->getEdit().tempoSequence;
-        auto& transport = session->getTransport();
-
-        const double step = key.getModifiers().isCommandDown() ? 4.0 : 1.0;
-        const double beat = tempo.toBeats (transport.getPosition()).inBeats();
-        const bool forward = key.isKeyCode (juce::KeyPress::rightKey);
-
-        const double target = forward ? (std::floor (beat / step + 1e-6) + 1.0) * step
-                                      : (std::ceil (beat / step - 1e-6) - 1.0) * step;
-
-        transport.setPosition (tempo.toTime (tracktion::BeatPosition::fromBeats (juce::jmax (0.0, target))));
-        return true;
     }
 
     // D shows and hides the dock
