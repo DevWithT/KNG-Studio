@@ -408,14 +408,9 @@ void PianoRoll::eraseAt (juce::Point<int> p)
 //==============================================================================
 void PianoRoll::timerCallback()
 {
-    // Clip was deleted, so hide the window
+    // Clip was deleted; the dock clears this panel
     if (clip->getParent() == nullptr)
-    {
-        if (auto* w = findParentComponentOfClass<juce::DocumentWindow>())
-            w->setVisible (false);
-
         return;
-    }
 
     cleanSelection();
     repaint();

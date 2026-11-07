@@ -21,6 +21,16 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
     kitBrowser = std::make_unique<KitBrowser> (engine.getDeviceManager().deviceManager);
     addAndMakeVisible (*kitBrowser);
 
+    addAndMakeVisible (dock);
+    addAndMakeVisible (dockDivider);
+
+    dockDivider.onDragStart = [this] { dockDragStartHeight = dockHeight; };
+    dockDivider.onDrag = [this] (int dy)
+    {
+        dockHeight = juce::jlimit (150, juce::jmax (150, (int) (getHeight() * 0.7f)), dockDragStartHeight - dy);
+        resized();
+    };
+
     tracksViewport.setScrollBarsShown (true, false);
     addAndMakeVisible (tracksViewport);
 
@@ -80,6 +90,7 @@ bool MainComponent::isBusyRecording() const
 //==============================================================================
 void MainComponent::closeProject()
 {
+    dock.setSession (nullptr);
     fxWindows.clear();
     pianoRollWindows.clear();
     mixerWindow = nullptr;
@@ -106,6 +117,7 @@ void MainComponent::loadProject (const juce::File& editFile)
     session->onShowClipProps = [this] (tracktion::AudioClipBase& clip) { showClipProps (clip); };
     session->onShowDrumRack  = [this] (int trackIndex) { showDrumRack (trackIndex); };
     session->onShowSampler   = [this] (int trackIndex) { showSampler (trackIndex); };
+    dock.setSession (session.get());
 
     transportBar = std::make_unique<TransportBar> (*session);
     addAndMakeVisible (*transportBar);
@@ -266,7 +278,8 @@ juce::PopupMenu MainComponent::getMenuForIndex (int menuIndex, const juce::Strin
             break;
 
         case 4: // View
-            add (cmdMixer, "Mixer", "M", hasSession, mixerWindow != nullptr && mixerWindow->isVisible());
+            add (cmdMixer, "Mixer", "M", hasSession, dockVisible && dock.getCurrentTab() == DockPanel::mixerTab);
+            add (cmdDock, "Dock", "D", true, dockVisible);
             add (cmdBrowser, "Browser", "B", true, browserVisible);
             m.addSeparator();
             add (cmdZoomIn, "Zoom In", "Ctrl+=", hasSession);
@@ -296,6 +309,7 @@ void MainComponent::menuItemSelected (int id, int)
         case cmdScanPlugins:   showPluginScanner(); return;
         case cmdShortcuts:     showShortcuts();     return;
         case cmdBrowser:       browserVisible = ! browserVisible; resized(); return;
+        case cmdDock:          dockVisible = ! dockVisible; resized(); return;
         case cmdExit:          juce::JUCEApplication::getInstance()->systemRequestedQuit(); return;
         default: break;
     }
@@ -395,17 +409,8 @@ void MainComponent::showFxChain (tracktion::PluginList& list, const juce::String
     if (session == nullptr)
         return;
 
-    for (auto* w : fxWindows)
-    {
-        if (w->getList() == &list)
-        {
-            w->setVisible (true);
-            w->toFront (true);
-            return;
-        }
-    }
-
-    fxWindows.add (new FxChainWindow (title, *session, list));
+    dock.showFx (list, title);
+    openDock();
 }
 
 void MainComponent::showPianoRoll (tracktion::MidiClip& clip)
@@ -413,17 +418,8 @@ void MainComponent::showPianoRoll (tracktion::MidiClip& clip)
     if (session == nullptr)
         return;
 
-    for (auto* w : pianoRollWindows)
-    {
-        if (w->getClip() == &clip)
-        {
-            w->setVisible (true);
-            w->toFront (true);
-            return;
-        }
-    }
-
-    pianoRollWindows.add (new PianoRollWindow (*session, clip));
+    dock.showPianoRoll (clip);
+    openDock();
 }
 
 void MainComponent::showComp (tracktion::WaveAudioClip& clip)
@@ -431,17 +427,8 @@ void MainComponent::showComp (tracktion::WaveAudioClip& clip)
     if (session == nullptr)
         return;
 
-    for (auto* w : compWindows)
-    {
-        if (w->getClip() == &clip)
-        {
-            w->setVisible (true);
-            w->toFront (true);
-            return;
-        }
-    }
-
-    compWindows.add (new CompWindow (*session, clip));
+    dock.showComp (clip);
+    openDock();
 }
 
 void MainComponent::toggleMixer()
@@ -449,16 +436,16 @@ void MainComponent::toggleMixer()
     if (session == nullptr)
         return;
 
-    if (mixerWindow == nullptr)
+    // M again while the mixer is showing hides the dock
+    if (dockVisible && dock.getCurrentTab() == DockPanel::mixerTab)
     {
-        mixerWindow = std::make_unique<MixerWindow> (*session);
+        dockVisible = false;
+        resized();
         return;
     }
 
-    mixerWindow->setVisible (! mixerWindow->isVisible());
-
-    if (mixerWindow->isVisible())
-        mixerWindow->toFront (true);
+    dock.showTab (DockPanel::mixerTab);
+    openDock();
 }
 
 void MainComponent::showPluginScanner()
@@ -549,6 +536,16 @@ void MainComponent::resized()
 
     area.removeFromTop (8);
 
+    // Dock along the bottom
+    dock.setVisible (dockVisible);
+    dockDivider.setVisible (dockVisible);
+
+    if (dockVisible)
+    {
+        dock.setBounds (area.removeFromBottom (juce::jmin (dockHeight, juce::jmax (150, area.getHeight() - 200))));
+        dockDivider.setBounds (area.removeFromBottom (8));
+    }
+
     // Browser down the left side
     if (kitBrowser != nullptr)
     {
@@ -637,6 +634,14 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
         }
 
         return false;
+    }
+
+    // D shows and hides the dock
+    if (code == 'D' || code == 'd')
+    {
+        dockVisible = ! dockVisible;
+        resized();
+        return true;
     }
 
     // B shows and hides the browser
@@ -770,23 +775,11 @@ void MainComponent::showDrumRack (int trackIndex)
     if (session == nullptr)
         return;
 
-    auto* track = session->getTrack (trackIndex);
-
-    if (track == nullptr)
-        return;
-
-    // Reuse the window if this track's rack is already open
-    for (auto* w : drumRackWindows)
+    if (auto* track = session->getTrack (trackIndex))
     {
-        if (w->getTrack() == track)
-        {
-            w->setVisible (true);
-            w->toFront (true);
-            return;
-        }
+        dock.showInstrument (*track, true);
+        openDock();
     }
-
-    drumRackWindows.add (new DrumRackWindow (*session, *track));
 }
 
 void MainComponent::showSampler (int trackIndex)
@@ -794,21 +787,18 @@ void MainComponent::showSampler (int trackIndex)
     if (session == nullptr)
         return;
 
-    auto* track = session->getTrack (trackIndex);
-
-    if (track == nullptr)
-        return;
-
-    // Reuse the window if this track's sampler is already open
-    for (auto* w : samplerWindows)
+    if (auto* track = session->getTrack (trackIndex))
     {
-        if (w->getTrack() == track)
-        {
-            w->setVisible (true);
-            w->toFront (true);
-            return;
-        }
+        dock.showInstrument (*track, false);
+        openDock();
     }
+}
 
-    samplerWindows.add (new SamplerWindow (*session, *track));
+void MainComponent::openDock()
+{
+    if (! dockVisible)
+    {
+        dockVisible = true;
+        resized();
+    }
 }

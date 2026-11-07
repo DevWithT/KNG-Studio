@@ -440,3 +440,8 @@ DrumRackWindow::DrumRackWindow (EditSession& session, te::Track& t)
     centreWithSize (920, 620);
     setVisible (true);
 }
+
+std::unique_ptr<juce::Component> createDrumRackPanel (EditSession& session, te::Track& track)
+{
+    return std::make_unique<DrumRackTabs> (session, track);
+}

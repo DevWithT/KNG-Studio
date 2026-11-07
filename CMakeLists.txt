@@ -57,7 +57,8 @@ target_sources(KNGStudio PRIVATE
     Source/PianoRollPaint.cpp
     Source/TheoryPanel.cpp
     Source/EditSessionSampler.cpp
-    Source/SamplerView.cpp)
+    Source/SamplerView.cpp
+    Source/DockPanel.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0

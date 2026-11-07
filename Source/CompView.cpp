@@ -45,14 +45,9 @@ juce::Colour CompView::colourForTake (int take)
 //==============================================================================
 void CompView::timerCallback()
 {
-    // Clip was deleted, so hide the window
+    // Clip was deleted; the dock clears this panel
     if (clip->getParent() == nullptr)
-    {
-        if (auto* w = findParentComponentOfClass<juce::DocumentWindow>())
-            w->setVisible (false);
-
         return;
-    }
 
     auto& m = cm();
     numTakes = m.getNumTakes();
@@ -170,8 +165,6 @@ void CompView::flatten()
     m.flattenTake (m.getActiveTakeIndex(), false);
     session.save();
 
-    if (auto* w = findParentComponentOfClass<juce::DocumentWindow>())
-        w->setVisible (false);
 }
 
 //==============================================================================

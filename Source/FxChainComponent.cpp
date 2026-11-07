@@ -63,14 +63,9 @@ FxChainComponent::~FxChainComponent()
 
 void FxChainComponent::timerCallback()
 {
-    // Track was deleted, so hide this window
+    // Track was deleted; the dock clears this panel
     if (ownerTrack != nullptr && ! te::getAllTracks (session.getEdit()).contains (ownerTrack.get()))
-    {
-        if (auto* w = findParentComponentOfClass<juce::DocumentWindow>())
-            w->setVisible (false);
-
         return;
-    }
 
     if (session.getFxPlugins (list) != shown)
     {

@@ -18,6 +18,7 @@
 #include "KitBrowser.h"
 #include "DrumRack.h"
 #include "SamplerView.h"
+#include "DockPanel.h"
 
 class MainComponent : public juce::Component,
                       public juce::MenuBarModel,
@@ -47,7 +48,7 @@ private:
         cmdAddAudioTrack = 200, cmdAddMidiTrack, cmdAddDrumTrack,
         cmdPlayStop = 300, cmdRecord, cmdGoToStart, cmdLoop, cmdClick, cmdSnap, cmdMonitor, cmdAutoWrite, cmdPunch,
         cmdAddMarker, cmdPrevMarker, cmdNextMarker,
-        cmdMixer = 400, cmdZoomIn, cmdZoomOut, cmdZoomFit, cmdBrowser,
+        cmdMixer = 400, cmdZoomIn, cmdZoomOut, cmdZoomFit, cmdBrowser, cmdDock,
         cmdShortcuts = 500
     };
 
@@ -63,6 +64,7 @@ private:
     void restoreBackup();
     void showDrumRack (int trackIndex);
     void showSampler (int trackIndex);
+    void openDock();
     void addDrumTrack();
     void showShortcuts();
     void toggleMixer();
@@ -105,6 +107,12 @@ private:
     juce::OwnedArray<SamplerWindow> samplerWindows;
     std::unique_ptr<KitBrowser> kitBrowser;
     bool browserVisible = true;
+
+    DockPanel dock;
+    DockDivider dockDivider;
+    int dockHeight = 340;
+    int dockDragStartHeight = 340;
+    bool dockVisible = true;
     std::unique_ptr<juce::FileChooser> chooser;
 
     static constexpr int statusHeight = 22;

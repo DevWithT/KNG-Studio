@@ -75,3 +75,6 @@ private:
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DrumRackWindow)
 };
+
+/** The drum panel (Sequencer + Pads tabs) for use inside the dock. */
+std::unique_ptr<juce::Component> createDrumRackPanel (EditSession& session, tracktion::Track& track);
