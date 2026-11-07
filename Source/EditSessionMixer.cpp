@@ -159,24 +159,6 @@ void EditSession::ensureReverbBus()
 }
 
 //==============================================================================
-void EditSession::setMasterVolumeDb (float db)
-{
-    auto vp = edit->getMasterVolumePlugin();
-
-    if (vp != nullptr)
-        vp->setVolumeDb (db);
-}
-
-float EditSession::getMasterVolumeDb()
-{
-    auto vp = edit->getMasterVolumePlugin();
-
-    if (vp != nullptr)
-        return vp->getVolumeDb();
-
-    return 0.0f;
-}
-
 te::Plugin* EditSession::getMasterMeterPlugin()
 {
     auto& list = edit->getMasterPluginList();

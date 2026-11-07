@@ -213,8 +213,6 @@ public:
     float getSendDb (int trackIndex);
     void setSendDb (int trackIndex, float db);
     bool isReverbBus (int trackIndex);
-    void setMasterVolumeDb (float db);
-    float getMasterVolumeDb();
     tracktion::Plugin* getMasterMeterPlugin();
 
     // Lets the UI open an FX chain window (MainComponent sets this)
