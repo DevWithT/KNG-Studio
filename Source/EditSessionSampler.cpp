@@ -22,7 +22,7 @@ void EditSession::setBuiltInSampler (int trackIndex)
 
     // One instrument per track, so swap out the old one
     for (auto p : track->pluginList.getPlugins())
-        if (p->isSynth())
+        if (p->isSynth() || dynamic_cast<te::SamplerPlugin*> (p.get()) != nullptr)
             p->deleteFromParent();
 
     track->pluginList.insertPlugin (plugin, 0, nullptr);
@@ -45,6 +45,13 @@ bool EditSession::setSamplerSample (int trackIndex, const juce::File& file, int 
         return false;
 
     beginEdit();
+
+    // One sampler per track: remove any extra left over from earlier swaps
+    if (auto* track = getTrack (trackIndex))
+        for (auto p : track->pluginList.getPlugins())
+            if (auto* extra = dynamic_cast<te::SamplerPlugin*> (p.get()))
+                if (extra != s)
+                    extra->deleteFromParent();
 
     while (s->getNumSounds() > 0)
         s->removeSound (0);

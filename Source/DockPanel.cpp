@@ -144,7 +144,7 @@ void DockPanel::showInstrument (te::Track& track, bool isDrumTrack)
     else
         slots[instrumentTab]->setContent (std::make_unique<SamplerComponent> (*session, track));
 
-    tabs.setTabName (instrumentTab, (isDrumTrack ? "Drums: " : "Sampler: ") + track.getName());
+    tabs.setTabName (instrumentTab, (isDrumTrack ? "Drum Kit - " : "Sampler - ") + track.getName());
     showTab (instrumentTab);
 }
 

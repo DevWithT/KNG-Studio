@@ -258,7 +258,6 @@ juce::PopupMenu MainComponent::getMenuForIndex (int menuIndex, const juce::Strin
         case 2: // Track
             add (cmdAddAudioTrack, "Add Audio Track", {}, hasSession);
             add (cmdAddMidiTrack, "Add MIDI Track", {}, hasSession);
-            add (cmdAddDrumTrack, "Add Drum Track", {}, hasSession);
             break;
 
         case 3: // Transport
