@@ -660,7 +660,13 @@ void PianoRoll::mouseDrag (const juce::MouseEvent& e)
 void PianoRoll::mouseUp (const juce::MouseEvent&)
 {
     if (erasing || dragMode != DragMode::none)
+    {
+        // Push the change to every linked copy on the timeline
+        if (clip->isLinked())
+            clip->updateLinkedClips();
+
         session.save();
+    }
 
     erasing = false;
     dragMode = DragMode::none;

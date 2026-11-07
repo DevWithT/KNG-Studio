@@ -153,6 +153,20 @@ public:
     void openPianoRollForTrack (int trackIndex);
     std::function<void (int)> onShowSampler;
 
+    // Patterns (the Rack). Copies of a pattern are linked: edit one, they all update.
+    int getCurrentPattern() const               { return currentPattern; }
+    void setCurrentPattern (int pattern)        { currentPattern = juce::jmax (1, pattern); }
+    int getNumPatterns();
+    int newPattern();
+    int getPatternBars (int pattern);
+    void setPatternBars (int pattern, int bars);
+    double getPatternHome (int pattern);
+    tracktion::MidiClip* getPatternClip (int trackIndex, int pattern, bool createIfMissing);
+    void placePattern (int pattern, double atSeconds);
+    void loopPattern (int pattern);
+    void makePatternUnique (tracktion::MidiClip& clip);
+    double getBarSeconds();
+
     // Tempo, click, count-in
     void setBpm (double bpm);
     double getBpm() const;
@@ -254,6 +268,7 @@ private:
     bool snapEnabled = true;
     bool recoveredFromCrash = false;
     juce::Time lastBackupTime;
+    int currentPattern = 1;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EditSession)
 };

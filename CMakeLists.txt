@@ -58,7 +58,10 @@ target_sources(KNGStudio PRIVATE
     Source/TheoryPanel.cpp
     Source/EditSessionSampler.cpp
     Source/SamplerView.cpp
-    Source/DockPanel.cpp)
+    Source/DockPanel.cpp
+    Source/EditSessionPatterns.cpp
+    Source/RackRow.cpp
+    Source/RackView.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0

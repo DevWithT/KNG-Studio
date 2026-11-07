@@ -1,0 +1,229 @@
+#include "EditSession.h"
+
+namespace te = tracktion;
+
+static const juce::Identifier patternProp ("kngPattern");
+
+static juce::String linkIdFor (int pattern, te::Track& track)
+{
+    return "kngpat" + juce::String (pattern) + "_" + track.itemID.toString();
+}
+
+static int patternOf (te::Clip& c)
+{
+    return (int) c.state.getProperty (patternProp, 0);
+}
+
+//==============================================================================
+double EditSession::getBarSeconds()
+{
+    return 4.0 * 60.0 / juce::jmax (1.0, getBpm());
+}
+
+int EditSession::getNumPatterns()
+{
+    int count = juce::jmax (1, (int) edit->state.getProperty ("kngPatternCount", 1));
+
+    for (int i = 0; i < getNumTracks(); ++i)
+        if (auto* t = getTrack (i))
+            for (auto* c : t->getClips())
+                count = juce::jmax (count, patternOf (*c));
+
+    return count;
+}
+
+int EditSession::newPattern()
+{
+    const int next = getNumPatterns() + 1;
+    edit->state.setProperty ("kngPatternCount", next, nullptr);
+    setCurrentPattern (next);
+    return next;
+}
+
+int EditSession::getPatternBars (int pattern)
+{
+    return juce::jlimit (1, 4, (int) edit->state.getProperty ("kngPatternBars" + juce::String (pattern), 1));
+}
+
+void EditSession::setPatternBars (int pattern, int bars)
+{
+    bars = juce::jlimit (1, 4, bars);
+
+    beginEdit();
+    edit->state.setProperty ("kngPatternBars" + juce::String (pattern), bars, nullptr);
+
+    // Resize every copy of the pattern
+    for (int i = 0; i < getNumTracks(); ++i)
+        if (auto* t = getTrack (i))
+            for (auto* c : t->getClips())
+                if (auto* mc = dynamic_cast<te::MidiClip*> (c))
+                    if (patternOf (*mc) == pattern)
+                        mc->setEnd (mc->getPosition().getStart() + te::TimeDuration::fromSeconds (getBarSeconds() * bars), true);
+
+    save();
+}
+
+double EditSession::getPatternHome (int pattern)
+{
+    const juce::Identifier key ("kngPatternHome" + juce::String (pattern));
+
+    if (edit->state.hasProperty (key))
+        return (double) edit->state.getProperty (key);
+
+    // Earliest copy on any track, otherwise the bar under the playhead
+    double home = -1.0;
+
+    for (int i = 0; i < getNumTracks(); ++i)
+        if (auto* t = getTrack (i))
+            for (auto* c : t->getClips())
+                if (patternOf (*c) == pattern)
+                {
+                    const double start = c->getPosition().getStart().inSeconds();
+                    home = home < 0.0 ? start : juce::jmin (home, start);
+                }
+
+    if (home < 0.0)
+        home = std::floor (getTransport().getPosition().inSeconds() / getBarSeconds()) * getBarSeconds();
+
+    edit->state.setProperty (key, home, nullptr);
+    return home;
+}
+
+te::MidiClip* EditSession::getPatternClip (int trackIndex, int pattern, bool createIfMissing)
+{
+    auto* track = getTrack (trackIndex);
+
+    if (track == nullptr)
+        return nullptr;
+
+    const double home = getPatternHome (pattern);
+    te::MidiClip* first = nullptr;
+
+    for (auto* c : track->getClips())
+    {
+        if (auto* mc = dynamic_cast<te::MidiClip*> (c))
+        {
+            if (patternOf (*mc) != pattern)
+                continue;
+
+            // Prefer the copy at the pattern's home
+            if (std::abs (mc->getPosition().getStart().inSeconds() - home) < 0.001)
+                return mc;
+
+            if (first == nullptr)
+                first = mc;
+        }
+    }
+
+    if (first != nullptr || ! createIfMissing || getTransport().isRecording())
+        return first;
+
+    beginEdit();
+
+    const double length = getBarSeconds() * getPatternBars (pattern);
+    auto clip = track->insertMIDIClip (te::TimeRange (te::TimePosition::fromSeconds (home),
+                                                      te::TimePosition::fromSeconds (home + length)),
+                                       nullptr);
+
+    if (clip == nullptr)
+        return nullptr;
+
+    clip->setName ("Pattern " + juce::String (pattern));
+    clip->state.setProperty (patternProp, pattern, nullptr);
+    clip->setLinkGroupID (linkIdFor (pattern, *track));
+
+    save();
+    return clip.get();
+}
+
+void EditSession::placePattern (int pattern, double atSeconds)
+{
+    if (getTransport().isRecording())
+        return;
+
+    const double bar = getBarSeconds();
+    const double start = juce::jmax (0.0, std::floor (atSeconds / bar) * bar);
+
+    beginEdit();
+
+    for (int i = 0; i < getNumTracks(); ++i)
+    {
+        auto* track = getTrack (i);
+        auto* master = getPatternClip (i, pattern, false);
+
+        if (track == nullptr || master == nullptr)
+            continue;
+
+        if (master->getLinkGroupID().isEmpty())
+            master->setLinkGroupID (linkIdFor (pattern, *track));
+
+        // Don't stack a copy on top of one that's already there
+        bool alreadyThere = false;
+
+        for (auto* c : track->getClips())
+            if (patternOf (*c) == pattern && std::abs (c->getPosition().getStart().inSeconds() - start) < 0.001)
+                alreadyThere = true;
+
+        if (alreadyThere)
+            continue;
+
+        // The copy keeps the pattern number and link, so it stays in sync
+        if (auto copy = te::duplicateClip (*master))
+            copy->setStart (te::TimePosition::fromSeconds (start), false, true);
+    }
+
+    save();
+}
+
+void EditSession::loopPattern (int pattern)
+{
+    const double home = getPatternHome (pattern);
+    const double length = getBarSeconds() * getPatternBars (pattern);
+
+    setLoopRange (home, home + length);
+    setLooping (true);
+    getTransport().setPosition (te::TimePosition::fromSeconds (home));
+
+    if (! getTransport().isPlaying())
+        play();
+}
+
+void EditSession::makePatternUnique (te::MidiClip& clip)
+{
+    const int oldPattern = patternOf (clip);
+
+    if (oldPattern <= 0)
+        return;
+
+    const double start = clip.getPosition().getStart().inSeconds();
+    const int fresh = getNumPatterns() + 1;
+
+    beginEdit();
+
+    edit->state.setProperty ("kngPatternCount", fresh, nullptr);
+    edit->state.setProperty ("kngPatternHome" + juce::String (fresh), start, nullptr);
+    edit->state.setProperty ("kngPatternBars" + juce::String (fresh), getPatternBars (oldPattern), nullptr);
+
+    // Every track's copy at this spot becomes the new pattern
+    for (int i = 0; i < getNumTracks(); ++i)
+    {
+        if (auto* track = getTrack (i))
+        {
+            for (auto* c : track->getClips())
+            {
+                if (patternOf (*c) == oldPattern && std::abs (c->getPosition().getStart().inSeconds() - start) < 0.001)
+                {
+                    c->state.setProperty (patternProp, fresh, &edit->getUndoManager());
+                    c->setLinkGroupID (linkIdFor (fresh, *track));
+                    c->setName ("Pattern " + juce::String (fresh));
+                }
+            }
+        }
+    }
+
+    // The old pattern may have lost its home copy, so let it find a new one
+    edit->state.removeProperty ("kngPatternHome" + juce::String (oldPattern), nullptr);
+
+    setCurrentPattern (fresh);
+    save();
+}

@@ -406,6 +406,10 @@ void TrackLane::showClipMenu (te::Clip* clip)
     if (auto* mc = dynamic_cast<te::MidiClip*> (clip))
     {
         te::MidiClip::Ptr midiPtr (mc);
+        // Split one copy of a linked pattern into its own new pattern
+        if (mc->state.hasProperty ("kngPattern"))
+            menu.addItem ("Make Unique", [s, midiPtr] { s->makePatternUnique (*midiPtr); });
+
         menu.addItem ("Open Piano Roll", [s, midiPtr]
         {
             if (s->onShowPianoRoll)

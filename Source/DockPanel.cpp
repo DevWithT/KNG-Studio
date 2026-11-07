@@ -5,6 +5,7 @@
 #include "FxChainComponent.h"
 #include "CompView.h"
 #include "MixerView.h"
+#include "RackView.h"
 
 namespace te = tracktion;
 
@@ -112,7 +113,11 @@ void DockPanel::setSession (EditSession* sessionToUse)
     session = sessionToUse;
 
     if (session != nullptr)
+    {
+        slots[rackTab]->setContent (std::make_unique<RackView> (*session));
         slots[mixerTab]->setContent (std::make_unique<MixerView> (*session));
+        showTab (rackTab);
+    }
 }
 
 //==============================================================================
