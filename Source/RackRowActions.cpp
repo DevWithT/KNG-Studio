@@ -203,7 +203,7 @@ void RackRow::showRowMenu()
                 // Steps play the whole sample; melodies stop at the end of each note
                 const int trackIndex = safe->getTrackIndex();
                 safe->session.beginEdit();
-                safe->session.setSamplerOneShot (trackIndex, toSteps);
+                safe->session.setSamplerOneShot (trackIndex, false);
                 safe->session.save();
                 safe->repaint();
             }

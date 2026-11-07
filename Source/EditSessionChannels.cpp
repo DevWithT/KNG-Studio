@@ -25,9 +25,9 @@ int EditSession::addSampleChannel (const juce::File& sample)
     track->state.setProperty ("kngChannel", true, nullptr);
     save();
 
-    // Plays at its own pitch on C4, and always plays the whole sample
+    // Plays at its own pitch on C4, and stops when its note ends
     setSamplerSample (index, sample, 60);
-    setSamplerOneShot (index, true);
+    setSamplerOneShot (index, false);
 
     return index;
 }

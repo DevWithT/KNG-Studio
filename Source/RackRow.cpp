@@ -597,10 +597,16 @@ void RackRow::mouseUp (const juce::MouseEvent&)
 
     painting = false;
 
-    // Push the change to every linked copy on the timeline
     if (auto* clip = getClip (false))
+    {
+        // Sound rows: each hit rings until the next one
+        if (isChannel())
+            PatternGrid::fillToNext (*clip, getChannelNote(), getNumSteps(), &session.getEdit().getUndoManager());
+
+        // Push the change to every linked copy on the timeline
         if (clip->isLinked())
             clip->updateLinkedClips();
+    }
 
     session.save();
 }
