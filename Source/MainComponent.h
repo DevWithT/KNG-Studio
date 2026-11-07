@@ -17,6 +17,7 @@
 #include "ClipProps.h"
 #include "KitBrowser.h"
 #include "DrumRack.h"
+#include "SamplerView.h"
 
 class MainComponent : public juce::Component,
                       public juce::MenuBarModel,
@@ -61,6 +62,7 @@ private:
     void showClipProps (tracktion::AudioClipBase& clip);
     void restoreBackup();
     void showDrumRack (int trackIndex);
+    void showSampler (int trackIndex);
     void addDrumTrack();
     void showShortcuts();
     void toggleMixer();
@@ -100,6 +102,7 @@ private:
     std::unique_ptr<MixerWindow> mixerWindow;
     juce::OwnedArray<CompWindow> compWindows;
     juce::OwnedArray<DrumRackWindow> drumRackWindows;
+    juce::OwnedArray<SamplerWindow> samplerWindows;
     std::unique_ptr<KitBrowser> kitBrowser;
     bool browserVisible = true;
     std::unique_ptr<juce::FileChooser> chooser;

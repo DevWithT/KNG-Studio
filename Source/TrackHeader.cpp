@@ -77,6 +77,10 @@ TrackHeader::TrackHeader (EditSession& sessionToUse, int trackIndexToUse)
             showInstrumentMenu();
     };
 
+    addAndMakeVisible (rollButton);
+    rollButton.setVisible (isMidi);
+    rollButton.onClick = [this] { session.openPianoRollForTrack (trackIndex); };
+
     addAndMakeVisible (inputBox);
     inputBox.setTextWhenNoChoicesAvailable (isMidi ? "No MIDI inputs" : "No inputs");
     inputBox.onChange = [this]
@@ -186,14 +190,26 @@ void TrackHeader::showInstrumentMenu()
     const int idx = trackIndex;
 
     juce::PopupMenu menu;
+    auto* inst = session.getInstrument (trackIndex);
 
-    if (auto* inst = session.getInstrument (trackIndex))
+    if (dynamic_cast<te::SamplerPlugin*> (inst) != nullptr)
+    {
+        menu.addItem ("Open KNG Sampler", [s, idx] { if (s->onShowSampler) s->onShowSampler (idx); });
+    }
+    else if (inst != nullptr)
     {
         te::Plugin::Ptr ptr (inst);
         menu.addItem ("Open " + inst->getName(), [ptr] { ptr->showWindowExplicitly(); });
+    }
+
+    if (inst != nullptr)
+    {
         menu.addItem ("Remove Instrument", [s, idx] { s->removeInstrument (idx); });
         menu.addSeparator();
     }
+
+    menu.addItem ("KNG Sampler (built-in)", [s, idx] { s->setBuiltInSampler (idx); });
+    menu.addSeparator();
 
     std::map<juce::String, juce::PopupMenu> byMaker;
 
@@ -207,7 +223,7 @@ void TrackHeader::showInstrumentMenu()
     }
 
     if (byMaker.empty())
-        menu.addItem ("No instruments yet. Click Scan Plugins up top.", false, false, nullptr);
+        menu.addItem ("No VST instruments yet. Use File > Scan Plugins.", false, false, nullptr);
 
     for (auto& [maker, sub] : byMaker)
         menu.addSubMenu (maker, sub);
@@ -248,7 +264,10 @@ void TrackHeader::timerCallback()
     if (isMidi)
     {
         auto* inst = session.getInstrument (trackIndex);
-        const auto text = inst != nullptr ? inst->getName() : juce::String ("No instrument");
+        const auto text = session.isDrumTrack (trackIndex)                ? juce::String ("Drum Rack")
+                        : dynamic_cast<te::SamplerPlugin*> (inst) != nullptr ? juce::String ("KNG Sampler")
+                        : inst != nullptr                                 ? inst->getName()
+                                                                          : juce::String ("No instrument");
 
         if (instrumentButton.getButtonText() != text)
             instrumentButton.setButtonText (text);
@@ -314,6 +333,8 @@ void TrackHeader::resized()
 
     if (isMidi)
     {
+        rollButton.setBounds (row2.removeFromRight (40));
+        row2.removeFromRight (4);
         inputBox.setBounds (row2.removeFromLeft (row2.getWidth() / 2));
         row2.removeFromLeft (4);
         instrumentButton.setBounds (row2);

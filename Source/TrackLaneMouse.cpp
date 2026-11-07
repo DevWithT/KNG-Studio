@@ -385,6 +385,14 @@ void TrackLane::showClipMenu (te::Clip* clip)
                 s->onShowClipProps (*acbPtr);
         });
 
+        juce::PopupMenu chop;
+
+        for (int n : { 4, 8, 16 })
+            chop.addItem (juce::String (n) + " slices", [s, acbPtr, n] { s->chopClipToPads (*acbPtr, n, false); });
+
+        chop.addItem ("At markers", [s, acbPtr] { s->chopClipToPads (*acbPtr, 16, true); });
+        menu.addSubMenu ("Chop to Pads", chop);
+
         menu.addItem ("Tune with KngTune", [s, idx = trackIndex]
         {
             if (! s->addKngTune (idx))

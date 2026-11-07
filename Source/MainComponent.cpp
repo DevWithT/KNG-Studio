@@ -85,6 +85,7 @@ void MainComponent::closeProject()
     mixerWindow = nullptr;
     compWindows.clear();
     drumRackWindows.clear();
+    samplerWindows.clear();
     tracksViewport.setViewedComponent (nullptr, false);
     tracksView = nullptr;
     masterStrip = nullptr;
@@ -104,6 +105,7 @@ void MainComponent::loadProject (const juce::File& editFile)
     session->onShowComp      = [this] (tracktion::WaveAudioClip& clip) { showComp (clip); };
     session->onShowClipProps = [this] (tracktion::AudioClipBase& clip) { showClipProps (clip); };
     session->onShowDrumRack  = [this] (int trackIndex) { showDrumRack (trackIndex); };
+    session->onShowSampler   = [this] (int trackIndex) { showSampler (trackIndex); };
 
     transportBar = std::make_unique<TransportBar> (*session);
     addAndMakeVisible (*transportBar);
@@ -785,4 +787,28 @@ void MainComponent::showDrumRack (int trackIndex)
     }
 
     drumRackWindows.add (new DrumRackWindow (*session, *track));
+}
+
+void MainComponent::showSampler (int trackIndex)
+{
+    if (session == nullptr)
+        return;
+
+    auto* track = session->getTrack (trackIndex);
+
+    if (track == nullptr)
+        return;
+
+    // Reuse the window if this track's sampler is already open
+    for (auto* w : samplerWindows)
+    {
+        if (w->getTrack() == track)
+        {
+            w->setVisible (true);
+            w->toFront (true);
+            return;
+        }
+    }
+
+    samplerWindows.add (new SamplerWindow (*session, *track));
 }

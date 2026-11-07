@@ -29,6 +29,7 @@ private:
     juce::Label nameLabel, sendLabel;
     juce::TextButton armButton { "R" }, muteButton { "M" }, soloButton { "S" }, fxButton { "FX" }, autoButton { "A" };
     juce::TextButton instrumentButton { "No instrument" };
+    juce::TextButton rollButton { "Roll" };
     juce::ComboBox inputBox;
     juce::Slider volumeSlider, panSlider, sendSlider;
     LevelMeter meter;

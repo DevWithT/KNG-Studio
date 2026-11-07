@@ -139,6 +139,20 @@ public:
     tracktion::MidiClip* createPatternClip (int trackIndex, double startSeconds, int bars);
     std::function<void (int)> onShowDrumRack;
 
+    // Built-in sampler instrument, chopping, and quick piano roll access
+    void setBuiltInSampler (int trackIndex);
+    bool setSamplerSample (int trackIndex, const juce::File& file, int rootNote);
+    juce::String getSamplerSampleName (int trackIndex);
+    int getSamplerRoot (int trackIndex);
+    void setSamplerRoot (int trackIndex, int rootNote);
+    float getSamplerGain (int trackIndex);
+    void setSamplerGain (int trackIndex, float gainDb);
+    bool getSamplerOneShot (int trackIndex);
+    void setSamplerOneShot (int trackIndex, bool oneShot);
+    int chopClipToPads (tracktion::AudioClipBase& clip, int slices, bool atMarkers);
+    void openPianoRollForTrack (int trackIndex);
+    std::function<void (int)> onShowSampler;
+
     // Tempo, click, count-in
     void setBpm (double bpm);
     double getBpm() const;
