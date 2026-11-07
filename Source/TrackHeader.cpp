@@ -1,5 +1,6 @@
 #include "TrackHeader.h"
 #include <map>
+#include "VolumeHelpers.h"
 
 namespace te = tracktion;
 
@@ -95,9 +96,7 @@ TrackHeader::TrackHeader (EditSession& sessionToUse, int trackIndexToUse)
     addAndMakeVisible (volumeSlider);
     volumeSlider.setSliderStyle (juce::Slider::LinearHorizontal);
     volumeSlider.setTextBoxStyle (juce::Slider::TextBoxRight, false, 56, 20);
-    volumeSlider.setRange (-60.0, 6.0, 0.1);
-    volumeSlider.setTextValueSuffix (" dB");
-    volumeSlider.setDoubleClickReturnValue (true, 0.0);
+    KngVolume::setupSlider (volumeSlider);
 
     addAndMakeVisible (panSlider);
     panSlider.setSliderStyle (juce::Slider::LinearHorizontal);
@@ -131,7 +130,7 @@ TrackHeader::TrackHeader (EditSession& sessionToUse, int trackIndexToUse)
 
         if (auto* vp = t->getVolumePlugin())
         {
-            volumeSlider.setValue (vp->getVolumeDb(), juce::dontSendNotification);
+            volumeSlider.setValue (session.getTrackVolumeDb (trackIndex), juce::dontSendNotification);
             panSlider.setValue (vp->getPan(), juce::dontSendNotification);
         }
     }
@@ -139,8 +138,7 @@ TrackHeader::TrackHeader (EditSession& sessionToUse, int trackIndexToUse)
     volumeSlider.onValueChange = [this]
     {
         if (auto* t = session.getTrack (trackIndex))
-            if (auto* vp = t->getVolumePlugin())
-                vp->setVolumeDb ((float) volumeSlider.getValue());
+            session.setTrackVolumeDb (trackIndex, (float) volumeSlider.getValue());
     };
 
     panSlider.onValueChange = [this]
@@ -247,7 +245,7 @@ void TrackHeader::timerCallback()
         if (auto* vp = t->getVolumePlugin())
         {
             if (! volumeSlider.isMouseButtonDown())
-                volumeSlider.setValue (vp->getVolumeDb(), juce::dontSendNotification);
+                volumeSlider.setValue (session.getTrackVolumeDb (trackIndex), juce::dontSendNotification);
 
             if (! panSlider.isMouseButtonDown())
                 panSlider.setValue (vp->getPan(), juce::dontSendNotification);

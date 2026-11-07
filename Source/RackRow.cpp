@@ -1,5 +1,6 @@
 #include "RackRow.h"
 #include "PatternGrid.h"
+#include "VolumeHelpers.h"
 #include <map>
 
 namespace te = tracktion;
@@ -33,15 +34,8 @@ RackRow::RackRow (EditSession& sessionToUse, te::Track& trackToUse)
         k->setPopupDisplayEnabled (true, true, this);
     }
 
-    volKnob.setRange (-60.0, 6.0, 0.1);
-    volKnob.setTextValueSuffix (" dB");
-    volKnob.setDoubleClickReturnValue (true, 0.0);
-    volKnob.onValueChange = [this]
-    {
-        if (auto* at = getAudioTrack())
-            if (auto* vp = at->getVolumePlugin())
-                vp->setVolumeDb ((float) volKnob.getValue());
-    };
+    KngVolume::setupSlider (volKnob);
+    volKnob.onValueChange = [this] { session.setTrackVolumeDb (getTrackIndex(), (float) volKnob.getValue()); };
 
     panKnob.setRange (-1.0, 1.0, 0.01);
     panKnob.setDoubleClickReturnValue (true, 0.0);
@@ -193,7 +187,7 @@ void RackRow::syncControls()
     if (auto* vp = at->getVolumePlugin())
     {
         if (! volKnob.isMouseButtonDown())
-            volKnob.setValue (vp->getVolumeDb(), juce::dontSendNotification);
+            volKnob.setValue (session.getTrackVolumeDb (idx), juce::dontSendNotification);
 
         if (! panKnob.isMouseButtonDown())
             panKnob.setValue (vp->getPan(), juce::dontSendNotification);

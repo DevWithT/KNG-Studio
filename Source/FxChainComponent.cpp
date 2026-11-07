@@ -83,7 +83,11 @@ void FxChainComponent::rebuild()
     shown = session.getFxPlugins (list);
 
     for (auto* p : shown)
+    {
+        if ((bool) p->state.getProperty ("kngBoost", false)) continue;
+
         addAndMakeVisible (rows.add (new Row (*this, *p)));
+    }
 
     resized();
 }

@@ -1,4 +1,5 @@
 #include "MasterStrip.h"
+#include "VolumeHelpers.h"
 
 MasterStrip::MasterStrip (EditSession& sessionToUse)
     : session (sessionToUse)
@@ -10,9 +11,7 @@ MasterStrip::MasterStrip (EditSession& sessionToUse)
     addAndMakeVisible (volumeSlider);
     volumeSlider.setSliderStyle (juce::Slider::LinearHorizontal);
     volumeSlider.setTextBoxStyle (juce::Slider::TextBoxRight, false, 60, 20);
-    volumeSlider.setRange (-60.0, 6.0, 0.1);
-    volumeSlider.setTextValueSuffix (" dB");
-    volumeSlider.setDoubleClickReturnValue (true, 0.0);
+    KngVolume::setupSlider (volumeSlider);
     volumeSlider.setValue (session.getMasterVolumeDb(), juce::dontSendNotification);
     volumeSlider.onValueChange = [this] { session.setMasterVolumeDb ((float) volumeSlider.getValue()); };
 

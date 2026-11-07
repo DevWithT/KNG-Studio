@@ -1,4 +1,5 @@
 #include "MixerView.h"
+#include "VolumeHelpers.h"
 
 namespace te = tracktion;
 
@@ -80,9 +81,7 @@ MixerStrip::MixerStrip (EditSession& sessionToUse, int trackIndexToUse)
     // Fader
     fader.setSliderStyle (juce::Slider::LinearVertical);
     fader.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 60, 18);
-    fader.setRange (-60.0, 6.0, 0.1);
-    fader.setTextValueSuffix (" dB");
-    fader.setDoubleClickReturnValue (true, 0.0);
+    KngVolume::setupSlider (fader);
     fader.onValueChange = [this]
     {
         if (isMaster())
@@ -91,8 +90,7 @@ MixerStrip::MixerStrip (EditSession& sessionToUse, int trackIndexToUse)
         }
         else if (auto* t = session.getTrack (trackIndex))
         {
-            if (auto* vp = t->getVolumePlugin())
-                vp->setVolumeDb ((float) fader.getValue());
+            session.setTrackVolumeDb (trackIndex, (float) fader.getValue());
         }
     };
 
@@ -151,7 +149,7 @@ void MixerStrip::timerCallback()
     if (auto* vp = t->getVolumePlugin())
     {
         if (! fader.isMouseButtonDown())
-            fader.setValue (vp->getVolumeDb(), juce::dontSendNotification);
+            fader.setValue (session.getTrackVolumeDb (trackIndex), juce::dontSendNotification);
 
         if (! panKnob.isMouseButtonDown())
             panKnob.setValue (vp->getPan(), juce::dontSendNotification);

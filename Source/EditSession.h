@@ -156,6 +156,12 @@ public:
     /** One sound in the Rack: a new track with a one-shot KNG Sampler. Returns the track index, or -1. */
     int addSampleChannel (const juce::File& sample);
 
+    /** Volume from -inf (at or below -60) up to +12 dB. Above +6 uses a hidden boost stage. */
+    float getTrackVolumeDb (int trackIndex);
+    void setTrackVolumeDb (int trackIndex, float db);
+    float getMasterVolumeDb();
+    void setMasterVolumeDb (float db);
+
     // Patterns (the Rack). Copies of a pattern are linked: edit one, they all update.
     int getCurrentPattern() const               { return currentPattern; }
     void setCurrentPattern (int pattern)        { currentPattern = juce::jmax (1, pattern); }
