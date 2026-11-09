@@ -1,6 +1,7 @@
 #include "RackRow.h"
 #include "PatternGrid.h"
 #include "VolumeHelpers.h"
+#include "KngSamplerPlugin.h"
 #include <map>
 
 namespace te = tracktion;
@@ -196,7 +197,7 @@ void RackRow::syncControls()
     auto* inst = session.getInstrument (idx);
     const auto text = isChannel()                                        ? juce::String ("Sample")
                     : isDrum()                                           ? juce::String (getVisiblePads().isEmpty() ? "Load Kit" : "Kit")
-                    : dynamic_cast<te::SamplerPlugin*> (inst) != nullptr ? juce::String ("Sampler")
+                    : dynamic_cast<KngSamplerPlugin*> (inst) != nullptr ? juce::String ("Sampler")
                     : inst != nullptr                                    ? inst->getName()
                                                                          : juce::String ("+ Inst");
 
@@ -225,7 +226,7 @@ void RackRow::openInstrument()
 
     auto* inst = session.getInstrument (idx);
 
-    if (dynamic_cast<te::SamplerPlugin*> (inst) != nullptr)
+    if (dynamic_cast<KngSamplerPlugin*> (inst) != nullptr)
     {
         if (session.onShowSampler)
             session.onShowSampler (idx);

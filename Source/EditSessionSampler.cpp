@@ -1,10 +1,37 @@
 #include "EditSession.h"
+#include "KngSamplerPlugin.h"
 #include <algorithm>
 
 namespace te = tracktion;
 
 //==============================================================================
-// Built-in sampler: one sample played across the whole keyboard
+// KNG Sampler: one sample played across the whole keyboard
+
+KngSamplerPlugin* EditSession::getKngSampler (int trackIndex)
+{
+    if (auto* track = getTrack (trackIndex))
+        for (auto* p : track->pluginList.getPlugins())
+            if (auto* k = dynamic_cast<KngSamplerPlugin*> (p))
+                return k;
+
+    return nullptr;
+}
+
+static KngSamplerPlugin* createKngSampler (te::Edit& edit, te::AudioTrack& track)
+{
+    auto plugin = edit.getPluginCache().createNewPlugin (KngSamplerPlugin::xmlTypeName, juce::PluginDescription());
+
+    if (plugin == nullptr)
+        return nullptr;
+
+    // One instrument per track, so swap out the old one (including older samplers)
+    for (auto* p : track.pluginList.getPlugins())
+        if (p->isSynth() || dynamic_cast<te::SamplerPlugin*> (p) != nullptr)
+            p->deleteFromParent();
+
+    track.pluginList.insertPlugin (plugin, 0, nullptr);
+    return dynamic_cast<KngSamplerPlugin*> (plugin.get());
+}
 
 void EditSession::setBuiltInSampler (int trackIndex)
 {
@@ -13,19 +40,8 @@ void EditSession::setBuiltInSampler (int trackIndex)
     if (track == nullptr)
         return;
 
-    auto plugin = edit->getPluginCache().createNewPlugin (te::SamplerPlugin::xmlTypeName, juce::PluginDescription());
-
-    if (plugin == nullptr)
-        return;
-
     beginEdit();
-
-    // One instrument per track, so swap out the old one
-    for (auto p : track->pluginList.getPlugins())
-        if (p->isSynth() || dynamic_cast<te::SamplerPlugin*> (p) != nullptr)
-            p->deleteFromParent();
-
-    track->pluginList.insertPlugin (plugin, 0, nullptr);
+    createKngSampler (*edit, *track);
     save();
 
     if (onShowSampler)
@@ -34,97 +50,87 @@ void EditSession::setBuiltInSampler (int trackIndex)
 
 bool EditSession::setSamplerSample (int trackIndex, const juce::File& file, int rootNote)
 {
-    auto* s = getDrumSampler (trackIndex);
+    auto* track = getTrack (trackIndex);
 
-    if (s == nullptr)
-        return false;
-
-    te::AudioFile audioFile (engine, file);
-
-    if (! audioFile.isValid())
+    if (track == nullptr || ! file.existsAsFile())
         return false;
 
     beginEdit();
 
-    // One sampler per track: remove any extra left over from earlier swaps
-    if (auto* track = getTrack (trackIndex))
-        for (auto p : track->pluginList.getPlugins())
-            if (auto* extra = dynamic_cast<te::SamplerPlugin*> (p))
-                if (extra != s)
-                    extra->deleteFromParent();
+    auto* k = getKngSampler (trackIndex);
 
-    while (s->getNumSounds() > 0)
-        s->removeSound (0);
+    // Older sampler, or none: upgrade to the KNG engine
+    if (k == nullptr)
+        k = createKngSampler (*edit, *track);
 
-    const auto error = s->addSound (file.getFullPathName(), file.getFileNameWithoutExtension(),
-                                    0.0, audioFile.getLength(), 0.0f);
-
-    if (error.isNotEmpty())
+    if (k == nullptr)
         return false;
 
-    // Play it across every key, pitched from the root note
-    s->setSoundParams (0, juce::jlimit (0, 127, rootNote), 0, 127);
-    s->setSoundOpenEnded (0, false);
+    k->state.setProperty (KngSamplerPlugin::rootProp, juce::jlimit (0, 127, rootNote), nullptr);
+    const bool ok = k->loadSample (file);
 
     save();
-    return true;
+    return ok;
 }
 
 juce::String EditSession::getSamplerSampleName (int trackIndex)
 {
-    if (auto* s = getDrumSampler (trackIndex))
-        if (s->getNumSounds() > 0)
-            return s->getSoundName (0);
+    if (auto* k = getKngSampler (trackIndex))
+        if (k->getSampleFile() != juce::File())
+            return k->getSampleFile().getFileNameWithoutExtension();
 
     return {};
 }
 
 int EditSession::getSamplerRoot (int trackIndex)
 {
-    if (auto* s = getDrumSampler (trackIndex))
-        if (s->getNumSounds() > 0)
-            return s->getKeyNote (0);
+    if (auto* k = getKngSampler (trackIndex))
+        return (int) k->state.getProperty (KngSamplerPlugin::rootProp, 60);
 
     return 60;
 }
 
 void EditSession::setSamplerRoot (int trackIndex, int rootNote)
 {
-    if (auto* s = getDrumSampler (trackIndex))
-        if (s->getNumSounds() > 0)
-            s->setSoundParams (0, juce::jlimit (0, 127, rootNote), 0, 127);
+    if (auto* k = getKngSampler (trackIndex))
+    {
+        k->state.setProperty (KngSamplerPlugin::rootProp, juce::jlimit (0, 127, rootNote), &edit->getUndoManager());
+        k->syncFromState();
+    }
 }
 
 float EditSession::getSamplerGain (int trackIndex)
 {
-    if (auto* s = getDrumSampler (trackIndex))
-        if (s->getNumSounds() > 0)
-            return s->getSoundGainDb (0);
+    if (auto* k = getKngSampler (trackIndex))
+        return (float) k->state.getProperty (KngSamplerPlugin::gainProp, 0.0f);
 
     return 0.0f;
 }
 
 void EditSession::setSamplerGain (int trackIndex, float gainDb)
 {
-    if (auto* s = getDrumSampler (trackIndex))
-        if (s->getNumSounds() > 0)
-            s->setSoundGains (0, gainDb, s->getSoundPan (0));
+    if (auto* k = getKngSampler (trackIndex))
+    {
+        k->state.setProperty (KngSamplerPlugin::gainProp, gainDb, &edit->getUndoManager());
+        k->syncFromState();
+    }
 }
 
 bool EditSession::getSamplerOneShot (int trackIndex)
 {
-    if (auto* s = getDrumSampler (trackIndex))
-        if (s->getNumSounds() > 0)
-            return s->isSoundOpenEnded (0);
+    if (auto* k = getKngSampler (trackIndex))
+        return (bool) k->state.getProperty (KngSamplerPlugin::oneShotProp, false);
 
     return false;
 }
 
 void EditSession::setSamplerOneShot (int trackIndex, bool oneShot)
 {
-    if (auto* s = getDrumSampler (trackIndex))
-        if (s->getNumSounds() > 0)
-            s->setSoundOpenEnded (0, oneShot);
+    if (auto* k = getKngSampler (trackIndex))
+    {
+        k->state.setProperty (KngSamplerPlugin::oneShotProp, oneShot, &edit->getUndoManager());
+        k->syncFromState();
+    }
 }
 
 //==============================================================================

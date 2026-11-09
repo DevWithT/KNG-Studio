@@ -154,7 +154,7 @@ void RackRow::showRowMenu()
 
     auto* s = &session;
     juce::Component::SafePointer<RackRow> safe (this);
-    const bool hasSampler = session.getDrumSampler (idx) != nullptr;
+    const bool hasSampler = session.getKngSampler (idx) != nullptr;
 
     juce::PopupMenu menu;
 
@@ -234,7 +234,7 @@ void RackRow::dropFile (const juce::File& file)
 
     const bool wasChannel = isChannel();
 
-    if (session.getDrumSampler (idx) == nullptr)
+    if (session.getKngSampler (idx) == nullptr)
         session.setBuiltInSampler (idx);
 
     session.setSamplerSample (idx, file, session.getSamplerRoot (idx));

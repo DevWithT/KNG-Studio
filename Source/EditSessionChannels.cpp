@@ -1,4 +1,5 @@
 #include "EditSession.h"
+#include "KngSamplerPlugin.h"
 
 namespace te = tracktion;
 
@@ -14,7 +15,7 @@ int EditSession::addSampleChannel (const juce::File& sample)
     if (track == nullptr)
         return -1;
 
-    auto plugin = edit->getPluginCache().createNewPlugin (te::SamplerPlugin::xmlTypeName, juce::PluginDescription());
+    auto plugin = edit->getPluginCache().createNewPlugin (KngSamplerPlugin::xmlTypeName, juce::PluginDescription());
 
     if (plugin == nullptr)
         return -1;

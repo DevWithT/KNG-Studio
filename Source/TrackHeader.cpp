@@ -1,6 +1,7 @@
 #include "TrackHeader.h"
 #include <map>
 #include "VolumeHelpers.h"
+#include "KngSamplerPlugin.h"
 
 namespace te = tracktion;
 
@@ -190,7 +191,7 @@ void TrackHeader::showInstrumentMenu()
     juce::PopupMenu menu;
     auto* inst = session.getInstrument (trackIndex);
 
-    if (dynamic_cast<te::SamplerPlugin*> (inst) != nullptr)
+    if (dynamic_cast<KngSamplerPlugin*> (inst) != nullptr)
     {
         menu.addItem ("Open KNG Sampler", [s, idx] { if (s->onShowSampler) s->onShowSampler (idx); });
     }
@@ -263,7 +264,7 @@ void TrackHeader::timerCallback()
     {
         auto* inst = session.getInstrument (trackIndex);
         const auto text = session.isDrumTrack (trackIndex)                ? juce::String ("Drum Rack")
-                        : dynamic_cast<te::SamplerPlugin*> (inst) != nullptr ? juce::String ("KNG Sampler")
+                        : dynamic_cast<KngSamplerPlugin*> (inst) != nullptr ? juce::String ("KNG Sampler")
                         : inst != nullptr                                 ? inst->getName()
                                                                           : juce::String ("No instrument");
 

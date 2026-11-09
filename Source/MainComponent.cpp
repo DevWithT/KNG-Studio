@@ -1,8 +1,11 @@
 #include "MainComponent.h"
+#include "KngSamplerPlugin.h"
 
 MainComponent::MainComponent (tracktion::Engine& engineToUse)
     : engine (engineToUse)
 {
+    engine.getPluginManager().createBuiltInType<KngSamplerPlugin>();
+
     setWantsKeyboardFocus (true);
 
     menuBar.setModel (this);

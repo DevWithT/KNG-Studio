@@ -2,6 +2,8 @@
 
 #include <tracktion_engine/tracktion_engine.h>
 
+class KngSamplerPlugin;
+
 class EditSession : private juce::Timer
 {
 public:
@@ -141,6 +143,7 @@ public:
 
     // Built-in sampler instrument, chopping, and quick piano roll access
     void setBuiltInSampler (int trackIndex);
+    KngSamplerPlugin* getKngSampler (int trackIndex);
     bool setSamplerSample (int trackIndex, const juce::File& file, int rootNote);
     juce::String getSamplerSampleName (int trackIndex);
     int getSamplerRoot (int trackIndex);

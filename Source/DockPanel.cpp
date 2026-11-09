@@ -6,6 +6,7 @@
 #include "CompView.h"
 #include "MixerView.h"
 #include "RackView.h"
+#include "KngSamplerView.h"
 
 namespace te = tracktion;
 
@@ -142,7 +143,7 @@ void DockPanel::showInstrument (te::Track& track, bool isDrumTrack)
     if (isDrumTrack)
         slots[instrumentTab]->setContent (createDrumRackPanel (*session, track));
     else
-        slots[instrumentTab]->setContent (std::make_unique<SamplerComponent> (*session, track));
+        slots[instrumentTab]->setContent (std::make_unique<KngSamplerView> (*session, track));
 
     tabs.setTabName (instrumentTab, (isDrumTrack ? "Drum Kit - " : "Sampler - ") + track.getName());
     showTab (instrumentTab);
