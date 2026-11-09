@@ -21,6 +21,7 @@
 #include "SamplerView.h"
 #include "DockPanel.h"
 #include "StartScreen.h"
+#include "SettingsComponent.h"
 
 class MainComponent : public juce::Component,
                       public juce::MenuBarModel,
@@ -44,7 +45,7 @@ public:
 private:
     enum CommandIDs
     {
-        cmdNew = 1, cmdOpen, cmdSave, cmdImport, cmdExport, cmdAudioSettings, cmdScanPlugins, cmdLatency, cmdExit,
+        cmdNew = 1, cmdOpen, cmdSave, cmdImport, cmdExport, cmdSettings, cmdAudioSettings, cmdScanPlugins, cmdLatency, cmdExit,
         cmdBackupNow, cmdRestoreBackup, cmdStartScreen,
         cmdUndo = 100, cmdRedo, cmdCopy, cmdPaste, cmdDuplicate, cmdSplit, cmdDelete, cmdSelectAll,
         cmdAddAudioTrack = 200, cmdAddMidiTrack, cmdAddDrumTrack,
@@ -57,6 +58,7 @@ private:
     void changeListenerCallback (juce::ChangeBroadcaster*) override;
 
     void showAudioSettings();
+    void showSettings();
     void showPluginScanner();
     void showLatencyDialog();
     void showFxChain (tracktion::PluginList& list, const juce::String& title);

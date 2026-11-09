@@ -32,7 +32,6 @@ private:
 
     juce::TextButton addTrackButton { "+ Add Track" };
     juce::TextButton addMidiTrackButton { "+ Add MIDI Track" };
-    juce::TextButton addDrumTrackButton { "+ Add Drum Track" };
 
     // Rebuild when tracks are added, removed or reordered; relayout when lanes show or hide
     juce::Array<tracktion::AudioTrack*> builtTracks;

@@ -281,6 +281,7 @@ juce::PopupMenu MainComponent::getMenuForIndex (int menuIndex, const juce::Strin
             add (cmdImport, "Import Audio...", {}, hasSession);
             add (cmdExport, "Export...", {}, hasSession);
             m.addSeparator();
+            add (cmdSettings, "Settings...", "Ctrl+,");
             add (cmdAudioSettings, "Audio Settings...");
             add (cmdScanPlugins, "Scan Plugins...");
             add (cmdLatency, "Latency Check...", {}, hasSession);
@@ -349,6 +350,7 @@ void MainComponent::menuItemSelected (int id, int)
     switch (id)
     {
         case cmdStartScreen:   showStartScreen();   return;
+        case cmdSettings:      showSettings();      return;
         case cmdNew:           newProject();        return;
         case cmdOpen:          openProject();       return;
         case cmdAudioSettings: showAudioSettings(); return;
@@ -383,7 +385,6 @@ void MainComponent::menuItemSelected (int id, int)
 
         case cmdAddAudioTrack: session->addTrack(); break;
         case cmdAddMidiTrack:  session->addMidiTrack(); break;
-        case cmdAddDrumTrack:  addDrumTrack(); break;
 
         case cmdPlayStop:      togglePlayStop(); break;
         case cmdRecord:        session->record(); break;
@@ -695,6 +696,7 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
         if (code == 'C' || code == 'c')  { session->copySelectedClip();      return true; }
         if (code == 'V' || code == 'v')  { session->pasteClip();             return true; }
         if (code == 'A' || code == 'a')  { session->selectAllClips();        return true; }
+        if (code == ',')                 { showSettings();                   return true; }
 
         if (code == '=' || code == '+')
         {
@@ -893,4 +895,19 @@ void MainComponent::hideStartScreen()
     startScreenVisible = false;
     startScreen.setVisible (false);
     grabKeyboardFocus();
+}
+
+void MainComponent::showSettings()
+{
+    auto* settings = new SettingsComponent (engine);
+    settings->onLatencyCheck = [this] { showLatencyDialog(); };
+
+    juce::DialogWindow::LaunchOptions options;
+    options.content.setOwned (settings);
+    options.dialogTitle = "Settings";
+    options.dialogBackgroundColour = juce::Colour (0xff1e2124);
+    options.escapeKeyTriggersCloseButton = true;
+    options.useNativeTitleBar = true;
+    options.resizable = true;
+    options.launchAsync();
 }

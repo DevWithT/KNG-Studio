@@ -175,6 +175,18 @@ public:
     // Move one copy of a pattern (every track's clip in it) to a new spot
     void movePatternBlock (int pattern, double fromSeconds, double toSeconds);
 
+    // Buses and sends (bus 0 is the original reverb bus)
+    int addBus (const juce::String& name);
+    juce::Array<int> getBusNumbers();
+    juce::String getBusName (int bus);
+    float getSendToBusDb (int trackIndex, int bus);
+    void setSendToBusDb (int trackIndex, int bus, float db);
+
+    // Sidechain ducking: a compressor on the target track, triggered by the source (kick ducks the 808)
+    void duckFromTrack (int targetIndex, int sourceIndex);
+    void removeDucking (int targetIndex);
+    int getDuckSource (int targetIndex);   // -1 if none
+
     // Patterns (the Rack). Copies of a pattern are linked: edit one, they all update.
     int getCurrentPattern() const               { return currentPattern; }
     void setCurrentPattern (int pattern)        { currentPattern = juce::jmax (1, pattern); }

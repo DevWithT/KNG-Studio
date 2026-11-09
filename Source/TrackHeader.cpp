@@ -2,6 +2,7 @@
 #include <map>
 #include "VolumeHelpers.h"
 #include "KngSamplerPlugin.h"
+#include "SendPopup.h"
 
 namespace te = tracktion;
 
@@ -426,6 +427,65 @@ void TrackHeader::mouseDown (const juce::MouseEvent& e)
 
     // Bounce the track (with its effects) to audio on a new track
     menu.addItem ("Bounce in Place", [s, idx] { s->bounceTrackInPlace (idx); });
+
+    // Sends to buses
+    if (! isBus)
+    {
+        juce::PopupMenu sends;
+
+        for (int bus : session.getBusNumbers())
+        {
+            const float db = session.getSendToBusDb (idx, bus);
+            const auto level = db > -60.0f ? "   (" + juce::String (db, 1) + " dB)" : juce::String();
+
+            sends.addItem (session.getBusName (bus) + level, [s, idx, bus, safe]
+            {
+                if (safe != nullptr)
+                    SendPopup::show (*s, idx, bus, *safe.getComponent());
+            });
+        }
+
+        sends.addSeparator();
+        sends.addItem ("New Bus...", [s, idx]
+        {
+            auto* w = new juce::AlertWindow ("New Bus", "Name this bus:", juce::MessageBoxIconType::NoIcon);
+            w->addTextEditor ("name", "Delay Bus");
+            w->addButton ("Create", 1, juce::KeyPress (juce::KeyPress::returnKey));
+            w->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
+
+            w->enterModalState (true, juce::ModalCallbackFunction::create ([s, idx, w] (int result)
+            {
+                const auto name = w->getTextEditorContents ("name").trim();
+
+                if (result == 1 && name.isNotEmpty())
+                {
+                    const int bus = s->addBus (name);
+
+                    if (bus >= 0)
+                        s->setSendToBusDb (idx, bus, -6.0f);
+                }
+            }), true);
+        });
+
+        menu.addSubMenu ("Sends", sends);
+    }
+
+    // Sidechain ducking: this track gets quieter when the picked track plays
+    juce::PopupMenu duck;
+    const int duckSource = session.getDuckSource (idx);
+
+    for (int i = 0; i < session.getNumTracks(); ++i)
+        if (i != idx && ! session.isReverbBus (i))
+            if (auto* t = session.getTrack (i))
+                duck.addItem (t->getName(), true, i == duckSource, [s, idx, i] { s->duckFromTrack (idx, i); });
+
+    if (duckSource >= 0)
+    {
+        duck.addSeparator();
+        duck.addItem ("Remove Ducking", [s, idx] { s->removeDucking (idx); });
+    }
+
+    menu.addSubMenu ("Sidechain Duck From", duck);
 
     // Chain templates
     juce::PopupMenu templates;

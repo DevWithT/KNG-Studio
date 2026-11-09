@@ -5,6 +5,7 @@
 
 /** Strip above the tracks: paint, move, copy and erase pattern copies across bars. */
 class PatternLane : public juce::Component,
+                    public juce::SettableTooltipClient,
                     private juce::Timer
 {
 public:

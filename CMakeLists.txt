@@ -71,7 +71,9 @@ target_sources(KNGStudio PRIVATE
     Source/KngSamplerView.cpp
     Source/StartScreen.cpp
     Source/EditSessionTools.cpp
-    Source/GenericPluginPanel.cpp)
+    Source/GenericPluginPanel.cpp
+    Source/EditSessionRouting.cpp
+    Source/SettingsComponent.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0

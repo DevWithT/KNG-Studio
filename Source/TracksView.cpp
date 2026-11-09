@@ -18,15 +18,6 @@ TracksView::TracksView (EditSession& sessionToUse)
     };
 
     rebuild();
-    addDrumTrackButton.onClick = [this]
-    {
-        session.addDrumTrack();
-
-        if (session.onShowDrumRack)
-            session.onShowDrumRack (session.getNumTracks() - 1);
-
-        rebuild();
-    };
     startTimerHz (5);
 }
 
