@@ -149,6 +149,18 @@ TrackHeader::TrackHeader (EditSession& sessionToUse, int trackIndexToUse)
                 vp->setPan ((float) panSlider.getValue());
     };
 
+    // Tooltips
+    armButton.setTooltip ("Arm this track for recording");
+    muteButton.setTooltip ("Mute");
+    soloButton.setTooltip ("Solo: hear only this track");
+    autoButton.setTooltip ("Show or hide this track's automation lane");
+    fxButton.setTooltip ("Open this track's effects in the dock");
+    inputBox.setTooltip ("Which input this track records from");
+    instrumentButton.setTooltip ("Choose or open this track's instrument");
+    rollButton.setTooltip ("Open this track's notes in the Piano Roll");
+    volumeSlider.setTooltip ("Volume (double-click for 0 dB)");
+    panSlider.setTooltip ("Pan left or right (double-click to center)");
+
     // The reverb bus doesn't record and can't send to itself
     if (isBus)
     {

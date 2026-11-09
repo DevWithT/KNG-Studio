@@ -45,6 +45,19 @@ TransportBar::TransportBar (EditSession& sessionToUse)
     monitorButton.onClick = [this] { session.setMonitoring (monitorButton.getToggleState()); };
     writeButton.onClick   = [this] { session.setAutomationWrite (writeButton.getToggleState()); };
 
+    // Tooltips
+    playButton.setTooltip ("Play / Pause (Space)");
+    stopButton.setTooltip ("Stop and return to where you started (Space)");
+    recordButton.setTooltip ("Record on armed tracks");
+    tempoSlider.setTooltip ("Tempo in beats per minute");
+    countInBox.setTooltip ("Bars of click before recording starts");
+    clickButton.setTooltip ("Metronome on or off");
+    loopButton.setTooltip ("Loop the region marked on the ruler");
+    punchButton.setTooltip ("Only record between the loop markers");
+    snapButton.setTooltip ("Snap clips and markers to the beat grid (hold Alt to ignore)");
+    monitorButton.setTooltip ("Hear your inputs live while armed");
+    writeButton.setTooltip ("Record fader and knob moves as automation while playing");
+
     timerCallback();
     startTimerHz (30);
 }

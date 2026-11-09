@@ -63,6 +63,17 @@ KngSamplerView::KngSamplerView (EditSession& sessionToUse, te::Track& trackToUse
     toggle (loopButton, KngSamplerPlugin::loopProp);
     toggle (oneShotButton, KngSamplerPlugin::oneShotProp);
 
+    // Tooltips
+    loadButton.setTooltip ("Load a sample from disk, or drag one in");
+    rootBox.setTooltip ("The note your sample actually plays. Set this so it's in tune.");
+    gainSlider.setTooltip ("Sample volume");
+    attackSlider.setTooltip ("How fast the sound fades in");
+    releaseSlider.setTooltip ("How long the sound rings after the note ends");
+    glideSlider.setTooltip ("How long a slide takes when Mono is on and notes overlap");
+    monoButton.setTooltip ("One note at a time; each new note cuts the last. Turn on for 808s.");
+    loopButton.setTooltip ("Hold the sound for long notes by looping the orange region");
+    oneShotButton.setTooltip ("Always play the whole sample, ignoring note length");
+
     keyboard.setAvailableRange (24, 96);
     keyboard.setLowestVisibleKey (36);
     keyboardState.addListener (this);

@@ -49,6 +49,14 @@ RackRow::RackRow (EditSession& sessionToUse, te::Track& trackToUse)
 
     instrumentButton.onClick = [this] { openInstrument(); };
 
+    // Tooltips
+    expandButton.setTooltip ("Show or hide this row's pads");
+    muteButton.setTooltip ("Mute");
+    soloButton.setTooltip ("Solo");
+    volKnob.setTooltip ("Volume (double-click for 0 dB)");
+    panKnob.setTooltip ("Pan (double-click to center)");
+    instrumentButton.setTooltip ("Open this sound's settings. Right-click the row for more options.");
+
     syncControls();
     startTimerHz (12);
 }

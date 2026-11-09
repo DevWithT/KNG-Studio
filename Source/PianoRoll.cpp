@@ -63,6 +63,16 @@ PianoRoll::PianoRoll (EditSession& sessionToUse, te::MidiClip& clipToEdit)
 
     stampButton.onClick = [this] { clip->state.setProperty ("kngStamp", stampButton.getToggleState(), nullptr); };
 
+    // Tooltips
+    gridBox.setTooltip ("Note grid size for snapping (hold Alt while dragging to ignore it)");
+    quantiseButton.setTooltip ("Snap notes to the grid (Q). Works on selected notes, or all if none are selected.");
+    theoryButton.setTooltip ("Show scales, chords and music theory help");
+    keyBox.setTooltip ("The song's key");
+    scaleBox.setTooltip ("Highlights the notes that fit the key; notes outside it turn red");
+    chordRootBox.setTooltip ("Root note of the chord to highlight");
+    chordTypeBox.setTooltip ("Chord to highlight across every octave");
+    stampButton.setTooltip ("Click once in the grid to place the whole chord");
+
     viewBeat = getClipStartBeat();
 
     // Centre on the notes if there are any

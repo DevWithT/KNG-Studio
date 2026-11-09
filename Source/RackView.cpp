@@ -63,6 +63,15 @@ RackView::RackView (EditSession& sessionToUse)
 
     addInstrumentButton.onClick = [this] { session.addMidiTrack(); };
 
+    // Tooltips
+    patternBox.setTooltip ("Which pattern the Rack is editing. Pick New pattern to start another.");
+    barsBox.setTooltip ("How many bars long this pattern is");
+    placeButton.setTooltip ("Put a copy of this pattern on the timeline at the playhead");
+    loopButton.setTooltip ("Loop this pattern and play it");
+    swingSlider.setTooltip ("Push every other 16th late for groove (drum and sound rows only)");
+    addSampleButton.setTooltip ("Add sounds to the Rack, one row each. You can also drag samples in from the Browser.");
+    addInstrumentButton.setTooltip ("Add a row for a synth or the KNG Sampler");
+
     hintLabel.setFont (juce::Font (juce::FontOptions (12.0f)));
     hintLabel.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.5f));
     hintLabel.setText ("Drag samples in from the Browser. Right-click a row for options. Timeline copies stay linked.",

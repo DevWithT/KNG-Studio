@@ -111,6 +111,7 @@ private:
     bool browserVisible = true;
 
     DockPanel dock;
+    juce::TooltipWindow tooltipWindow { this, 500 };
     DockDivider dockDivider;
     int dockHeight = 340;
     int dockDragStartHeight = 340;

@@ -22,6 +22,10 @@ MasterStrip::MasterStrip (EditSession& sessionToUse)
             session.onShowFxChain (session.getEdit().getMasterPluginList(), "Master FX");
     };
 
+    // Tooltips
+    volumeSlider.setTooltip ("Master volume (double-click for 0 dB)");
+    fxButton.setTooltip ("Open effects on the master bus");
+
     addAndMakeVisible (meter);
     meter.attachTo (session.getMasterMeterPlugin());
 }
