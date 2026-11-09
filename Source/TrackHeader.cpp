@@ -424,6 +424,9 @@ void TrackHeader::mouseDown (const juce::MouseEvent& e)
                                                     "Put KngTune in your VST3 folder, then use File > Scan Plugins.");
     });
 
+    // Bounce the track (with its effects) to audio on a new track
+    menu.addItem ("Bounce in Place", [s, idx] { s->bounceTrackInPlace (idx); });
+
     // Chain templates
     juce::PopupMenu templates;
 

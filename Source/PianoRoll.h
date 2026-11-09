@@ -81,6 +81,7 @@ private:
     void paintRows (juce::Graphics&, juce::Rectangle<int> grid);
     void paintGridLines (juce::Graphics&, juce::Rectangle<int> grid);
     void paintNotes (juce::Graphics&, juce::Rectangle<int> grid);
+    void paintGhostNotes (juce::Graphics&, juce::Rectangle<int> grid);
     void paintKeyboard (juce::Graphics&);
     void paintVelocity (juce::Graphics&);
     void paintRuler (juce::Graphics&);

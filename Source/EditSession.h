@@ -165,6 +165,16 @@ public:
     float getMasterVolumeDb();
     void setMasterVolumeDb (float db);
 
+    // Built-in effects: list of { menu name, plugin type }
+    static std::vector<std::pair<juce::String, juce::String>> getBuiltInEffects();
+    void addBuiltInPlugin (tracktion::PluginList& list, const juce::String& type);
+
+    // Render a track (with its effects) to audio on a new track, and mute the original
+    void bounceTrackInPlace (int trackIndex);
+
+    // Move one copy of a pattern (every track's clip in it) to a new spot
+    void movePatternBlock (int pattern, double fromSeconds, double toSeconds);
+
     // Patterns (the Rack). Copies of a pattern are linked: edit one, they all update.
     int getCurrentPattern() const               { return currentPattern; }
     void setCurrentPattern (int pattern)        { currentPattern = juce::jmax (1, pattern); }
@@ -287,6 +297,7 @@ private:
     bool recoveredFromCrash = false;
     juce::Time lastBackupTime;
     int currentPattern = 1;
+    std::shared_ptr<tracktion::EditRenderer::Handle> bounceHandle;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EditSession)
 };

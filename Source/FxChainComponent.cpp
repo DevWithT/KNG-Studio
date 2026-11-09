@@ -1,5 +1,6 @@
 #include "FxChainComponent.h"
 #include <map>
+#include "GenericPluginPanel.h"
 
 namespace te = tracktion;
 
@@ -18,7 +19,14 @@ FxChainComponent::Row::Row (FxChainComponent& owner, te::Plugin& p)
     auto* l = &owner.list;
     auto ptr = plugin;
 
-    openButton.onClick    = [ptr] { ptr->showWindowExplicitly(); };
+    openButton.onClick    = [ptr, this]
+    {
+        // VST plugins have their own window; built-in effects get the knob panel
+        if (dynamic_cast<te::ExternalPlugin*> (ptr.get()) != nullptr)
+            ptr->showWindowExplicitly();
+        else
+            GenericPluginPanel::showFor (*ptr, openButton);
+    };
     enabledButton.onClick = [this] { plugin->setEnabled (enabledButton.getToggleState()); };
     upButton.onClick      = [s, l, ptr] { s->movePlugin (*l, ptr.get(), -1); };
     downButton.onClick    = [s, l, ptr] { s->movePlugin (*l, ptr.get(), 1); };
@@ -111,6 +119,14 @@ void FxChainComponent::showAddMenu()
     }
 
     juce::PopupMenu menu;
+
+    juce::PopupMenu builtIn;
+
+    for (auto& [name, type] : EditSession::getBuiltInEffects())
+        builtIn.addItem (name, [s, l, type] { s->addBuiltInPlugin (*l, type); });
+
+    menu.addSubMenu ("KNG Built-in", builtIn);
+    menu.addSeparator();
 
     if (byMaker.empty())
         menu.addItem ("No plugins yet. Click Scan Plugins up top.", false, false, nullptr);

@@ -20,6 +20,7 @@ void PianoRoll::paint (juce::Graphics& g)
 
         paintRows (g, grid);
         paintGridLines (g, grid);
+        paintGhostNotes (g, grid);
         paintNotes (g, grid);
 
         // Playhead
@@ -267,4 +268,50 @@ void PianoRoll::paintRuler (juce::Graphics& g)
     tri.addTriangle (px - 5.0f, (float) r.getY(), px + 5.0f, (float) r.getY(), px, (float) r.getY() + 8.0f);
     g.setColour (juce::Colours::yellow);
     g.fillPath (tri);
+}
+
+void PianoRoll::paintGhostNotes (juce::Graphics& g, juce::Rectangle<int> grid)
+{
+    // Other instruments' notes, faded, so you can line parts up
+    const auto viewStart = clip->getTimeOfContentBeat (te::BeatPosition::fromBeats (xToBeat (grid.getX())));
+    const auto viewEnd   = clip->getTimeOfContentBeat (te::BeatPosition::fromBeats (xToBeat (grid.getRight())));
+
+    g.setColour (juce::Colours::white.withAlpha (0.13f));
+
+    for (auto* track : te::getAudioTracks (session.getEdit()))
+    {
+        // Skip this track, and drum and sound rows (their notes aren't pitches)
+        if (track == clip->getTrack()
+             || track->state.hasProperty ("kngDrum")
+             || (bool) track->state.getProperty ("kngChannel", false))
+            continue;
+
+        for (auto* c : track->getClips())
+        {
+            auto* other = dynamic_cast<te::MidiClip*> (c);
+
+            if (other == nullptr)
+                continue;
+
+            const auto pos = other->getPosition();
+
+            if (pos.getEnd() <= viewStart || pos.getStart() >= viewEnd)
+                continue;
+
+            for (auto* n : other->getSequence().getNotes())
+            {
+                const auto t1 = other->getTimeOfContentBeat (n->getStartBeat());
+                const auto t2 = other->getTimeOfContentBeat (n->getStartBeat() + n->getLengthBeats());
+
+                if (t2 <= pos.getStart() || t1 >= pos.getEnd())
+                    continue;
+
+                const int x1 = beatToX (clip->getContentBeatAtTime (t1).inBeats());
+                const int x2 = beatToX (clip->getContentBeatAtTime (t2).inBeats());
+
+                g.fillRoundedRectangle ((float) x1, (float) noteToY (n->getNoteNumber()) + 2.0f,
+                                        (float) juce::jmax (3, x2 - x1), (float) noteHeight - 4.0f, 2.0f);
+            }
+        }
+    }
 }
