@@ -46,37 +46,21 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
 
     // Start screen on launch, on top of everything
     addAndMakeVisible (startScreen);
-    startScreen.onContinue = [this] { hideStartScreen(); };
+    startScreen.onContinue = [this] { pendingStartMode = 0; hideStartScreen(); };
 
     startScreen.onOpenProject = [this] (const juce::File& editFile)
     {
+        pendingStartMode = 0;
+
         // Open that project the same way File > Open does once a file is chosen
         loadProject (editFile);
         hideStartScreen();
     };
 
-    startScreen.onOpenOther = [this]
-    {
-        openProject();
-        hideStartScreen();
-    };
-
-    startScreen.onNewBeat = [this]
-    {
-        newProject();
-        hideStartScreen();
-        dockVisible = true;
-        dock.showTab (DockPanel::rackTab);
-        resized();
-    };
-
-    startScreen.onNewVocal = [this]
-    {
-        newProject();
-        hideStartScreen();
-        dockVisible = false;
-        resized();
-    };
+    // These finish later (a name prompt or file chooser), so loadProject() closes the start screen
+    startScreen.onOpenOther = [this] { pendingStartMode = 0; openProject(); };
+    startScreen.onNewBeat   = [this] { pendingStartMode = 1; newProject(); };
+    startScreen.onNewVocal  = [this] { pendingStartMode = 2; newProject(); };
 
     showStartScreen();
 }
@@ -186,6 +170,23 @@ void MainComponent::loadProject (const juce::File& editFile)
             "KNG Studio didn't close cleanly last time. Everything up to the last autosave (within a minute) is here.\n\n"
             "If something looks wrong, use File > Restore Backup.");
 
+    resized();
+
+    // Opened from the start screen: close it and set the window up for what was picked
+    if (startScreenVisible)
+        hideStartScreen();
+
+    if (pendingStartMode == 1)
+    {
+        dockVisible = true;
+        dock.showTab (DockPanel::rackTab);
+    }
+    else if (pendingStartMode == 2)
+    {
+        dockVisible = false;
+    }
+
+    pendingStartMode = 0;
     resized();
 }
 
@@ -646,6 +647,10 @@ void MainComponent::mouseDown (const juce::MouseEvent&)
 
 bool MainComponent::keyPressed (const juce::KeyPress& key)
 {
+    // Keys don't reach the project while the start screen is up
+    if (startScreenVisible)
+        return false;
+
     if (session == nullptr)
         return false;
 

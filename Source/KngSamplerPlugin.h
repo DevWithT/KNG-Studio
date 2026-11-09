@@ -15,11 +15,20 @@ public:
 
     juce::String getName() const override                    { return getPluginName(); }
     juce::String getPluginType() override                    { return xmlTypeName; }
+    juce::String getSelectableDescription() override         { return getPluginName(); }
     bool isSynth() override                                  { return true; }
     bool takesMidiInput() override                           { return true; }
     bool takesAudioInput() override                          { return false; }
     bool producesAudioWhenNoAudioInput() override            { return true; }
     int getNumOutputChannelsGivenInputs (int) override       { return 2; }
+
+    // A synth: no audio coming in, stereo going out
+    BusLayout getBusses() const override
+    {
+        BusLayout layout;
+        layout.outputs.push_back (tracktion::ChannelConfiguration::stereo());
+        return layout;
+    }
 
     void initialise (const tracktion::PluginInitialisationInfo&) override;
     void deinitialise() override {}
@@ -75,7 +84,6 @@ private:
     double sampleFileRate = 44100.0;
     juce::File loadedFile;
 
-    double sampleRate = 44100.0;
     std::array<Voice, 16> voices;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (KngSamplerPlugin)

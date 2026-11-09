@@ -202,10 +202,10 @@ void KngSamplerPlugin::renderVoices (juce::AudioBuffer<float>& out, int start, i
     const double glideCoef  = s.glideMs > 0.0f ? 1.0 - std::exp (-1.0 / (s.glideMs * 0.001 * sampleRate)) : 1.0;
 
     // Loop region, in sample positions
-    const double loopStart = juce::jmax (1.0, s.loopStart * (len - 2));
-    const double loopEnd   = juce::jlimit (loopStart + 64.0, (double) (len - 2), s.loopEnd * (len - 2));
+    const double loopStart = juce::jmax (1.0, (double) s.loopStart * (len - 2));
+    const double loopEnd   = juce::jlimit (loopStart + 64.0, (double) (len - 2), (double) s.loopEnd * (len - 2));
     const double loopLen   = loopEnd - loopStart;
-    const double xfade     = juce::jmin ({ loopLen * 0.25, 0.02 * fileRate, loopStart });
+    const double xfade     = juce::jmin (loopLen * 0.25, 0.02 * fileRate, loopStart);
 
     auto* left  = out.getWritePointer (0, start);
     auto* right = out.getNumChannels() > 1 ? out.getWritePointer (1, start) : nullptr;

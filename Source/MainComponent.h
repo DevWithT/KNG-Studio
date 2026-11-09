@@ -117,6 +117,7 @@ private:
     juce::TooltipWindow tooltipWindow { this, 500 };
     StartScreen startScreen;
     bool startScreenVisible = true;
+    int pendingStartMode = 0;   // 1 = new beat, 2 = new vocal session
     DockDivider dockDivider;
     int dockHeight = 340;
     int dockDragStartHeight = 340;
