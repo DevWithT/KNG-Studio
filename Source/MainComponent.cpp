@@ -43,6 +43,42 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
     loadProject (getLastProjectFile());
 
     setSize (1280, 800);
+
+    // Start screen on launch, on top of everything
+    addAndMakeVisible (startScreen);
+    startScreen.onContinue = [this] { hideStartScreen(); };
+
+    startScreen.onOpenProject = [this] (const juce::File& editFile)
+    {
+        // Open that project the same way File > Open does once a file is chosen
+        loadProject (editFile);
+        hideStartScreen();
+    };
+
+    startScreen.onOpenOther = [this]
+    {
+        openProject();
+        hideStartScreen();
+    };
+
+    startScreen.onNewBeat = [this]
+    {
+        newProject();
+        hideStartScreen();
+        dockVisible = true;
+        dock.showTab (DockPanel::rackTab);
+        resized();
+    };
+
+    startScreen.onNewVocal = [this]
+    {
+        newProject();
+        hideStartScreen();
+        dockVisible = false;
+        resized();
+    };
+
+    showStartScreen();
 }
 
 MainComponent::~MainComponent()
@@ -233,6 +269,8 @@ juce::PopupMenu MainComponent::getMenuForIndex (int menuIndex, const juce::Strin
     switch (menuIndex)
     {
         case 0: // File
+            add (cmdStartScreen, "Start Screen");
+            m.addSeparator();
             add (cmdNew, "New Project...", "Ctrl+N");
             add (cmdOpen, "Open Project...", "Ctrl+O");
             add (cmdSave, "Save", "Ctrl+S", hasSession);
@@ -309,6 +347,7 @@ void MainComponent::menuItemSelected (int id, int)
     // These work with or without a project open
     switch (id)
     {
+        case cmdStartScreen:   showStartScreen();   return;
         case cmdNew:           newProject();        return;
         case cmdOpen:          openProject();       return;
         case cmdAudioSettings: showAudioSettings(); return;
@@ -596,6 +635,8 @@ void MainComponent::resized()
     if (tracksView != nullptr)
         tracksView->setSize (tracksViewport.getWidth() - tracksViewport.getScrollBarThickness(),
                              tracksView->getIdealHeight());
+
+    startScreen.setBounds (getLocalBounds());
 }
 
 void MainComponent::mouseDown (const juce::MouseEvent&)
@@ -830,4 +871,21 @@ void MainComponent::openDock()
         dockVisible = true;
         resized();
     }
+}
+
+void MainComponent::showStartScreen()
+{
+    startScreenVisible = true;
+    startScreen.refresh (session != nullptr ? session->getProjectFile() : juce::File());
+    startScreen.setVisible (true);
+    startScreen.toFront (true);
+    startScreen.grabKeyboardFocus();
+    resized();
+}
+
+void MainComponent::hideStartScreen()
+{
+    startScreenVisible = false;
+    startScreen.setVisible (false);
+    grabKeyboardFocus();
 }

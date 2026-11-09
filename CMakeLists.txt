@@ -68,7 +68,8 @@ target_sources(KNGStudio PRIVATE
     Source/EditSessionPatternLane.cpp
     Source/PatternLane.cpp
     Source/KngSamplerPlugin.cpp
-    Source/KngSamplerView.cpp)
+    Source/KngSamplerView.cpp
+    Source/StartScreen.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0

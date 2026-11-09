@@ -20,6 +20,7 @@
 #include "DrumRack.h"
 #include "SamplerView.h"
 #include "DockPanel.h"
+#include "StartScreen.h"
 
 class MainComponent : public juce::Component,
                       public juce::MenuBarModel,
@@ -44,7 +45,7 @@ private:
     enum CommandIDs
     {
         cmdNew = 1, cmdOpen, cmdSave, cmdImport, cmdExport, cmdAudioSettings, cmdScanPlugins, cmdLatency, cmdExit,
-        cmdBackupNow, cmdRestoreBackup,
+        cmdBackupNow, cmdRestoreBackup, cmdStartScreen,
         cmdUndo = 100, cmdRedo, cmdCopy, cmdPaste, cmdDuplicate, cmdSplit, cmdDelete, cmdSelectAll,
         cmdAddAudioTrack = 200, cmdAddMidiTrack, cmdAddDrumTrack,
         cmdPlayStop = 300, cmdRecord, cmdGoToStart, cmdLoop, cmdClick, cmdSnap, cmdMonitor, cmdAutoWrite, cmdPunch,
@@ -66,6 +67,8 @@ private:
     void showDrumRack (int trackIndex);
     void showSampler (int trackIndex);
     void openDock();
+    void showStartScreen();
+    void hideStartScreen();
     void addDrumTrack();
     void showShortcuts();
     void toggleMixer();
@@ -112,6 +115,8 @@ private:
 
     DockPanel dock;
     juce::TooltipWindow tooltipWindow { this, 500 };
+    StartScreen startScreen;
+    bool startScreenVisible = true;
     DockDivider dockDivider;
     int dockHeight = 340;
     int dockDragStartHeight = 340;
