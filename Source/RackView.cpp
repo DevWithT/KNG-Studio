@@ -41,6 +41,17 @@ RackView::RackView (EditSession& sessionToUse)
 
     loopButton.onClick = [this] { session.loopPattern (session.getCurrentPattern()); };
 
+    addAndMakeVisible (swingLabel);
+    addAndMakeVisible (swingSlider);
+    swingSlider.setSliderStyle (juce::Slider::LinearHorizontal);
+    swingSlider.setTextBoxStyle (juce::Slider::TextBoxRight, false, 44, 20);
+    swingSlider.setRange (0.0, 100.0, 1.0);
+    swingSlider.setTextValueSuffix ("%");
+    swingSlider.setDoubleClickReturnValue (true, 0.0);
+    swingSlider.onDragStart   = [this] { session.beginEdit(); };
+    swingSlider.onValueChange = [this] { session.setPatternSwing (session.getCurrentPattern(), (float) swingSlider.getValue()); };
+    swingSlider.onDragEnd     = [this] { session.save(); };
+
     addSampleButton.onClick = [this]
     {
         chooser = std::make_unique<juce::FileChooser> ("Add Samples", EditSession::getKitsFolder(),
@@ -167,6 +178,9 @@ void RackView::syncToolbar()
 
     if (! barsBox.isPopupActive())
         barsBox.setSelectedId (session.getPatternBars (current), juce::dontSendNotification);
+
+    if (! swingSlider.isMouseButtonDown())
+        swingSlider.setValue (session.getPatternSwing (current), juce::dontSendNotification);
 }
 
 //==============================================================================
@@ -255,6 +269,9 @@ void RackView::resized()
     placeButton.setBounds (tb.removeFromLeft (130));
     tb.removeFromLeft (4);
     loopButton.setBounds (tb.removeFromLeft (110));
+    tb.removeFromLeft (10);
+    swingLabel.setBounds (tb.removeFromLeft (44));
+    swingSlider.setBounds (tb.removeFromLeft (140));
     tb.removeFromLeft (16);
     addSampleButton.setBounds (tb.removeFromLeft (90));
     tb.removeFromLeft (4);

@@ -43,6 +43,8 @@ private:
     juce::ComboBox patternBox, barsBox;
     juce::TextButton placeButton { "Place at Playhead" }, loopButton { "Loop Pattern" };
     juce::TextButton addSampleButton { "+ Sample" }, addInstrumentButton { "+ Instrument" };
+    juce::Label swingLabel { {}, "Swing" };
+    juce::Slider swingSlider;
 
     juce::Viewport viewport;
     juce::Component content;

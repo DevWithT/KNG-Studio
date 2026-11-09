@@ -142,3 +142,10 @@ void PatternLane::mouseUp (const juce::MouseEvent&)
     erasing = false;
     lastBar = -1.0;
 }
+
+void PatternLane::mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails& wheel)
+{
+    // Scroll the timeline left and right
+    const float d = std::abs (wheel.deltaX) > std::abs (wheel.deltaY) ? wheel.deltaX : wheel.deltaY;
+    session.scrollBy (-d * session.getViewLength() * 0.15);
+}

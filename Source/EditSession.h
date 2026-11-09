@@ -183,6 +183,8 @@ public:
     struct PatternBlock { int pattern = 0; double start = 0.0, end = 0.0; };
     std::vector<PatternBlock> getPatternBlocks();
     void removePatternAt (double seconds);
+    float getPatternSwing (int pattern);
+    void setPatternSwing (int pattern, float percent);
 
     // Tempo, click, count-in
     void setBpm (double bpm);

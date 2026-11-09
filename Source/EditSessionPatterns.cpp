@@ -138,6 +138,7 @@ te::MidiClip* EditSession::getPatternClip (int trackIndex, int pattern, bool cre
     clip->setName ("Pattern " + juce::String (pattern));
     clip->state.setProperty (patternProp, pattern, nullptr);
     clip->setLinkGroupID (linkIdFor (pattern, *track));
+    clip->state.setProperty ("kngSwing", getPatternSwing (pattern), nullptr);
 
     save();
     return clip.get();
@@ -244,4 +245,52 @@ void EditSession::makePatternUnique (te::MidiClip& clip)
 
     setCurrentPattern (fresh);
     save();
+}
+
+//==============================================================================
+// Swing: pushes every other 16th late, on sound rows only (never melodies)
+
+float EditSession::getPatternSwing (int pattern)
+{
+    return (float) edit->state.getProperty ("kngPatternSwing" + juce::String (pattern), 0.0f);
+}
+
+void EditSession::setPatternSwing (int pattern, float percent)
+{
+    percent = juce::jlimit (0.0f, 100.0f, percent);
+    edit->state.setProperty ("kngPatternSwing" + juce::String (pattern), percent, nullptr);
+
+    const double stepBeats = 0.25;
+    const double delay = percent / 100.0 * (stepBeats * 0.5);
+    auto* um = &edit->getUndoManager();
+
+    for (int i = 0; i < getNumTracks(); ++i)
+    {
+        auto* track = getTrack (i);
+
+        if (track == nullptr || ! (bool) track->state.getProperty ("kngChannel", false))
+            continue;
+
+        for (auto* c : track->getClips())
+        {
+            auto* mc = dynamic_cast<te::MidiClip*> (c);
+
+            if (mc == nullptr || patternOf (*mc) != pattern)
+                continue;
+
+            const double start = mc->getContentBeatAtTime (mc->getPosition().getStart()).inBeats();
+
+            // Find each hit's step first (swing is under half a step, so flooring is safe)
+            std::vector<std::pair<te::MidiNote*, int>> placed;
+
+            for (auto* n : mc->getSequence().getNotes())
+                placed.push_back ({ n, (int) std::floor ((n->getStartBeat().inBeats() - start + 0.001) / stepBeats) });
+
+            mc->state.setProperty ("kngSwing", percent, um);
+
+            for (auto& [n, step] : placed)
+                n->setStartAndLength (te::BeatPosition::fromBeats (start + step * stepBeats + ((step % 2) == 1 ? delay : 0.0)),
+                                      n->getLengthBeats(), um);
+        }
+    }
 }
