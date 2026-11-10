@@ -4,6 +4,7 @@
 #include "KngEqPlugin.h"
 #include "KngCompPlugin.h"
 #include "KngVerbPlugin.h"
+#include "KngDelayPlugin.h"
 
 MainComponent::MainComponent (tracktion::Engine& engineToUse)
     : engine (engineToUse)
@@ -13,6 +14,7 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
     engine.getPluginManager().createBuiltInType<KngEqPlugin>();
     engine.getPluginManager().createBuiltInType<KngCompPlugin>();
     engine.getPluginManager().createBuiltInType<KngVerbPlugin>();
+    engine.getPluginManager().createBuiltInType<KngDelayPlugin>();
 
     setWantsKeyboardFocus (true);
 
