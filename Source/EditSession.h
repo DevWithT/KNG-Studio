@@ -160,6 +160,11 @@ public:
     /** One sound in the Rack: a new track with a one-shot KNG Sampler. Returns the track index, or -1. */
     int addSampleChannel (const juce::File& sample);
 
+    // Plugin picker. An id is "kngsynth", "kngsampler", a built-in effect type, or a VST's identifier string.
+    int addInstrumentTrack (const juce::String& pluginId, const juce::String& trackName);
+    void setInstrumentById (int trackIndex, const juce::String& pluginId);
+    void addEffectById (int trackIndex, const juce::String& pluginId);
+
     /** Volume from -inf (at or below -60) up to +12 dB. Above +6 uses a hidden boost stage. */
     float getTrackVolumeDb (int trackIndex);
     void setTrackVolumeDb (int trackIndex, float db);

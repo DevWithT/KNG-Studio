@@ -22,6 +22,7 @@
 #include "DockPanel.h"
 #include "StartScreen.h"
 #include "SettingsComponent.h"
+#include "PluginBrowser.h"
 
 class MainComponent : public juce::Component,
                       public juce::MenuBarModel,
@@ -115,6 +116,10 @@ private:
     juce::OwnedArray<SamplerWindow> samplerWindows;
     std::unique_ptr<KitBrowser> kitBrowser;
     bool browserVisible = true;
+
+    // Left column: Sounds (samples) and Plugins tabs
+    std::unique_ptr<PluginBrowser> pluginBrowser;
+    juce::TabbedComponent browserTabs { juce::TabbedButtonBar::TabsAtTop };
 
     DockPanel dock;
     juce::TooltipWindow tooltipWindow { this, 500 };

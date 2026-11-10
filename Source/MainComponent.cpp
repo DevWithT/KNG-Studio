@@ -26,7 +26,13 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
     deviceLabel.setJustificationType (juce::Justification::centredRight);
 
     kitBrowser = std::make_unique<KitBrowser> (engine.getDeviceManager().deviceManager);
-    addAndMakeVisible (*kitBrowser);
+    pluginBrowser = std::make_unique<PluginBrowser> (engine);
+
+    const juce::Colour tabColour (0xff24282c);
+    browserTabs.addTab ("Sounds", tabColour, kitBrowser.get(), false);
+    browserTabs.addTab ("Plugins", tabColour, pluginBrowser.get(), false);
+    browserTabs.setTabBarDepth (28);
+    addAndMakeVisible (browserTabs);
 
     addAndMakeVisible (dock);
     addAndMakeVisible (dockDivider);
@@ -142,6 +148,8 @@ bool MainComponent::isBusyRecording() const
 void MainComponent::closeProject()
 {
     dock.setSession (nullptr);
+    if (pluginBrowser != nullptr)
+        pluginBrowser->setSession (nullptr);
     fxWindows.clear();
     pianoRollWindows.clear();
     mixerWindow = nullptr;
@@ -171,6 +179,7 @@ void MainComponent::loadProject (const juce::File& editFile)
     session->onShowSampler   = [this] (int trackIndex) { showSampler (trackIndex); };
     session->onShowPluginEditor = [this] (tracktion::Plugin& p) { dock.showEffect (p); openDock(); };
     dock.setSession (session.get());
+    pluginBrowser->setSession (session.get());
 
     transportBar = std::make_unique<TransportBar> (*session);
     addAndMakeVisible (*transportBar);
@@ -640,16 +649,13 @@ void MainComponent::resized()
         dockDivider.setBounds (area.removeFromBottom (8));
     }
 
-    // Browser down the left side
-    if (kitBrowser != nullptr)
-    {
-        kitBrowser->setVisible (browserVisible);
+    // Browser down the left side: Sounds and Plugins tabs
+    browserTabs.setVisible (browserVisible);
 
-        if (browserVisible)
-        {
-            kitBrowser->setBounds (area.removeFromLeft (230));
-            area.removeFromLeft (8);
-        }
+    if (browserVisible)
+    {
+        browserTabs.setBounds (area.removeFromLeft (240));
+        area.removeFromLeft (8);
     }
 
     // Master strip along the bottom
@@ -681,9 +687,10 @@ void MainComponent::resized()
     area.removeFromTop (4);
     tracksViewport.setBounds (area);
 
+    // At least as tall as the view, so the empty space below the tracks takes drops
     if (tracksView != nullptr)
         tracksView->setSize (tracksViewport.getWidth() - tracksViewport.getScrollBarThickness(),
-                             tracksView->getIdealHeight());
+                             juce::jmax (tracksView->getIdealHeight(), tracksViewport.getHeight()));
 
     startScreen.setBounds (getLocalBounds());
 }

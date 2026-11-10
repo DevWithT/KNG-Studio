@@ -1,4 +1,5 @@
 #include "RackView.h"
+#include "PluginBrowser.h"
 
 namespace te = tracktion;
 
@@ -61,7 +62,11 @@ RackView::RackView (EditSession& sessionToUse)
                               [this] (const juce::FileChooser& fc) { addSamples (fc.getResults()); });
     };
 
-    addInstrumentButton.onClick = [this] { session.addMidiTrack(); };
+    addInstrumentButton.onClick = [this]
+    {
+        PluginBrowser::showInstrumentMenu (session.getEdit().engine, addInstrumentButton,
+                                           [this] (const PluginBrowser::Entry& e) { session.addInstrumentTrack (e.id, e.name); });
+    };
 
     // Tooltips
     patternBox.setTooltip ("Which pattern the Rack is editing. Pick New pattern to start another.");
@@ -195,11 +200,46 @@ void RackView::syncToolbar()
 //==============================================================================
 bool RackView::isInterestedInDragSource (const SourceDetails& details)
 {
-    return dynamic_cast<juce::FileTreeComponent*> (details.sourceComponent.get()) != nullptr;
+    PluginBrowser::Entry e;
+
+    return dynamic_cast<juce::FileTreeComponent*> (details.sourceComponent.get()) != nullptr
+        || PluginBrowser::parseDrag (details.description, e);
 }
 
 void RackView::itemDropped (const SourceDetails& details)
 {
+    // A plugin from the Plugins browser
+    PluginBrowser::Entry plugin;
+
+    if (PluginBrowser::parseDrag (details.description, plugin))
+    {
+        hovering = false;
+        repaint();
+
+        // Instruments make a new row; effects go on the row they're dropped on
+        if (plugin.instrument)
+        {
+            session.addInstrumentTrack (plugin.id, plugin.name);
+            return;
+        }
+
+        const auto screenPos = localPointToGlobal (details.localPosition);
+
+        for (auto* row : rows)
+        {
+            if (row->getScreenBounds().contains (screenPos))
+            {
+                for (int i = 0; i < session.getNumTracks(); ++i)
+                    if (session.getTrack (i) == row->getTrack())
+                        session.addEffectById (i, plugin.id);
+
+                break;
+            }
+        }
+
+        return;
+    }
+
     hovering = false;
 
     if (auto* tree = dynamic_cast<juce::FileTreeComponent*> (details.sourceComponent.get()))
