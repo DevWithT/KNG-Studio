@@ -76,7 +76,9 @@ target_sources(KNGStudio PRIVATE
     Source/SettingsComponent.cpp
     Source/KngSynthPlugin.cpp
     Source/KngSynthView.cpp
-    Source/EditSessionSynth.cpp)
+    Source/EditSessionSynth.cpp
+    Source/KngEqPlugin.cpp
+    Source/KngEqView.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0

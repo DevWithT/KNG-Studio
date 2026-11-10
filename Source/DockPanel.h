@@ -9,7 +9,7 @@ class DockPanel : public juce::Component,
                   private juce::Timer
 {
 public:
-    enum Tab { rackTab = 0, pianoRollTab, instrumentTab, fxTab, compTab, mixerTab, numTabs };
+    enum Tab { rackTab = 0, pianoRollTab, instrumentTab, fxTab, effectTab, compTab, mixerTab, numTabs };
 
     DockPanel();
     ~DockPanel() override;
@@ -20,6 +20,7 @@ public:
     void showPianoRoll (tracktion::MidiClip& clip);
     void showInstrument (tracktion::Track& track, bool isDrumTrack);
     void showFx (tracktion::PluginList& list, const juce::String& title);
+    void showEffect (tracktion::Plugin& plugin);
     void showComp (tracktion::WaveAudioClip& clip);
     void showTab (Tab tab);
     Tab getCurrentTab() const;
@@ -52,6 +53,7 @@ private:
     tracktion::MidiClip::Ptr pianoClip;
     tracktion::Track::Ptr instrumentTrack, fxTrack;
     tracktion::WaveAudioClip::Ptr compClip;
+    tracktion::Plugin::Ptr effectPlugin;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DockPanel)
 };

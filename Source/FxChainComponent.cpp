@@ -19,11 +19,13 @@ FxChainComponent::Row::Row (FxChainComponent& owner, te::Plugin& p)
     auto* l = &owner.list;
     auto ptr = plugin;
 
-    openButton.onClick    = [ptr, this]
+    openButton.onClick    = [ptr, this, s]
     {
-        // VST plugins have their own window; built-in effects get the knob panel
+        // VST plugins have their own window; KNG effects open in the dock; other built-ins get the knob panel
         if (dynamic_cast<te::ExternalPlugin*> (ptr.get()) != nullptr)
             ptr->showWindowExplicitly();
+        else if (ptr->getPluginType().startsWith ("kng") && s->onShowPluginEditor)
+            s->onShowPluginEditor (*ptr);
         else
             GenericPluginPanel::showFor (*ptr, openButton);
     };

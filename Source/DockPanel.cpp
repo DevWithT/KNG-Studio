@@ -14,7 +14,7 @@ namespace te = tracktion;
 
 static const juce::StringArray& baseTabNames()
 {
-    static const juce::StringArray names { "Rack", "Piano Roll", "Instrument", "FX", "Comp", "Mixer" };
+    static const juce::StringArray names { "Rack", "Piano Roll", "Instrument", "FX", "Effect", "Comp", "Mixer" };
     return names;
 }
 
@@ -64,6 +64,7 @@ DockPanel::DockPanel()
         "Double-click a MIDI clip, or hit Roll on a MIDI track.",
         "Click the instrument button on a MIDI or drum track.",
         "Click FX on a track or on the master strip.",
+        "Add a KNG effect from an FX chain (KNG Built-in), or click one that's already there.",
         "Right-click a clip with takes > Comp Takes.",
         "Open a project to see the mixer."
     };
@@ -109,6 +110,7 @@ void DockPanel::setSession (EditSession* sessionToUse)
     instrumentTrack = nullptr;
     fxTrack = nullptr;
     compClip = nullptr;
+    effectPlugin = nullptr;
 
     for (int i = 0; i < numTabs; ++i)
         resetTabName ((Tab) i);
@@ -193,6 +195,13 @@ void DockPanel::timerCallback()
     if (session == nullptr)
         return;
 
+    if (effectPlugin != nullptr && effectPlugin->getOwnerList() == nullptr)
+    {
+        slots[effectTab]->clear();
+        effectPlugin = nullptr;
+        resetTabName (effectTab);
+    }
+
     // Clear any tab whose clip or track was deleted
     if (pianoClip != nullptr && pianoClip->getParent() == nullptr)
     {
@@ -233,4 +242,15 @@ void DockPanel::paint (juce::Graphics& g)
 void DockPanel::resized()
 {
     tabs.setBounds (getLocalBounds());
+}
+
+void DockPanel::showEffect (te::Plugin& plugin)
+{
+    if (session == nullptr)
+        return;
+
+    effectPlugin = &plugin;
+    slots[effectTab]->setContent (plugin.createEditor());
+    tabs.setTabName (effectTab, plugin.getName());
+    showTab (effectTab);
 }

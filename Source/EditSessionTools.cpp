@@ -1,4 +1,5 @@
 #include "EditSession.h"
+#include "KngEqPlugin.h"
 
 namespace te = tracktion;
 
@@ -8,6 +9,7 @@ namespace te = tracktion;
 std::vector<std::pair<juce::String, juce::String>> EditSession::getBuiltInEffects()
 {
     return {
+        { "KNG EQ",               KngEqPlugin::xmlTypeName },
         { "EQ (4 band)",          te::EqualiserPlugin::xmlTypeName },
         { "Compressor",           te::CompressorPlugin::xmlTypeName },
         { "Reverb",               te::ReverbPlugin::xmlTypeName },
@@ -44,6 +46,11 @@ void EditSession::addBuiltInPlugin (te::PluginList& list, const juce::String& ty
     }
 
     list.insertPlugin (plugin, index, nullptr);
+
+    // KNG effects open their own panel right away
+    if (type.startsWith ("kng") && onShowPluginEditor)
+        onShowPluginEditor (*plugin);
+
     save();
 }
 

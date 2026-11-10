@@ -251,6 +251,9 @@ public:
     // Lets the UI open an FX chain window (MainComponent sets this)
     std::function<void (tracktion::PluginList&, const juce::String&)> onShowFxChain;
 
+    // Lets the UI open a KNG effect's own panel in the dock (MainComponent sets this)
+    std::function<void (tracktion::Plugin&)> onShowPluginEditor;
+
     // Recording latency offset (saved between launches)
     static double getLatencyOffsetMs();
     void setLatencyOffsetMs (double ms);

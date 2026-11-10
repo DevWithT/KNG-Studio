@@ -1,12 +1,14 @@
 #include "MainComponent.h"
 #include "KngSamplerPlugin.h"
 #include "KngSynthPlugin.h"
+#include "KngEqPlugin.h"
 
 MainComponent::MainComponent (tracktion::Engine& engineToUse)
     : engine (engineToUse)
 {
     engine.getPluginManager().createBuiltInType<KngSamplerPlugin>();
     engine.getPluginManager().createBuiltInType<KngSynthPlugin>();
+    engine.getPluginManager().createBuiltInType<KngEqPlugin>();
 
     setWantsKeyboardFocus (true);
 
@@ -167,6 +169,7 @@ void MainComponent::loadProject (const juce::File& editFile)
     session->onShowClipProps = [this] (tracktion::AudioClipBase& clip) { showClipProps (clip); };
     session->onShowDrumRack  = [this] (int trackIndex) { showDrumRack (trackIndex); };
     session->onShowSampler   = [this] (int trackIndex) { showSampler (trackIndex); };
+    session->onShowPluginEditor = [this] (tracktion::Plugin& p) { dock.showEffect (p); openDock(); };
     dock.setSession (session.get());
 
     transportBar = std::make_unique<TransportBar> (*session);
