@@ -1,5 +1,22 @@
 #include "PianoRoll.h"
 #include "TheoryHelper.h"
+#include "KngSamplerPlugin.h"
+#include "KngSynthPlugin.h"
+
+// Slide arrows only make sense when the instrument plays one note at a time
+static bool slidesEnabled (tracktion::MidiClip& clip)
+{
+    if (auto* t = dynamic_cast<tracktion::AudioTrack*> (clip.getClipTrack()))
+    {
+        if (auto* s = t->pluginList.findFirstPluginOfType<KngSamplerPlugin>())
+            return (bool) s->state.getProperty (KngSamplerPlugin::monoProp, false);
+
+        if (auto* y = t->pluginList.findFirstPluginOfType<KngSynthPlugin>())
+            return y->getParam (KngSynth::voiceMode)->getCurrentValue() > 0.5f;
+    }
+
+    return false;
+}
 
 namespace te = tracktion;
 
@@ -117,6 +134,7 @@ void PianoRoll::paintNotes (juce::Graphics& g, juce::Rectangle<int> grid)
     const Theory::Scale* scale = s >= 0 ? &Theory::scales()[(size_t) s] : nullptr;
 
     g.setFont (juce::Font (juce::FontOptions (10.0f)));
+    const bool showSlides = slidesEnabled (*clip);
 
     for (auto* n : clip->getSequence().getNotes())
     {
@@ -138,6 +156,26 @@ void PianoRoll::paintNotes (juce::Graphics& g, juce::Rectangle<int> grid)
 
         g.setColour (sel ? juce::Colours::white : juce::Colours::black.withAlpha (0.55f));
         g.drawRoundedRectangle (r.toFloat(), 3.0f, sel ? 2.0f : 1.0f);
+
+        // Slide: an earlier note still ringing when this one starts glides into it
+        if (showSlides)
+        {
+            const double ns = n->getStartBeat().inBeats();
+
+            for (auto* prev : clip->getSequence().getNotes())
+            {
+                const double ps = prev->getStartBeat().inBeats();
+
+                if (prev != n && ps < ns && ps + prev->getLengthBeats().inBeats() > ns + 1.0e-6)
+                {
+                    const float x = (float) beatToX (ns);
+                    const float y1 = (float) noteToY (prev->getNoteNumber()) + noteHeight * 0.5f;
+                    g.setColour (juce::Colours::white.withAlpha (0.85f));
+                    g.drawArrow ({ x - 14.0f, y1, x + 2.0f, (float) r.getCentreY() }, 2.0f, 7.0f, 7.0f);
+                    break;
+                }
+            }
+        }
 
         if (r.getWidth() > 28)
         {

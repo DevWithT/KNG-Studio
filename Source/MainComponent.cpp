@@ -164,12 +164,6 @@ void MainComponent::closeProject()
     dock.setSession (nullptr);
     if (pluginBrowser != nullptr)
         pluginBrowser->setSession (nullptr);
-    fxWindows.clear();
-    pianoRollWindows.clear();
-    mixerWindow = nullptr;
-    compWindows.clear();
-    drumRackWindows.clear();
-    samplerWindows.clear();
     tracksViewport.setViewedComponent (nullptr, false);
     tracksView = nullptr;
     masterStrip = nullptr;
@@ -908,15 +902,6 @@ void MainComponent::restoreBackup()
                               backup.copyFileTo (projectFile);
                               loadProject (projectFile);
                           });
-}
-
-void MainComponent::addDrumTrack()
-{
-    if (session == nullptr)
-        return;
-
-    session->addDrumTrack();
-    showDrumRack (session->getNumTracks() - 1);
 }
 
 void MainComponent::showDrumRack (int trackIndex)

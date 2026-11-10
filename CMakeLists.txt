@@ -53,11 +53,9 @@ target_sources(KNGStudio PRIVATE
     Source/EditSessionDrums.cpp
     Source/KitBrowser.cpp
     Source/DrumRack.cpp
-    Source/StepSequencer.cpp
     Source/PianoRollPaint.cpp
     Source/TheoryPanel.cpp
     Source/EditSessionSampler.cpp
-    Source/SamplerView.cpp
     Source/DockPanel.cpp
     Source/EditSessionPatterns.cpp
     Source/RackRow.cpp

@@ -18,7 +18,6 @@
 #include "ClipProps.h"
 #include "KitBrowser.h"
 #include "DrumRack.h"
-#include "SamplerView.h"
 #include "DockPanel.h"
 #include "StartScreen.h"
 #include "SettingsComponent.h"
@@ -49,7 +48,7 @@ private:
         cmdNew = 1, cmdOpen, cmdSave, cmdImport, cmdExport, cmdSettings, cmdAudioSettings, cmdScanPlugins, cmdLatency, cmdExit,
         cmdBackupNow, cmdRestoreBackup, cmdStartScreen,
         cmdUndo = 100, cmdRedo, cmdCopy, cmdPaste, cmdDuplicate, cmdSplit, cmdDelete, cmdSelectAll,
-        cmdAddAudioTrack = 200, cmdAddMidiTrack, cmdAddDrumTrack,
+        cmdAddAudioTrack = 200, cmdAddMidiTrack,
         cmdPlayStop = 300, cmdRecord, cmdRetake, cmdGoToStart, cmdLoop, cmdClick, cmdSnap, cmdMonitor, cmdAutoWrite, cmdPunch,
         cmdAddMarker, cmdPrevMarker, cmdNextMarker,
         cmdMixer = 400, cmdZoomIn, cmdZoomOut, cmdZoomFit, cmdBrowser, cmdDock,
@@ -73,7 +72,6 @@ private:
     void showStartScreen();
     void hideStartScreen();
     void setUpNewSong();
-    void addDrumTrack();
     void showShortcuts();
     void toggleMixer();
     void togglePlayStop();
@@ -108,12 +106,6 @@ private:
     juce::Viewport tracksViewport;
     std::unique_ptr<TracksView> tracksView;
 
-    juce::OwnedArray<FxChainWindow> fxWindows;
-    juce::OwnedArray<PianoRollWindow> pianoRollWindows;
-    std::unique_ptr<MixerWindow> mixerWindow;
-    juce::OwnedArray<CompWindow> compWindows;
-    juce::OwnedArray<DrumRackWindow> drumRackWindows;
-    juce::OwnedArray<SamplerWindow> samplerWindows;
     std::unique_ptr<KitBrowser> kitBrowser;
     bool browserVisible = true;
 

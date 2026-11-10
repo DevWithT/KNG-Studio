@@ -65,6 +65,7 @@ private:
     void previewNotes (const juce::Array<int>& notes, int velocity);
     void quantise();
     void deleteSelected();
+    void toggleSlideOnSelected();
     void eraseAt (juce::Point<int> p);
 
     // Theory
@@ -93,6 +94,7 @@ private:
     juce::ComboBox gridBox;
     juce::TextButton quantiseButton { "Quantize (Q)" };
     juce::TextButton theoryButton { "Theory" };
+    juce::TextButton slideButton { "Slide" };
     juce::Label hintLabel;
 
     // Row 2: theory, only while Theory is on

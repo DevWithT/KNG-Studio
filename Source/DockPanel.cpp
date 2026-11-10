@@ -1,7 +1,6 @@
 #include "DockPanel.h"
 #include "PianoRoll.h"
 #include "DrumRack.h"
-#include "SamplerView.h"
 #include "FxChainComponent.h"
 #include "CompView.h"
 #include "MixerView.h"

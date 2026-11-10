@@ -1,5 +1,7 @@
 #include "PianoRoll.h"
 #include "TheoryHelper.h"
+#include "KngSamplerPlugin.h"
+#include "KngSynthPlugin.h"
 
 namespace te = tracktion;
 
@@ -28,6 +30,10 @@ PianoRoll::PianoRoll (EditSession& sessionToUse, te::MidiClip& clipToEdit)
     addAndMakeVisible (theoryButton);
     theoryButton.setClickingTogglesState (false);
     theoryButton.onClick = [this] { setTheoryOpen (! theoryOpen); };
+
+    addAndMakeVisible (slideButton);
+    slideButton.setTooltip ("Slide (G): the note before glides into the selected note. Again to remove.");
+    slideButton.onClick = [this] { toggleSlideOnSelected(); };
 
     hintLabel.setFont (juce::Font (juce::FontOptions (12.0f)));
     hintLabel.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.55f));
@@ -434,6 +440,8 @@ void PianoRoll::resized()
     quantiseButton.setBounds (row1.removeFromLeft (110));
     row1.removeFromLeft (6);
     theoryButton.setBounds (row1.removeFromLeft (80));
+    row1.removeFromLeft (6);
+    slideButton.setBounds (row1.removeFromLeft (70));
     row1.removeFromLeft (12);
     hintLabel.setBounds (row1);
 
@@ -792,6 +800,12 @@ bool PianoRoll::keyPressed (const juce::KeyPress& key)
         return false;
     }
 
+    if (code == 'G' || code == 'g')
+    {
+        toggleSlideOnSelected();
+        return true;
+    }
+
     if (code == 'Q' || code == 'q')
     {
         quantise();
@@ -824,4 +838,68 @@ PianoRollWindow::PianoRollWindow (EditSession& session, te::MidiClip& c)
     setResizable (true, false);
     centreWithSize (1240, 700);
     setVisible (true);
+}
+
+//==============================================================================
+void PianoRoll::toggleSlideOnSelected()
+{
+    cleanSelection();
+
+    if (selected.isEmpty())
+        return;
+
+    session.beginEdit();
+    auto& seq = clip->getSequence();
+
+    for (auto* n : selected)
+    {
+        const double ns = n->getStartBeat().inBeats();
+        te::MidiNote* prev = nullptr;
+
+        // The note right before this one, on any pitch
+        for (auto* m : seq.getNotes())
+            if (m != n && m->getStartBeat().inBeats() < ns - 1.0e-6
+                 && (prev == nullptr || m->getStartBeat() > prev->getStartBeat()))
+                prev = m;
+
+        if (prev == nullptr)
+            continue;
+
+        const double ps = prev->getStartBeat().inBeats();
+        const bool sliding = ps + prev->getLengthBeats().inBeats() > ns + 1.0e-6;
+
+        // Slide on: the note before rings a little past this one's start, so it glides in.
+        // Slide off: it stops exactly where this one starts.
+        const double newLength = sliding ? ns - ps : ns - ps + 0.125;
+        prev->setStartAndLength (prev->getStartBeat(), te::BeatDuration::fromBeats (newLength), um());
+    }
+
+    // Slides need one note at a time, with glide
+    if (auto* track = dynamic_cast<te::AudioTrack*> (clip->getClipTrack()))
+    {
+        if (auto* sampler = track->pluginList.findFirstPluginOfType<KngSamplerPlugin>())
+        {
+            sampler->state.setProperty (KngSamplerPlugin::monoProp, true, um());
+
+            if ((float) sampler->state.getProperty (KngSamplerPlugin::glideProp, 0.0f) < 1.0f)
+                sampler->state.setProperty (KngSamplerPlugin::glideProp, 60.0f, um());
+
+            sampler->syncFromState();
+        }
+
+        if (auto* synth = track->pluginList.findFirstPluginOfType<KngSynthPlugin>())
+        {
+            if (synth->getParam (KngSynth::voiceMode)->getCurrentValue() < 0.5f)
+                synth->getParam (KngSynth::voiceMode)->setParameter (1.0f, juce::sendNotification);
+
+            if (synth->getParam (KngSynth::glide)->getCurrentValue() < 0.01f)
+                synth->getParam (KngSynth::glide)->setParameter (0.06f, juce::sendNotification);
+        }
+    }
+
+    if (clip->isLinked())
+        clip->updateLinkedClips();
+
+    session.save();
+    repaint();
 }

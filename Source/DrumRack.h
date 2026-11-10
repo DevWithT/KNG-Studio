@@ -62,19 +62,5 @@ private:
 };
 
 //==============================================================================
-class DrumRackWindow : public juce::DocumentWindow
-{
-public:
-    DrumRackWindow (EditSession& session, tracktion::Track& track);
-
-    void closeButtonPressed() override          { setVisible (false); }
-    tracktion::Track* getTrack() const          { return track.get(); }
-
-private:
-    tracktion::Track::Ptr track;
-
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DrumRackWindow)
-};
-
 /** The drum panel (Sequencer + Pads tabs) for use inside the dock. */
 std::unique_ptr<juce::Component> createDrumRackPanel (EditSession& session, tracktion::Track& track);
