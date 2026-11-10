@@ -71,6 +71,7 @@ private:
     void openDock();
     void showStartScreen();
     void hideStartScreen();
+    void setUpNewSong();
     void addDrumTrack();
     void showShortcuts();
     void toggleMixer();
@@ -120,6 +121,8 @@ private:
     StartScreen startScreen;
     bool startScreenVisible = true;
     int pendingStartMode = 0;   // 1 = new beat, 2 = new vocal session
+    double pendingBpm = 0.0;
+    juce::File pendingBeatFile;
     DockDivider dockDivider;
     int dockHeight = 340;
     int dockDragStartHeight = 340;

@@ -46,11 +46,12 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
 
     // Start screen on launch, on top of everything
     addAndMakeVisible (startScreen);
-    startScreen.onContinue = [this] { pendingStartMode = 0; hideStartScreen(); };
+    startScreen.onContinue = [this] { pendingStartMode = 0; pendingBeatFile = juce::File(); hideStartScreen(); };
 
     startScreen.onOpenProject = [this] (const juce::File& editFile)
     {
         pendingStartMode = 0;
+        pendingBeatFile = juce::File();
 
         // Open that project the same way File > Open does once a file is chosen
         loadProject (editFile);
@@ -58,9 +59,32 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
     };
 
     // These finish later (a name prompt or file chooser), so loadProject() closes the start screen
-    startScreen.onOpenOther = [this] { pendingStartMode = 0; openProject(); };
-    startScreen.onNewBeat   = [this] { pendingStartMode = 1; newProject(); };
-    startScreen.onNewVocal  = [this] { pendingStartMode = 2; newProject(); };
+    startScreen.onOpenOther = [this] { pendingStartMode = 0; pendingBeatFile = juce::File(); openProject(); };
+    startScreen.onNewBeat = [this]
+    {
+        pendingBeatFile = juce::File();
+        pendingStartMode = 1;
+        newProject();
+    };
+
+    // Pick the beat file first, then name the song
+    startScreen.onNewVocal = [this]
+    {
+        chooser = std::make_unique<juce::FileChooser> ("Pick your beat",
+                                                       juce::File::getSpecialLocation (juce::File::userMusicDirectory),
+                                                       "*.wav;*.mp3;*.flac;*.aif;*.aiff;*.ogg");
+
+        chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+                              [this] (const juce::FileChooser& fc)
+                              {
+                                  if (! fc.getResult().existsAsFile())
+                                      return;
+
+                                  pendingBeatFile = fc.getResult();
+                                  pendingStartMode = 2;
+                                  newProject();
+                              });
+    };
 
     showStartScreen();
 }
@@ -176,17 +200,12 @@ void MainComponent::loadProject (const juce::File& editFile)
     if (startScreenVisible)
         hideStartScreen();
 
-    if (pendingStartMode == 1)
-    {
-        dockVisible = true;
-        dock.showTab (DockPanel::rackTab);
-    }
-    else if (pendingStartMode == 2)
-    {
-        dockVisible = false;
-    }
+    if (pendingStartMode != 0)
+        setUpNewSong();
 
     pendingStartMode = 0;
+    pendingBpm = 0.0;
+    pendingBeatFile = juce::File();
     resized();
 }
 
@@ -195,15 +214,34 @@ void MainComponent::newProject()
     if (isBusyRecording())
         return;
 
-    auto* w = new juce::AlertWindow ("New Project", "Name your project:", juce::MessageBoxIconType::NoIcon);
-    w->addTextEditor ("name", "My Song");
+    const auto defaultName = pendingBeatFile.existsAsFile() ? pendingBeatFile.getFileNameWithoutExtension()
+                                                            : juce::String ("My Song");
+
+    auto* w = new juce::AlertWindow ("New Song", "Name your song and set the tempo:", juce::MessageBoxIconType::NoIcon);
+    w->addTextEditor ("name", defaultName, "Name");
+    w->addTextEditor ("bpm", "140", "BPM");
     w->addButton ("Create", 1, juce::KeyPress (juce::KeyPress::returnKey));
     w->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
 
     w->enterModalState (true, juce::ModalCallbackFunction::create ([this, w] (int result)
     {
-        if (result == 1)
-            createProject (w->getTextEditorContents ("name"));
+        if (result != 1)
+        {
+            // Cancelled: nothing should carry over to the next project that opens
+            pendingStartMode = 0;
+            pendingBpm = 0.0;
+            pendingBeatFile = juce::File();
+            return;
+        }
+
+        const double bpm = w->getTextEditorContents ("bpm").getDoubleValue();
+        pendingBpm = bpm > 0.0 ? juce::jlimit (40.0, 300.0, bpm) : 140.0;
+
+        // File > New and Ctrl+N set up a song too
+        if (pendingStartMode == 0)
+            pendingStartMode = 1;
+
+        createProject (w->getTextEditorContents ("name"));
     }), true);
 }
 
@@ -224,6 +262,10 @@ void MainComponent::openProject()
 {
     if (isBusyRecording())
         return;
+
+    pendingStartMode = 0;
+    pendingBpm = 0.0;
+    pendingBeatFile = juce::File();
 
     chooser = std::make_unique<juce::FileChooser> ("Open Project", getProjectsRoot(), "*.tracktionedit");
 
@@ -910,4 +952,45 @@ void MainComponent::showSettings()
     options.useNativeTitleBar = true;
     options.resizable = true;
     options.launchAsync();
+}
+
+void MainComponent::setUpNewSong()
+{
+    if (session == nullptr)
+        return;
+
+    if (pendingBpm > 0.0)
+        session->setBpm (pendingBpm);
+
+    // A vocal track on top, ready to record, with your saved vocal chain if you have one
+    if (auto* vocal = session->getTrack (0))
+        vocal->setName ("Vocal");
+
+    if (session->getTemplateNames().contains ("Vocal Chain"))
+        session->loadChainTemplate (0, "Vocal Chain");
+
+    session->setMonitoring (true);
+    session->setCountInBars (1);
+
+    if (pendingBeatFile.existsAsFile())
+    {
+        // Started from a beat file: put it on its own track at bar 1, and keep the dock out of the way
+        session->addTrack();
+        const int beatTrack = session->getNumTracks() - 1;
+        session->importAudioFileAt (pendingBeatFile, beatTrack, 0.0);
+
+        if (auto* beat = session->getTrack (beatTrack))
+            beat->setName ("Beat");
+
+        dockVisible = false;
+    }
+    else
+    {
+        // Fresh song: start in the Rack
+        dockVisible = true;
+        dock.showTab (DockPanel::rackTab);
+    }
+
+    session->save();
+    resized();
 }

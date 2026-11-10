@@ -40,8 +40,8 @@ private:
     static juce::File getProjectsRoot();
     juce::Array<juce::File> findRecentProjects();
 
-    Card newBeatCard { "New Beat", "Make drums and melodies in the Rack", juce::Colour (0xff3a8ee6) };
-    Card newVocalCard { "New Vocal Session", "Record and comp vocals on the timeline", juce::Colour (0xffe6a23a) };
+    Card newBeatCard { "New Song", "Make the beat and record on it, all in one place", juce::Colour (0xff3a8ee6) };
+    Card newVocalCard { "Start From a Beat", "Bring in a beat file and record over it", juce::Colour (0xffe6a23a) };
 
     juce::TextButton continueButton, openOtherButton { "Open Other..." };
     juce::Label recentLabel { {}, "Recent projects" };
