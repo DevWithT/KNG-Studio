@@ -62,5 +62,5 @@ private:
 };
 
 //==============================================================================
-/** The drum panel (Sequencer + Pads tabs) for use inside the dock. */
+/** The drum panel (pads panel) for use inside the dock. */
 std::unique_ptr<juce::Component> createDrumRackPanel (EditSession& session, tracktion::Track& track);

@@ -514,6 +514,7 @@ void MainComponent::showShortcuts()
         "Alt+Drag\tMove without snapping\n\n"
         "Piano roll:\n"
         "Q\tQuantize\n"
+        "G\tSlide into the selected note (808 glides)\n"
         "Ctrl+A\tSelect all notes");
 }
 
