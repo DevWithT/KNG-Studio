@@ -157,28 +157,42 @@ void TrackLane::drawGrid (juce::Graphics& g)
     if (getWidth() <= 0)
         return;
 
-    const double beat = 60.0 / juce::jmax (1.0, session.getBpm());
-    const double pxPerBeat = getWidth() / session.getViewLength() * beat;
+    // Bars and beats follow the tempo map
+    auto& ts = session.getEdit().tempoSequence;
+    const double viewStart = session.getViewStart();
+    const double viewEnd = viewStart + session.getViewLength();
+
+    double bar = session.barStartAt (viewStart);
+    const double pxPerBar = timeToX (session.barsAfter (bar, 1)) - timeToX (bar);
 
     // Too zoomed out to draw anything useful
-    if (pxPerBeat * 4.0 < 4.0)
+    if (pxPerBar < 4.0)
         return;
 
-    const bool showBeats = pxPerBeat >= 12.0;
-    const double viewEnd = session.getViewStart() + session.getViewLength();
+    const bool showBeats = pxPerBar / 4.0 >= 12.0;
 
-    const int firstBeat = (int) std::floor (session.getViewStart() / beat);
-    const int lastBeat  = (int) std::ceil (viewEnd / beat);
-
-    for (int n = juce::jmax (0, firstBeat); n <= lastBeat; ++n)
+    for (int guard = 0; bar <= viewEnd && guard < 4000; ++guard)
     {
-        const bool isBar = (n % 4) == 0;
+        const double next = session.barsAfter (bar, 1);
 
-        if (! isBar && ! showBeats)
-            continue;
+        if (next <= bar)
+            break;
 
-        g.setColour (juce::Colours::white.withAlpha (isBar ? 0.10f : 0.04f));
-        g.drawVerticalLine (timeToX (n * beat), 0.0f, (float) getHeight());
+        g.setColour (juce::Colours::white.withAlpha (0.10f));
+        g.drawVerticalLine (timeToX (bar), 0.0f, (float) getHeight());
+
+        if (showBeats)
+        {
+            const double b1 = ts.toBeats (te::TimePosition::fromSeconds (bar)).inBeats();
+            const double b2 = ts.toBeats (te::TimePosition::fromSeconds (next)).inBeats();
+            g.setColour (juce::Colours::white.withAlpha (0.04f));
+
+            for (double b = std::floor (b1) + 1.0; b < b2 - 1.0e-6; b += 1.0)
+                g.drawVerticalLine (timeToX (ts.toTime (te::BeatPosition::fromBeats (b)).inSeconds()),
+                                    0.0f, (float) getHeight());
+        }
+
+        bar = next;
     }
 }
 

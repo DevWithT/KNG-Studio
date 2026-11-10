@@ -94,7 +94,8 @@ target_sources(KNGStudio PRIVATE
     Source/KngDoublerPlugin.cpp
     Source/KngPresets.cpp
     Source/EditSessionFolders.cpp
-    Source/FolderHeader.cpp)
+    Source/FolderHeader.cpp
+    Source/EditSessionTempo.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0

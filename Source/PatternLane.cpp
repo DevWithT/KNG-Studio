@@ -20,9 +20,7 @@ juce::Colour PatternLane::colourFor (int pattern)
 
 double PatternLane::barStartAt (int x)
 {
-    const double bar = session.getBarSeconds();
-    const double t = juce::jmax (0.0, session.xToTime (x, getWidth()));
-    return std::floor (t / bar) * bar;
+    return session.barStartAt (juce::jmax (0.0, session.xToTime (x, getWidth())));
 }
 
 void PatternLane::paintAt (int x)
@@ -35,7 +33,7 @@ void PatternLane::paintAt (int x)
     lastBar = start;
 
     const int pattern = session.getCurrentPattern();
-    const double length = session.getBarSeconds() * session.getPatternBars (pattern);
+    const double length = session.barsAfter (start, session.getPatternBars (pattern)) - start;
 
     for (auto& b : session.getPatternBlocks())
         if (b.start < start + length - 0.001 && b.end > start + 0.001)
@@ -54,13 +52,21 @@ void PatternLane::paint (juce::Graphics& g)
 {
     g.fillAll (juce::Colour (0xff1e2124));
 
-    const double bar = session.getBarSeconds();
     const double viewEnd = session.getViewStart() + session.getViewLength();
-
     g.setColour (juce::Colours::white.withAlpha (0.06f));
 
-    for (double t = std::floor (session.getViewStart() / bar) * bar; t <= viewEnd; t += bar)
-        g.drawVerticalLine (session.timeToX (t, getWidth()), 0.0f, (float) getHeight());
+    double barLine = session.barStartAt (session.getViewStart());
+
+    for (int guard = 0; barLine <= viewEnd && guard < 4000; ++guard)
+    {
+        g.drawVerticalLine (session.timeToX (barLine, getWidth()), 0.0f, (float) getHeight());
+        const double next = session.barsAfter (barLine, 1);
+
+        if (next <= barLine)
+            break;
+
+        barLine = next;
+    }
 
     auto blocks = session.getPatternBlocks();
     g.setFont (juce::Font (juce::FontOptions (12.0f)));
@@ -158,9 +164,11 @@ void PatternLane::mouseDrag (const juce::MouseEvent& e)
     }
     else if (moving)
     {
-        const double bar = session.getBarSeconds();
-        const double t = session.xToTime (e.x, getWidth()) - moveGrab;
-        moveTo = juce::jmax (0.0, std::round (t / bar) * bar);
+        // Land on the nearest bar line
+        const double t = juce::jmax (0.0, session.xToTime (e.x, getWidth()) - moveGrab);
+        const double before = session.barStartAt (t);
+        const double after = session.barsAfter (before, 1);
+        moveTo = (t - before) < (after - t) ? before : after;
         repaint();
     }
 }

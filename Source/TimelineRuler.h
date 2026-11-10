@@ -4,6 +4,7 @@
 #include "EditSession.h"
 
 class TimelineRuler : public juce::Component,
+                      public juce::SettableTooltipClient,
                       private juce::Timer
 {
 public:

@@ -5,6 +5,7 @@ namespace te = tracktion;
 TimelineRuler::TimelineRuler (EditSession& sessionToUse)
     : session (sessionToUse)
 {
+    setTooltip ("Click to move the playhead, drag to set the loop. Right-click to add a tempo or time signature change.");
     startTimerHz (30);
 }
 
@@ -25,8 +26,7 @@ int TimelineRuler::timeToX (double seconds) const
 
 double TimelineRuler::snapToBeat (double seconds) const
 {
-    const double beat = 60.0 / juce::jmax (1.0, session.getBpm());
-    return std::round (seconds / beat) * beat;
+    return session.snapToBeat (seconds);
 }
 
 void TimelineRuler::paint (juce::Graphics& g)
@@ -45,51 +45,76 @@ void TimelineRuler::paint (juce::Graphics& g)
         const int x1 = timeToX (loopStart);
         const int x2 = timeToX (loopEnd);
 
-        // Red for punch, green for loop, grey when neither is on
         g.setColour (session.isPunchEnabled() ? juce::Colour (0xffb03030).withAlpha (0.8f)
                    : session.isLooping()      ? juce::Colour (0xff2e7d32).withAlpha (0.8f)
                                               : juce::Colours::grey.withAlpha (0.35f));
         g.fillRect (x1, 0, juce::jmax (1, x2 - x1), getHeight());
     }
 
-    // Bars and beats
-    const double beat = 60.0 / juce::jmax (1.0, session.getBpm());
-    const double pxPerBar = getWidth() / session.getViewLength() * beat * 4.0;
+    // Bars and beats, following the tempo map
+    auto& ts = session.getEdit().tempoSequence;
+    const double viewStart = session.getViewStart();
+    const double viewEnd = viewStart + session.getViewLength();
 
-    // Space bar numbers at least 40px apart
+    double bar = session.barStartAt (viewStart);
+    int barNumber = session.barNumberAt (viewStart);
+    const double pxPerBar = timeToX (session.barsAfter (bar, 1)) - timeToX (bar);
+
     int labelStep = 1;
+
     while (pxPerBar * labelStep < 40.0 && labelStep < 1024)
         labelStep *= 2;
 
     const bool showBeats = pxPerBar / 4.0 >= 10.0;
-    const double viewEnd = session.getViewStart() + session.getViewLength();
-
-    const int firstBeat = juce::jmax (0, (int) std::floor (session.getViewStart() / beat));
-    const int lastBeat  = (int) std::ceil (viewEnd / beat);
-
     g.setFont (juce::Font (juce::FontOptions (11.0f)));
 
-    for (int n = firstBeat; n <= lastBeat; ++n)
+    for (int guard = 0; bar <= viewEnd && guard < 4000; ++guard)
     {
-        const bool isBar = (n % 4) == 0;
-        const int x = timeToX (n * beat);
+        const double next = session.barsAfter (bar, 1);
 
-        if (isBar)
+        if (next <= bar)
+            break;
+
+        const int x = timeToX (bar);
+        const bool labelled = ((barNumber - 1) % labelStep) == 0;
+
+        g.setColour (juce::Colours::white.withAlpha (labelled ? 0.6f : 0.35f));
+        g.drawVerticalLine (x, (float) (getHeight() / 2), (float) getHeight());
+
+        if (labelled)
+            g.drawText (juce::String (barNumber), x + 3, 1, 40, 12, juce::Justification::left);
+
+        if (showBeats)
         {
-            const int barIndex = n / 4;
-            const bool labelled = (barIndex % labelStep) == 0;
-
-            g.setColour (juce::Colours::white.withAlpha (labelled ? 0.6f : 0.35f));
-            g.drawVerticalLine (x, (float) (getHeight() / 2), (float) getHeight());
-
-            if (labelled)
-                g.drawText (juce::String (barIndex + 1), x + 3, 1, 40, 12, juce::Justification::left);
-        }
-        else if (showBeats)
-        {
+            const double b1 = ts.toBeats (te::TimePosition::fromSeconds (bar)).inBeats();
+            const double b2 = ts.toBeats (te::TimePosition::fromSeconds (next)).inBeats();
             g.setColour (juce::Colours::white.withAlpha (0.25f));
-            g.drawVerticalLine (x, (float) (getHeight() * 3 / 4), (float) getHeight());
+
+            for (double b = std::floor (b1) + 1.0; b < b2 - 1.0e-6; b += 1.0)
+                g.drawVerticalLine (timeToX (ts.toTime (te::BeatPosition::fromBeats (b)).inSeconds()),
+                                    (float) (getHeight() * 3 / 4), (float) getHeight());
         }
+
+        bar = next;
+        ++barNumber;
+    }
+
+    // Tempo (orange) and time signature (purple) changes
+    g.setFont (juce::Font (juce::FontOptions (10.0f, juce::Font::bold)));
+
+    for (auto& m : session.getTempoMarks())
+    {
+        const int x = timeToX (m.seconds);
+
+        if (x < -60 || x > getWidth())
+            continue;
+
+        const auto colour = m.isTimeSig ? juce::Colour (0xff8e6ae6) : juce::Colour (0xffe6893a);
+        g.setColour (colour);
+        g.fillRect (x, 0, 2, getHeight());
+        g.fillRoundedRectangle ((float) x, (float) getHeight() - 11.0f, 52.0f, 11.0f, 2.0f);
+        g.setColour (juce::Colours::black);
+        g.drawText (m.label, x + 3, getHeight() - 11, 50, 11, juce::Justification::centredLeft);
     }
 
     // Playhead
@@ -102,11 +127,64 @@ void TimelineRuler::mouseDown (const juce::MouseEvent& e)
 {
     draggingLoop = false;
     dragStartTime = xToTime (e.x);
+
+    if (! e.mods.isPopupMenu())
+        return;
+
+    // Right-click: tempo and time signature changes
+    dragStartTime = -1.0;
+
+    auto* s = &session;
+    const double t = xToTime (e.x);
+    const int bar = s->barNumberAt (t);
+    juce::PopupMenu menu;
+
+    menu.addItem ("Add Tempo Change at Bar " + juce::String (bar) + "...", [s, t]
+    {
+        auto* w = new juce::AlertWindow ("Tempo Change", "New tempo from this bar (BPM):", juce::MessageBoxIconType::NoIcon);
+        w->addTextEditor ("bpm", juce::String (juce::roundToInt (s->getBpmAt (t))));
+        w->addButton ("Add", 1, juce::KeyPress (juce::KeyPress::returnKey));
+        w->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
+
+        w->enterModalState (true, juce::ModalCallbackFunction::create ([s, t, w] (int result)
+        {
+            const double bpm = w->getTextEditorContents ("bpm").getDoubleValue();
+
+            if (result == 1 && bpm > 0.0)
+                s->addTempoChange (t, bpm);
+        }), true);
+    });
+
+    juce::PopupMenu sigs;
+
+    for (auto* sig : { "4/4", "3/4", "6/8", "5/4", "7/8", "12/8", "2/4" })
+    {
+        sigs.addItem (sig, [s, t, sig]
+        {
+            const auto parts = juce::StringArray::fromTokens (sig, "/", "");
+            s->addTimeSigChange (t, parts[0].getIntValue(), parts[1].getIntValue());
+        });
+    }
+
+    menu.addSubMenu ("Time Signature at Bar " + juce::String (bar), sigs);
+
+    // Remove a change near where you clicked
+    for (auto& m : s->getTempoMarks())
+    {
+        if (std::abs (timeToX (m.seconds) - e.x) <= 10)
+        {
+            const auto mark = m;
+            menu.addSeparator();
+            menu.addItem ("Remove " + m.label + " change", [s, mark] { s->removeTempoMark (mark); });
+        }
+    }
+
+    menu.showMenuAsync ({});
 }
 
 void TimelineRuler::mouseDrag (const juce::MouseEvent& e)
 {
-    if (e.getDistanceFromDragStart() < 4)
+    if (dragStartTime < 0.0 || e.getDistanceFromDragStart() < 4)
         return;
 
     draggingLoop = true;
@@ -124,7 +202,7 @@ void TimelineRuler::mouseUp (const juce::MouseEvent&)
     auto& transport = session.getTransport();
 
     // A plain click (no drag) moves the playhead
-    if (! draggingLoop && ! transport.isRecording())
+    if (dragStartTime >= 0.0 && ! draggingLoop && ! transport.isRecording())
         transport.setPosition (te::TimePosition::fromSeconds (dragStartTime));
 
     draggingLoop = false;

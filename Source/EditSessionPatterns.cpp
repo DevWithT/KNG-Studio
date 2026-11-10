@@ -17,7 +17,9 @@ static int patternOf (te::Clip& c)
 //==============================================================================
 double EditSession::getBarSeconds()
 {
-    return 4.0 * 60.0 / juce::jmax (1.0, getBpm());
+    // Length of the bar under the playhead (bars can change length with the tempo map)
+    const double start = barStartAt (getTransport().getPosition().inSeconds());
+    return barsAfter (start, 1) - start;
 }
 
 int EditSession::getNumPatterns()
@@ -58,7 +60,7 @@ void EditSession::setPatternBars (int pattern, int bars)
             for (auto* c : t->getClips())
                 if (auto* mc = dynamic_cast<te::MidiClip*> (c))
                     if (patternOf (*mc) == pattern)
-                        mc->setEnd (mc->getPosition().getStart() + te::TimeDuration::fromSeconds (getBarSeconds() * bars), true);
+                        mc->setEnd (te::TimePosition::fromSeconds (barsAfter (mc->getPosition().getStart().inSeconds(), bars)), true);
 
     save();
 }
@@ -83,7 +85,7 @@ double EditSession::getPatternHome (int pattern)
                 }
 
     if (home < 0.0)
-        home = std::floor (getTransport().getPosition().inSeconds() / getBarSeconds()) * getBarSeconds();
+        home = barStartAt (getTransport().getPosition().inSeconds());
 
     edit->state.setProperty (key, home, nullptr);
     return home;
@@ -127,7 +129,7 @@ te::MidiClip* EditSession::getPatternClip (int trackIndex, int pattern, bool cre
 
     beginEdit();
 
-    const double length = getBarSeconds() * getPatternBars (pattern);
+    const double length = barsAfter (home, getPatternBars (pattern)) - home;
     auto clip = track->insertMIDIClip (te::TimeRange (te::TimePosition::fromSeconds (home),
                                                       te::TimePosition::fromSeconds (home + length)),
                                        nullptr);
@@ -149,8 +151,7 @@ void EditSession::placePattern (int pattern, double atSeconds)
     if (getTransport().isRecording())
         return;
 
-    const double bar = getBarSeconds();
-    const double start = juce::jmax (0.0, std::floor (atSeconds / bar) * bar);
+    const double start = barStartAt (atSeconds);
 
     beginEdit();
 
@@ -197,7 +198,7 @@ void EditSession::placePattern (int pattern, double atSeconds)
 void EditSession::loopPattern (int pattern)
 {
     const double home = getPatternHome (pattern);
-    const double length = getBarSeconds() * getPatternBars (pattern);
+    const double length = barsAfter (home, getPatternBars (pattern)) - home;
 
     setLoopRange (home, home + length);
     setLooping (true);

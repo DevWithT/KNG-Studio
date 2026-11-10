@@ -25,8 +25,10 @@ private:
 
     juce::TextButton playButton { "Play" }, stopButton { "Stop" }, recordButton { "Rec" };
     juce::Label timeLabel;
+    juce::Label barLabel;
     juce::Slider tempoSlider;
     juce::ComboBox countInBox;
+    juce::TextButton timeSigButton { "4/4" };
     juce::ToggleButton clickButton { "Click" }, loopButton { "Loop" }, punchButton { "Punch" }, snapButton { "Snap" },
                        monitorButton { "Monitor" }, writeButton { "Auto Write" };
 

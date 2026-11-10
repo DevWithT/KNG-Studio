@@ -118,7 +118,14 @@ void PianoRoll::paintGridLines (juce::Graphics& g, juce::Rectangle<int> grid)
     {
         const double b = i * step;
         const bool isBeat = std::abs (b - std::round (b)) < 1e-6;
-        const bool isBar  = isBeat && ((int) std::round (b) % 4) == 0;
+        // A bar line wherever the tempo map starts a bar (handles time signature changes)
+        bool isBar = false;
+
+        if (isBeat)
+        {
+            const double t = clip->getTimeOfContentBeat (te::BeatPosition::fromBeats (b)).inSeconds();
+            isBar = std::abs (t - session.barStartAt (t)) < 0.0005;
+        }
 
         if (step * pxPerBeat < 4.0 && ! isBeat)
             continue;

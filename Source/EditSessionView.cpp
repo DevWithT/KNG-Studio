@@ -41,8 +41,10 @@ double EditSession::snapTime (double seconds) const
     if (! snapEnabled)
         return seconds;
 
-    const double beat = 60.0 / juce::jmax (1.0, getBpm());
-    return std::round (seconds / beat) * beat;
+    // Snap to the nearest beat on the tempo map, so it stays right across tempo changes
+    auto& ts = edit->tempoSequence;
+    const double beat = std::round (ts.toBeats (te::TimePosition::fromSeconds (juce::jmax (0.0, seconds))).inBeats());
+    return ts.toTime (te::BeatPosition::fromBeats (beat)).inSeconds();
 }
 
 //==============================================================================

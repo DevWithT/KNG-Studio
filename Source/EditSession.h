@@ -236,6 +236,27 @@ public:
     void setCountInBars (int bars);
     int getCountInBars() const;
 
+    // Tempo map: tempo and time signature changes, with bars counted the musical way
+    struct TempoMark
+    {
+        double seconds = 0.0;
+        juce::String label;
+        bool isTimeSig = false;
+        int index = 0;
+    };
+
+    std::vector<TempoMark> getTempoMarks();
+    void addTempoChange (double seconds, double bpm);
+    void addTimeSigChange (double seconds, int numerator, int denominator);
+    void removeTempoMark (const TempoMark& mark);
+    double getBpmAt (double seconds);
+    void setBpmAt (double seconds, double bpm);
+    juce::String getTimeSigAt (double seconds);
+    double barStartAt (double seconds);              // where the bar this time falls in begins
+    double barsAfter (double barStart, int bars);    // the time that many bars later
+    int barNumberAt (double seconds);                // counting from 1
+    double snapToBeat (double seconds);
+
     // Loop
     void setLooping (bool shouldLoop);
     bool isLooping();

@@ -22,13 +22,39 @@ TransportBar::TransportBar (EditSession& sessionToUse)
     timeLabel.setFont (juce::Font (juce::FontOptions (20.0f)));
     timeLabel.setText (formatTime (0.0), juce::dontSendNotification);
 
+    addAndMakeVisible (barLabel);
+    barLabel.setJustificationType (juce::Justification::centred);
+    barLabel.setFont (juce::Font (juce::FontOptions (15.0f)));
+    barLabel.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.7f));
+    barLabel.setTooltip ("Bar and beat at the playhead");
+
+    addAndMakeVisible (timeSigButton);
+    timeSigButton.setTooltip ("Time signature at the playhead. Click to change it from this bar on.");
+    timeSigButton.onClick = [this]
+    {
+        auto* s = &session;
+        const double t = session.getTransport().getPosition().inSeconds();
+        juce::PopupMenu menu;
+
+        for (auto* sig : { "4/4", "3/4", "6/8", "5/4", "7/8", "12/8", "2/4" })
+        {
+            menu.addItem (sig, [s, t, sig]
+            {
+                const auto parts = juce::StringArray::fromTokens (sig, "/", "");
+                s->addTimeSigChange (t, parts[0].getIntValue(), parts[1].getIntValue());
+            });
+        }
+
+        menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&timeSigButton));
+    };
+
     // Tempo
     tempoSlider.setSliderStyle (juce::Slider::IncDecButtons);
     tempoSlider.setRange (40.0, 300.0, 1.0);
     tempoSlider.setTextBoxStyle (juce::Slider::TextBoxLeft, false, 70, 24);
     tempoSlider.setTextValueSuffix (" BPM");
     tempoSlider.setValue (session.getBpm(), juce::dontSendNotification);
-    tempoSlider.onValueChange = [this] { session.setBpm (tempoSlider.getValue()); };
+    tempoSlider.onValueChange = [this] { session.setBpmAt (session.getTransport().getPosition().inSeconds(), tempoSlider.getValue()); };
 
     // Count-in
     countInBox.addItem ("No count-in", 1);
@@ -49,7 +75,7 @@ TransportBar::TransportBar (EditSession& sessionToUse)
     playButton.setTooltip ("Play / Pause (Space)");
     stopButton.setTooltip ("Stop and return to where you started (Space)");
     recordButton.setTooltip ("Record on armed tracks");
-    tempoSlider.setTooltip ("Tempo in beats per minute");
+    tempoSlider.setTooltip ("Tempo at the playhead. Right-click the ruler to add a tempo change.");
     countInBox.setTooltip ("Bars of click before recording starts");
     clickButton.setTooltip ("Metronome on or off");
     loopButton.setTooltip ("Loop the region marked on the ruler");
@@ -119,8 +145,22 @@ void TransportBar::timerCallback()
     if (! countInBox.isPopupActive())
         countInBox.setSelectedId (session.getCountInBars() + 1, juce::dontSendNotification);
 
+    const double now = transport.getPosition().inSeconds();
+
     if (! tempoSlider.isMouseButtonDown())
-        tempoSlider.setValue (session.getBpm(), juce::dontSendNotification);
+        tempoSlider.setValue (session.getBpmAt (now), juce::dontSendNotification);
+
+    const auto sig = session.getTimeSigAt (now);
+
+    if (timeSigButton.getButtonText() != sig)
+        timeSigButton.setButtonText (sig);
+
+    // Bar.beat, counted on the tempo map
+    auto& ts = session.getEdit().tempoSequence;
+    const double barStart = session.barStartAt (now);
+    const int beatInBar = (int) std::floor (ts.toBeats (tracktion::TimePosition::fromSeconds (now)).inBeats()
+                                            - ts.toBeats (tracktion::TimePosition::fromSeconds (barStart)).inBeats() + 1.0e-6) + 1;
+    barLabel.setText (juce::String (session.barNumberAt (now)) + "." + juce::String (beatInBar), juce::dontSendNotification);
 }
 
 juce::String TransportBar::formatTime (double seconds)
@@ -169,9 +209,11 @@ void TransportBar::resized()
     divider();
 
     place (timeLabel, 130);
+    place (barLabel, 64);
     divider();
 
     place (tempoSlider, 150);
+    place (timeSigButton, 56);
     place (countInBox, 130);
     place (clickButton, 70);
     divider();
