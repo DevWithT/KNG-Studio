@@ -20,6 +20,15 @@ void EditSession::record()
         getTransport().setPosition (te::TimePosition::fromSeconds (juce::jmax (0.0, getLoopStart() - bar * 2.0)));
     }
 
+    // Remember where this take starts and what was already there, for Re-take
+    recordStartSeconds = getTransport().getPosition().inSeconds();
+    clipsBeforeRecording.clear();
+
+    for (int i = 0; i < getNumTracks(); ++i)
+        if (auto* t = getTrack (i))
+            for (auto* c : t->getClips())
+                clipsBeforeRecording.push_back (c->itemID);
+
     getTransport().record (false);
 }
 
@@ -130,4 +139,39 @@ void EditSession::redo()
     clearSelection();
     edit->redo();
     syncTrackState();
+}
+
+void EditSession::retake()
+{
+    auto& transport = getTransport();
+
+    if (! transport.isRecording())
+        return;
+
+    transport.stop (false, false);
+
+    // The take is written when recording stops; remove it on the next tick, then go again
+    juce::MessageManager::callAsync ([this]
+    {
+        beginEdit();
+
+        for (int i = 0; i < getNumTracks(); ++i)
+        {
+            if (auto* t = getTrack (i))
+            {
+                juce::Array<te::Clip*> fresh;
+
+                for (auto* c : t->getClips())
+                    if (std::find (clipsBeforeRecording.begin(), clipsBeforeRecording.end(), c->itemID) == clipsBeforeRecording.end())
+                        fresh.add (c);
+
+                for (auto* c : fresh)
+                    c->removeFromParent();
+            }
+        }
+
+        clearSelection();
+        getTransport().setPosition (te::TimePosition::fromSeconds (recordStartSeconds));
+        record();
+    });
 }

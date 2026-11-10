@@ -22,6 +22,8 @@ public:
     void play();
     void stop();
     void record();
+    /** While recording: throw away this take, go back to where it started, and record again. */
+    void retake();
 
     // Tracks
     int getNumTracks();
@@ -318,6 +320,8 @@ private:
     bool recoveredFromCrash = false;
     juce::Time lastBackupTime;
     int currentPattern = 1;
+    double recordStartSeconds = 0.0;
+    std::vector<tracktion::EditItemID> clipsBeforeRecording;
     std::shared_ptr<tracktion::EditRenderer::Handle> bounceHandle;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EditSession)

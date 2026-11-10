@@ -45,23 +45,17 @@ KngSynthView::KngSynthView (EditSession& sessionToUse, te::Track& trackToUse)
     titleLabel.setFont (juce::Font (juce::FontOptions (17.0f, juce::Font::bold)));
 
     addAndMakeVisible (presetBox);
-    presetBox.setTextWhenNothingSelected ("Presets");
     presetBox.setTooltip ("Load a factory sound, then tweak it");
 
-    const auto& list = KngSynth::presets();
-
-    for (int i = 0; i < (int) list.size(); ++i)
-        presetBox.addItem (list[(size_t) i].name, i + 1);
-
-    presetBox.onChange = [this]
+    if (plugin != nullptr)
     {
-        if (plugin == nullptr || presetBox.getSelectedId() <= 0)
-            return;
+        juce::StringArray names;
 
-        session.beginEdit();
-        plugin->applyPreset (presetBox.getSelectedId() - 1);
-        session.save();
-    };
+        for (auto& preset : KngSynth::presets())
+            names.add (preset.name);
+
+        presetBox.attach (*plugin, names, [this] (int i) { if (plugin != nullptr) plugin->applyPreset (i); });
+    }
 
     addAndMakeVisible (viewport);
     viewport.setViewedComponent (&content, false);

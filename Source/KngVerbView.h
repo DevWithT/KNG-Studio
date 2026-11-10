@@ -1,6 +1,7 @@
 #pragma once
 
 #include <tracktion_engine/tracktion_engine.h>
+#include "KngPresets.h"
 
 class KngVerbPlugin;
 
@@ -37,7 +38,7 @@ private:
     tracktion::Plugin::Ptr pluginRef;
 
     juce::Label titleLabel;
-    juce::ComboBox presetBox;
+    KngPresetMenu presetBox;
     std::vector<Knob> knobs;
 
     juce::Rectangle<float> tailArea, bandArea, meterArea;

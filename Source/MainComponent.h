@@ -50,7 +50,7 @@ private:
         cmdBackupNow, cmdRestoreBackup, cmdStartScreen,
         cmdUndo = 100, cmdRedo, cmdCopy, cmdPaste, cmdDuplicate, cmdSplit, cmdDelete, cmdSelectAll,
         cmdAddAudioTrack = 200, cmdAddMidiTrack, cmdAddDrumTrack,
-        cmdPlayStop = 300, cmdRecord, cmdGoToStart, cmdLoop, cmdClick, cmdSnap, cmdMonitor, cmdAutoWrite, cmdPunch,
+        cmdPlayStop = 300, cmdRecord, cmdRetake, cmdGoToStart, cmdLoop, cmdClick, cmdSnap, cmdMonitor, cmdAutoWrite, cmdPunch,
         cmdAddMarker, cmdPrevMarker, cmdNextMarker,
         cmdMixer = 400, cmdZoomIn, cmdZoomOut, cmdZoomFit, cmdBrowser, cmdDock,
         cmdShortcuts = 500

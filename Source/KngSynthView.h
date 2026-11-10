@@ -3,6 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <juce_audio_utils/juce_audio_utils.h>
 #include "EditSession.h"
+#include "KngPresets.h"
 
 class KngSynthPlugin;
 
@@ -52,7 +53,7 @@ private:
     KngSynthPlugin* plugin = nullptr;
 
     juce::Label titleLabel;
-    juce::ComboBox presetBox;
+    KngPresetMenu presetBox;
     juce::Viewport viewport;
     Content content;
 

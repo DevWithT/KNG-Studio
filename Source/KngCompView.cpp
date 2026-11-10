@@ -44,22 +44,16 @@ KngCompView::KngCompView (KngCompPlugin& owner)
     titleLabel.setFont (juce::Font (juce::FontOptions (17.0f, juce::Font::bold)));
 
     addAndMakeVisible (presetBox);
-    presetBox.setTextWhenNothingSelected ("Presets");
     presetBox.setTooltip ("Start from a setting made for the job, then adjust");
 
-    const auto& list = KngComp::presets();
-
-    for (int i = 0; i < (int) list.size(); ++i)
-        presetBox.addItem (list[(size_t) i].name, i + 1);
-
-    presetBox.onChange = [this]
     {
-        if (presetBox.getSelectedId() <= 0)
-            return;
+        juce::StringArray names;
 
-        beginEdit();
-        plugin.applyPreset (presetBox.getSelectedId() - 1);
-    };
+        for (auto& preset : KngComp::presets())
+            names.add (preset.name);
+
+        presetBox.attach (plugin, names, [this] (int i) { plugin.applyPreset (i); });
+    }
 
     addAndMakeVisible (modeBox);
     modeBox.setTooltip ("Clean: transparent. Punch: snappy drums. Opto: smooth vocals. Vintage: fast with grit.");

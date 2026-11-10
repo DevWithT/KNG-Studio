@@ -380,6 +380,7 @@ juce::PopupMenu MainComponent::getMenuForIndex (int menuIndex, const juce::Strin
         case 3: // Transport
             add (cmdPlayStop, "Play / Stop", "Space", hasSession);
             add (cmdRecord, "Record", {}, hasSession);
+            add (cmdRetake, "Re-take", "Ctrl+R", hasSession);
             add (cmdGoToStart, "Go to Start", "Home", hasSession);
             add (cmdAddMarker, "Add Marker at Playhead", {}, hasSession);
             add (cmdPrevMarker, "Previous Marker", "[", hasSession);
@@ -458,6 +459,7 @@ void MainComponent::menuItemSelected (int id, int)
 
         case cmdPlayStop:      togglePlayStop(); break;
         case cmdRecord:        session->record(); break;
+        case cmdRetake:        session->retake(); break;
         case cmdGoToStart:     session->getTransport().setPosition (tracktion::TimePosition()); break;
         case cmdAddMarker:     session->addMarkerAt (session->getTransport().getPosition().inSeconds()); break;
         case cmdPrevMarker:    session->jumpToMarker (-1); break;
@@ -510,6 +512,7 @@ void MainComponent::showShortcuts()
         "Ctrl+Z / Ctrl+Y\tUndo / Redo\n"
         "Ctrl+C / Ctrl+V\tCopy / Paste clip\n"
         "Ctrl+D\tDuplicate clip\n"
+        "Ctrl+R\tRe-take (while recording)\n"
         "Ctrl+N / O / S\tNew / Open / Save\n"
         "Ctrl+Scroll\tZoom\n"
         "Shift+Scroll\tScroll sideways\n"
@@ -764,6 +767,7 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
         if (code == 'C' || code == 'c')  { session->copySelectedClip();      return true; }
         if (code == 'V' || code == 'v')  { session->pasteClip();             return true; }
         if (code == 'A' || code == 'a')  { session->selectAllClips();        return true; }
+        if (code == 'R' || code == 'r')  { session->retake();                return true; }
         if (code == ',')                 { showSettings();                   return true; }
 
         if (code == '=' || code == '+')

@@ -34,22 +34,16 @@ KngDelayView::KngDelayView (KngDelayPlugin& owner)
     titleLabel.setText ("KNG Delay", juce::dontSendNotification);
     titleLabel.setFont (juce::Font (juce::FontOptions (17.0f, juce::Font::bold)));
 
-    presetBox.setTextWhenNothingSelected ("Presets");
     presetBox.setTooltip ("Start from a setting made for the job, then adjust. Use Send Bus when it's on a bus.");
 
-    const auto& list = KngDelay::presets();
-
-    for (int i = 0; i < (int) list.size(); ++i)
-        presetBox.addItem (list[(size_t) i].name, i + 1);
-
-    presetBox.onChange = [this]
     {
-        if (presetBox.getSelectedId() <= 0)
-            return;
+        juce::StringArray names;
 
-        beginEdit();
-        plugin.applyPreset (presetBox.getSelectedId() - 1);
-    };
+        for (auto& preset : KngDelay::presets())
+            names.add (preset.name);
+
+        presetBox.attach (plugin, names, [this] (int i) { plugin.applyPreset (i); });
+    }
 
     for (int i = 0; i < KngDelay::modeNames().size(); ++i)
         modeBox.addItem (KngDelay::modeNames()[i], i + 1);

@@ -2,6 +2,7 @@
 
 #include <tracktion_engine/tracktion_engine.h>
 #include <juce_dsp/juce_dsp.h>
+#include "KngPresets.h"
 
 class KngEqPlugin;
 
@@ -49,6 +50,7 @@ private:
 
     juce::Label bandLabel;
     juce::ToggleButton onButton { "On" };
+    KngPresetMenu presetBox;
     juce::ComboBox typeBox, slopeBox;
     juce::Slider freqKnob, gainKnob, qKnob, outKnob;
     juce::Label freqLabel { {}, "Freq" }, gainLabel { {}, "Gain" }, qLabel { {}, "Q" }, outLabel { {}, "Output" };

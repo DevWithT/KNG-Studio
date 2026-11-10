@@ -1,6 +1,7 @@
 #pragma once
 
 #include <tracktion_engine/tracktion_engine.h>
+#include "KngPresets.h"
 
 class KngSatPlugin;
 
@@ -37,7 +38,8 @@ private:
     tracktion::Plugin::Ptr pluginRef;
 
     juce::Label titleLabel;
-    juce::ComboBox presetBox, modeBox;
+    KngPresetMenu presetBox;
+    juce::ComboBox modeBox;
     juce::ToggleButton autoButton { "Auto Gain" };
     std::vector<Knob> knobs;
 

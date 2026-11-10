@@ -1,6 +1,7 @@
 #pragma once
 
 #include <tracktion_engine/tracktion_engine.h>
+#include "KngPresets.h"
 
 class KngDelayPlugin;
 
@@ -37,7 +38,8 @@ private:
     tracktion::Plugin::Ptr pluginRef;
 
     juce::Label titleLabel;
-    juce::ComboBox presetBox, modeBox, divLBox, divRBox;
+    KngPresetMenu presetBox;
+    juce::ComboBox modeBox, divLBox, divRBox;
     juce::ToggleButton syncButton { "Sync to tempo" };
     juce::Label leftLabel { {}, "Left" }, rightLabel { {}, "Right" };
 

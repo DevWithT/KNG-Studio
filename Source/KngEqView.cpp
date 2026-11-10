@@ -113,6 +113,10 @@ KngEqView::KngEqView (KngEqPlugin& p)
     qKnob.onValueChange    = [this] { if (selected >= 0) setValue (selected, KngEq::bandQ, (float) qKnob.getValue()); };
     outKnob.onValueChange  = [this] { plugin.getParam (KngEq::outputParam)->setParameter ((float) outKnob.getValue(), juce::sendNotification); };
 
+    addAndMakeVisible (presetBox);
+    presetBox.setTooltip ("Save your own EQ settings and load them on any track");
+    presetBox.attach (plugin, {}, [] (int) {});
+
     selectBand (-1);
     setSize (900, 380);
     startTimerHz (30);
@@ -474,6 +478,8 @@ void KngEqView::resized()
     auto outCol = controls.removeFromRight (84);
     outLabel.setBounds (outCol.removeFromTop (16));
     outKnob.setBounds (outCol);
+    controls.removeFromRight (10);
+    presetBox.setBounds (controls.removeFromRight (180).removeFromTop (26));
 }
 
 //==============================================================================

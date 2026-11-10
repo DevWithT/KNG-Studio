@@ -42,19 +42,14 @@ KngFxView::KngFxView (KngFxBase& owner)
     hintLabel.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.5f));
 
     addAndMakeVisible (presetBox);
-    presetBox.setTextWhenNothingSelected ("Presets");
-
-    for (int i = 0; i < (int) plugin.getPresets().size(); ++i)
-        presetBox.addItem (plugin.getPresets()[(size_t) i].name, i + 1);
-
-    presetBox.onChange = [this]
     {
-        if (presetBox.getSelectedId() <= 0)
-            return;
+        juce::StringArray names;
 
-        beginEdit();
-        plugin.applyPreset (presetBox.getSelectedId() - 1);
-    };
+        for (auto& preset : plugin.getPresets())
+            names.add (preset.name);
+
+        presetBox.attach (plugin, names, [this] (int i) { plugin.applyPreset (i); });
+    }
 
     for (int i = 0; i < plugin.getNumParams(); ++i)
     {

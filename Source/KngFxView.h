@@ -1,6 +1,7 @@
 #pragma once
 
 #include "KngFx.h"
+#include "KngPresets.h"
 
 /** The panel every KngFxBase effect gets: presets, controls built from its parameters,
     its own picture, and in/out meters. */
@@ -35,7 +36,7 @@ private:
     tracktion::Plugin::Ptr pluginRef;
 
     juce::Label titleLabel, hintLabel;
-    juce::ComboBox presetBox;
+    KngPresetMenu presetBox;
     std::vector<Control> controls;
 
     juce::Rectangle<float> displayArea, inMeterArea, outMeterArea;

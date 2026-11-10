@@ -178,54 +178,76 @@ int EditSession::chopClipToPads (te::AudioClipBase& clip, int slices, bool atMar
     if (numSlices < 1)
         return -1;
 
-    addDrumTrack();
-    const int index = getNumTracks() - 1;
-    auto* track = getTrack (index);
-    auto* sampler = getDrumSampler (index);
+    juce::AudioFormatManager formats;
+    formats.registerBasicFormats();
+    std::unique_ptr<juce::AudioFormatReader> reader (formats.createReaderFor (source));
 
-    if (track == nullptr || sampler == nullptr)
+    if (reader == nullptr)
         return -1;
 
-    beginEdit();
-    track->setName ("Chops - " + clip.getName());
+    auto folder = getProjectFolder().getChildFile ("Audio");
+    folder.createDirectory();
 
-    // One slice per pad
+    const auto baseName = juce::File::createLegalFileName (clip.getName().isNotEmpty() ? clip.getName()
+                                                                                       : source.getFileNameWithoutExtension());
+    juce::WavAudioFormat wav;
+    int firstIndex = -1;
+
     for (int i = 0; i < numSlices; ++i)
     {
-        const double sliceStart  = offset + (cuts[(size_t) i] - clipStart);
-        const double sliceLength = cuts[(size_t) i + 1] - cuts[(size_t) i];
+        // Save the slice as its own file
+        const auto startSample = (juce::int64) ((offset + cuts[(size_t) i] - clipStart) * reader->sampleRate);
+        const int len = (int) ((cuts[(size_t) i + 1] - cuts[(size_t) i]) * reader->sampleRate);
 
-        if (sampler->addSound (source.getFullPathName(), "Slice " + juce::String (i + 1),
-                               sliceStart, sliceLength, 0.0f).isNotEmpty())
+        if (len <= 0)
             continue;
 
-        const int sound = sampler->getNumSounds() - 1;
-        const int note = getPadNote (i);
-        sampler->setSoundParams (sound, note, note, note);
-        sampler->setSoundOpenEnded (sound, true);
-    }
+        juce::AudioBuffer<float> sliceBuffer ((int) reader->numChannels, len);
+        reader->read (&sliceBuffer, 0, len, startSample, true, true);
 
-    // A pattern that plays the slices in order, so it sounds like the original
-    if (auto midi = track->insertMIDIClip (te::TimeRange (pos.getStart(), pos.getEnd()), nullptr))
-    {
-        midi->setName ("Chops");
+        auto file = folder.getNonexistentChildFile (baseName + " slice " + juce::String (i + 1), ".wav");
+        auto* stream = new juce::FileOutputStream (file);
+        std::unique_ptr<juce::AudioFormatWriter> writer (wav.createWriterFor (stream, reader->sampleRate,
+                                                                              (unsigned int) sliceBuffer.getNumChannels(),
+                                                                              24, {}, 0));
 
-        for (int i = 0; i < numSlices; ++i)
+        if (writer == nullptr)
         {
-            const auto b1 = midi->getContentBeatAtTime (te::TimePosition::fromSeconds (cuts[(size_t) i]));
-            const auto b2 = midi->getContentBeatAtTime (te::TimePosition::fromSeconds (cuts[(size_t) i + 1]));
-            midi->getSequence().addNote (getPadNote (i), b1, b2 - b1, 100, 0, &edit->getUndoManager());
+            delete stream;
+            continue;
+        }
+
+        writer->writeFromAudioSampleBuffer (sliceBuffer, 0, len);
+        writer.reset();
+
+        // One Rack row per slice
+        const int index = addSampleChannel (file);
+
+        if (index < 0)
+            continue;
+
+        if (firstIndex < 0)
+            firstIndex = index;
+
+        // A hit where this slice was, so the chops play back like the original
+        if (auto* track = getTrack (index))
+        {
+            if (auto midi = track->insertMIDIClip (te::TimeRange (pos.getStart(), pos.getEnd()), nullptr))
+            {
+                midi->setName ("Chops");
+                const auto b1 = midi->getContentBeatAtTime (te::TimePosition::fromSeconds (cuts[(size_t) i]));
+                const auto b2 = midi->getContentBeatAtTime (te::TimePosition::fromSeconds (cuts[(size_t) i + 1]));
+                midi->getSequence().addNote (60, b1, b2 - b1, 100, 0, &edit->getUndoManager());
+            }
         }
     }
 
     // So you don't hear it twice
+    beginEdit();
     clip.setMuted (true);
     save();
 
-    if (onShowDrumRack)
-        onShowDrumRack (index);
-
-    return index;
+    return firstIndex;
 }
 
 //==============================================================================

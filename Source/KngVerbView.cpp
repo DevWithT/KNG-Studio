@@ -34,22 +34,16 @@ KngVerbView::KngVerbView (KngVerbPlugin& owner)
     titleLabel.setFont (juce::Font (juce::FontOptions (17.0f, juce::Font::bold)));
 
     addAndMakeVisible (presetBox);
-    presetBox.setTextWhenNothingSelected ("Presets");
     presetBox.setTooltip ("Start from a space made for the job, then adjust. Use Send Bus when it's on a bus.");
 
-    const auto& list = KngVerb::presets();
-
-    for (int i = 0; i < (int) list.size(); ++i)
-        presetBox.addItem (list[(size_t) i].name, i + 1);
-
-    presetBox.onChange = [this]
     {
-        if (presetBox.getSelectedId() <= 0)
-            return;
+        juce::StringArray names;
 
-        beginEdit();
-        plugin.applyPreset (presetBox.getSelectedId() - 1);
-    };
+        for (auto& preset : KngVerb::presets())
+            names.add (preset.name);
+
+        presetBox.attach (plugin, names, [this] (int i) { plugin.applyPreset (i); });
+    }
 
     for (int param = 0; param < KngVerb::numParams; ++param)
     {

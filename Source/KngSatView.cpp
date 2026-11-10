@@ -35,20 +35,14 @@ KngSatView::KngSatView (KngSatPlugin& owner)
     titleLabel.setText ("KNG Saturator", juce::dontSendNotification);
     titleLabel.setFont (juce::Font (juce::FontOptions (17.0f, juce::Font::bold)));
 
-    presetBox.setTextWhenNothingSelected ("Presets");
-    const auto& list = KngSat::presets();
-
-    for (int i = 0; i < (int) list.size(); ++i)
-        presetBox.addItem (list[(size_t) i].name, i + 1);
-
-    presetBox.onChange = [this]
     {
-        if (presetBox.getSelectedId() <= 0)
-            return;
+        juce::StringArray names;
 
-        beginEdit();
-        plugin.applyPreset (presetBox.getSelectedId() - 1);
-    };
+        for (auto& preset : KngSat::presets())
+            names.add (preset.name);
+
+        presetBox.attach (plugin, names, [this] (int i) { plugin.applyPreset (i); });
+    }
 
     for (int i = 0; i < KngSat::modeNames().size(); ++i)
         modeBox.addItem (KngSat::modeNames()[i], i + 1);
