@@ -6,6 +6,9 @@
 #include "KngVerbPlugin.h"
 #include "KngDelayPlugin.h"
 #include "KngSatPlugin.h"
+#include "KngDeEssPlugin.h"
+#include "KngLimiterPlugin.h"
+#include "KngDoublerPlugin.h"
 
 MainComponent::MainComponent (tracktion::Engine& engineToUse)
     : engine (engineToUse)
@@ -17,6 +20,9 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
     engine.getPluginManager().createBuiltInType<KngVerbPlugin>();
     engine.getPluginManager().createBuiltInType<KngDelayPlugin>();
     engine.getPluginManager().createBuiltInType<KngSatPlugin>();
+    engine.getPluginManager().createBuiltInType<KngDeEssPlugin>();
+    engine.getPluginManager().createBuiltInType<KngLimiterPlugin>();
+    engine.getPluginManager().createBuiltInType<KngDoublerPlugin>();
 
     setWantsKeyboardFocus (true);
 

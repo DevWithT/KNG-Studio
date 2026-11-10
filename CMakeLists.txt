@@ -88,7 +88,12 @@ target_sources(KNGStudio PRIVATE
     Source/KngDelayPlugin.cpp
     Source/KngDelayView.cpp
     Source/KngSatPlugin.cpp
-    Source/KngSatView.cpp)
+    Source/KngSatView.cpp
+    Source/KngFx.cpp
+    Source/KngFxView.cpp
+    Source/KngDeEssPlugin.cpp
+    Source/KngLimiterPlugin.cpp
+    Source/KngDoublerPlugin.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0

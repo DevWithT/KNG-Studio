@@ -4,6 +4,9 @@
 #include "KngVerbPlugin.h"
 #include "KngDelayPlugin.h"
 #include "KngSatPlugin.h"
+#include "KngDeEssPlugin.h"
+#include "KngLimiterPlugin.h"
+#include "KngDoublerPlugin.h"
 
 namespace te = tracktion;
 
@@ -18,6 +21,9 @@ std::vector<std::pair<juce::String, juce::String>> EditSession::getBuiltInEffect
         { "KNG Verb",             KngVerbPlugin::xmlTypeName },
         { "KNG Delay",            KngDelayPlugin::xmlTypeName },
         { "KNG Saturator",        KngSatPlugin::xmlTypeName },
+        { "KNG De-Esser",         KngDeEssPlugin::xmlTypeName },
+        { "KNG Limiter",          KngLimiterPlugin::xmlTypeName },
+        { "KNG Doubler",          KngDoublerPlugin::xmlTypeName },
         { "EQ (4 band)",          te::EqualiserPlugin::xmlTypeName },
         { "Compressor",           te::CompressorPlugin::xmlTypeName },
         { "Reverb",               te::ReverbPlugin::xmlTypeName },
