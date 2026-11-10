@@ -26,35 +26,11 @@ TracksView::TracksView (EditSession& sessionToUse)
 TracksView::~TracksView()
 {
     stopTimer();
+    folderHeaders.clear();
     autoLanes.clear();
     autoHeaders.clear();
     lanes.clear();
     headers.clear();
-}
-
-juce::String TracksView::getAutomationSignature() const
-{
-    juce::String sig;
-
-    for (int i = 0; i < headers.size(); ++i)
-        sig << (session.isAutomationShown (i) ? "1" : "0");
-
-    return sig;
-}
-
-int TracksView::getIdealHeight() const
-{
-    int h = 0;
-
-    for (int i = 0; i < headers.size(); ++i)
-    {
-        h += rowHeight + gap;
-
-        if (session.isAutomationShown (i))
-            h += autoHeight + gap;
-    }
-
-    return h + 36;
 }
 
 juce::Array<tracktion::AudioTrack*> TracksView::getCurrentTracks()
@@ -67,70 +43,143 @@ juce::Array<tracktion::AudioTrack*> TracksView::getCurrentTracks()
     return result;
 }
 
-void TracksView::timerCallback()
+juce::String TracksView::getLayoutSignature()
 {
-    if (getCurrentTracks() != builtTracks)
+    juce::String sig;
+
+    for (int i = 0; i < session.getNumTracks(); ++i)
     {
-        rebuild();
-        return;
+        const auto folder = session.getTrackFolder (i);
+        sig << folder << "|" << (folder.isNotEmpty() && session.isFolderCollapsed (folder) ? "c" : "o")
+            << (session.isAutomationShown (i) ? "a" : "-") << ";";
     }
 
-    if (getAutomationSignature() != lastAutoSignature)
-        updateLayout();
+    return sig;
+}
+
+void TracksView::timerCallback()
+{
+    if (getCurrentTracks() != builtTracks || getLayoutSignature() != lastSignature)
+        rebuild();
 }
 
 void TracksView::rebuild()
 {
+    folderHeaders.clear();
     autoLanes.clear();
     autoHeaders.clear();
     lanes.clear();
     headers.clear();
 
     builtTracks = getCurrentTracks();
+    juce::String previousFolder;
 
     for (int i = 0; i < builtTracks.size(); ++i)
     {
+        // One folder bar where each folder begins
+        const auto folder = session.getTrackFolder (i);
+
+        if (folder.isNotEmpty() && folder != previousFolder)
+            addAndMakeVisible (folderHeaders.add (new FolderHeader (session, folder)));
+
+        previousFolder = folder;
+
         addAndMakeVisible (headers.add (new TrackHeader (session, i)));
         addAndMakeVisible (lanes.add (new TrackLane (session, i)));
         addChildComponent (autoHeaders.add (new AutomationHeader (session, i)));
         addChildComponent (autoLanes.add (new AutomationLane (session, i)));
     }
 
+    lastSignature = getLayoutSignature();
     updateLayout();
 }
 
-void TracksView::updateLayout()
+int TracksView::layout (bool apply)
 {
-    lastAutoSignature = getAutomationSignature();
-    setSize (getWidth(), getIdealHeight());
-    resized();
-}
-
-void TracksView::resized()
-{
-    int y = 0;
+    int y = 0, folderIndex = 0;
+    juce::String previousFolder;
     const int laneWidth = juce::jmax (0, getWidth() - headerWidth - gap);
 
     for (int i = 0; i < headers.size(); ++i)
     {
-        headers[i]->setBounds (0, y, headerWidth, rowHeight);
-        lanes[i]->setBounds (headerWidth + gap, y, laneWidth, rowHeight);
+        const auto folder = session.getTrackFolder (i);
+
+        if (folder.isNotEmpty() && folder != previousFolder)
+        {
+            if (apply && folderIndex < folderHeaders.size())
+                folderHeaders[folderIndex]->setBounds (0, y, getWidth(), folderHeight);
+
+            ++folderIndex;
+            y += folderHeight + gap;
+        }
+
+        previousFolder = folder;
+
+        const bool hidden = folder.isNotEmpty() && session.isFolderCollapsed (folder);
+        const bool showAuto = ! hidden && session.isAutomationShown (i);
+        const int x = folder.isNotEmpty() ? indent : 0;
+
+        if (apply)
+        {
+            headers[i]->setVisible (! hidden);
+            lanes[i]->setVisible (! hidden);
+            autoHeaders[i]->setVisible (showAuto);
+            autoLanes[i]->setVisible (showAuto);
+        }
+
+        if (hidden)
+            continue;
+
+        if (apply)
+        {
+            headers[i]->setBounds (x, y, headerWidth - x, rowHeight);
+            lanes[i]->setBounds (headerWidth + gap, y, laneWidth, rowHeight);
+        }
+
         y += rowHeight + gap;
 
-        const bool shown = session.isAutomationShown (i);
-        autoHeaders[i]->setVisible (shown);
-        autoLanes[i]->setVisible (shown);
-
-        if (shown)
+        if (showAuto)
         {
-            autoHeaders[i]->setBounds (0, y, headerWidth, autoHeight);
-            autoLanes[i]->setBounds (headerWidth + gap, y, laneWidth, autoHeight);
+            if (apply)
+            {
+                autoHeaders[i]->setBounds (x, y, headerWidth - x, autoHeight);
+                autoLanes[i]->setBounds (headerWidth + gap, y, laneWidth, autoHeight);
+            }
+
             y += autoHeight + gap;
         }
     }
 
-    addTrackButton.setBounds (0, y + 4, 140, 28);
-    addMidiTrackButton.setBounds (146, y + 4, 170, 28);
+    if (apply)
+    {
+        addTrackButton.setBounds (0, y + 4, 140, 28);
+        addMidiTrackButton.setBounds (146, y + 4, 170, 28);
+    }
+
+    return y + 36;
+}
+
+int TracksView::getIdealHeight()
+{
+    return layout (false);
+}
+
+void TracksView::updateLayout()
+{
+    int h = layout (false);
+
+    if (auto* parent = getParentComponent())
+        h = juce::jmax (h, parent->getHeight());
+
+    if (getHeight() != h)
+        setSize (getWidth(), h);
+
+    layout (true);
+}
+
+void TracksView::resized()
+{
+    layout (true);
 }
 
 //==============================================================================
@@ -138,8 +187,11 @@ int TracksView::trackAtY (int y) const
 {
     for (int i = 0; i < headers.size(); ++i)
     {
+        if (! headers[i]->isVisible())
+            continue;
+
         const int top = headers[i]->getY();
-        const int bottom = i + 1 < headers.size() ? headers[i + 1]->getY() : headers[i]->getBottom() + gap;
+        const int bottom = headers[i]->getBottom() + gap + (autoLanes[i]->isVisible() ? autoHeight + gap : 0);
 
         if (y >= top && y < bottom)
             return i;
@@ -199,7 +251,7 @@ void TracksView::paintOverChildren (juce::Graphics& g)
     }
 
     // Below the tracks: a new track goes here
-    const int top = headers.isEmpty() ? 0 : headers.getLast()->getBottom() + gap;
+    const int top = addTrackButton.getY() - 4;
     auto area = juce::Rectangle<int> (0, top, getWidth(), juce::jmax (48, getHeight() - top)).toFloat().reduced (2.0f);
 
     g.setColour (accent.withAlpha (0.1f));

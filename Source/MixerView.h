@@ -30,6 +30,37 @@ private:
     juce::Slider sendKnob, panKnob, fader;
     LevelMeter meter;
 
+    struct InsertButton : public juce::TextButton
+    {
+        std::function<void()> onRightClick;
+
+        void mouseDown (const juce::MouseEvent& e) override
+        {
+            if (e.mods.isPopupMenu())
+            {
+                if (onRightClick)
+                    onRightClick();
+
+                return;
+            }
+
+            juce::TextButton::mouseDown (e);
+        }
+    };
+
+    juce::OwnedArray<InsertButton> insertButtons;
+    juce::TextButton addFxButton { "+ FX" };
+    juce::ComboBox sendBusBox;
+    juce::String lastInsertSignature, lastBusSignature;
+    int sendBus = 0;
+
+    tracktion::PluginList* getPluginList();
+    void rebuildInserts();
+    void syncSendBuses();
+    void openPlugin (tracktion::Plugin& plugin, juce::Component& anchor);
+    void showAddFxMenu();
+    void addEffect (const juce::String& id);
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MixerStrip)
 };
 

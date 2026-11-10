@@ -490,6 +490,38 @@ void TrackHeader::mouseDown (const juce::MouseEvent& e)
 
     menu.addSubMenu ("Sidechain Duck From", duck);
 
+    // Folders
+    juce::PopupMenu folders;
+    const auto currentFolder = session.getTrackFolder (idx);
+
+    folders.addItem ("New Folder...", [s, idx]
+    {
+        auto* w = new juce::AlertWindow ("New Folder", "Name this folder:", juce::MessageBoxIconType::NoIcon);
+        w->addTextEditor ("name", "Drums");
+        w->addButton ("Create", 1, juce::KeyPress (juce::KeyPress::returnKey));
+        w->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
+
+        w->enterModalState (true, juce::ModalCallbackFunction::create ([s, idx, w] (int result)
+        {
+            const auto name = w->getTextEditorContents ("name").trim();
+
+            if (result == 1 && name.isNotEmpty())
+                s->setTrackFolder (idx, name);
+        }), true);
+    });
+
+    for (auto& f : session.getFolderNames())
+        if (f != currentFolder)
+            folders.addItem ("Move to " + f, [s, idx, f]
+            {
+                juce::MessageManager::callAsync ([s, idx, f] { s->setTrackFolder (idx, f); });
+            });
+
+    if (currentFolder.isNotEmpty())
+        folders.addItem ("Remove from " + currentFolder, [s, idx] { s->setTrackFolder (idx, {}); });
+
+    menu.addSubMenu ("Folder", folders);
+
     // Chain templates
     juce::PopupMenu templates;
 

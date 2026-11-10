@@ -1,5 +1,8 @@
 #include "MixerView.h"
 #include "VolumeHelpers.h"
+#include "PluginBrowser.h"
+#include "GenericPluginPanel.h"
+#include <map>
 
 namespace te = tracktion;
 
@@ -13,6 +16,22 @@ MixerStrip::MixerStrip (EditSession& sessionToUse, int trackIndexToUse)
                                                              &sendLabel, &panLabel, &sendKnob, &panKnob,
                                                              &fader, &meter })
         addAndMakeVisible (c);
+
+    addAndMakeVisible (addFxButton);
+    addFxButton.setTooltip ("Add an effect to this channel");
+    addFxButton.onClick = [this] { showAddFxMenu(); };
+
+    addAndMakeVisible (sendBusBox);
+    sendBusBox.setTooltip ("Which bus the send knob below feeds");
+    sendBusBox.setTextWhenNoChoicesAvailable ("Reverb");
+    sendBusBox.onChange = [this]
+    {
+        if (sendBusBox.getSelectedId() > 0)
+            sendBus = sendBusBox.getSelectedId() - 1;
+    };
+
+    sendLabel.setVisible (false);
+    fxButton.setVisible (false);
 
     nameLabel.setJustificationType (juce::Justification::centred);
     nameLabel.setFont (juce::Font (juce::FontOptions (13.0f)));
@@ -67,7 +86,14 @@ MixerStrip::MixerStrip (EditSession& sessionToUse, int trackIndexToUse)
     {
         return v <= -60.0 ? juce::String ("Off") : juce::String (v, 1) + " dB";
     };
-    sendKnob.onValueChange = [this] { session.setSendDb (trackIndex, (float) sendKnob.getValue()); };
+    sendKnob.onValueChange = [this]
+    {
+        // No buses yet: the first send makes the Reverb Bus, like before
+        if (session.getBusNumbers().isEmpty())
+            session.setSendDb (trackIndex, (float) sendKnob.getValue());
+        else
+            session.setSendToBusDb (trackIndex, sendBus, (float) sendKnob.getValue());
+    };
 
     panKnob.setRange (-1.0, 1.0, 0.01);
     panKnob.setDoubleClickReturnValue (true, 0.0);
@@ -113,6 +139,7 @@ MixerStrip::MixerStrip (EditSession& sessionToUse, int trackIndexToUse)
     {
         sendKnob.setVisible (false);
         sendLabel.setVisible (false);
+        sendBusBox.setVisible (false);
     }
 
     timerCallback();
@@ -126,6 +153,11 @@ MixerStrip::~MixerStrip()
 
 void MixerStrip::timerCallback()
 {
+    rebuildInserts();
+
+    if (! isMaster() && ! isBus)
+        syncSendBuses();
+
     // Keep in step with the track headers and automation
     if (isMaster())
     {
@@ -156,7 +188,9 @@ void MixerStrip::timerCallback()
     }
 
     if (! isBus && ! sendKnob.isMouseButtonDown())
-        sendKnob.setValue (session.getSendDb (trackIndex), juce::dontSendNotification);
+        sendKnob.setValue (session.getBusNumbers().isEmpty() ? session.getSendDb (trackIndex)
+                                                             : session.getSendToBusDb (trackIndex, sendBus),
+                           juce::dontSendNotification);
 
     repaint();
 }
@@ -193,16 +227,30 @@ void MixerStrip::resized()
     r.removeFromTop (6);
 
     nameLabel.setBounds (r.removeFromTop (20));
-    fxButton.setBounds (r.removeFromTop (22).reduced (8, 0));
+    r.removeFromTop (2);
+
+    // Inserts: the first four, then + FX
+    for (int i = 0; i < insertButtons.size(); ++i)
+    {
+        insertButtons[i]->setVisible (i < 4);
+
+        if (i < 4)
+        {
+            insertButtons[i]->setBounds (r.removeFromTop (18).reduced (2, 0));
+            r.removeFromTop (2);
+        }
+    }
+
+    addFxButton.setBounds (r.removeFromTop (20).reduced (2, 0));
     r.removeFromTop (6);
 
-    auto sendArea = r.removeFromTop (54);
-    sendLabel.setBounds (sendArea.removeFromTop (14));
-    sendKnob.setBounds (sendArea.withSizeKeepingCentre (40, 40));
+    auto sendArea = r.removeFromTop (60);
+    sendBusBox.setBounds (sendArea.removeFromTop (20).reduced (2, 0));
+    sendKnob.setBounds (sendArea.withSizeKeepingCentre (38, 38));
 
-    auto panArea = r.removeFromTop (54);
+    auto panArea = r.removeFromTop (50);
     panLabel.setBounds (panArea.removeFromTop (14));
-    panKnob.setBounds (panArea.withSizeKeepingCentre (40, 40));
+    panKnob.setBounds (panArea.withSizeKeepingCentre (36, 36));
 
     auto msRow = r.removeFromBottom (24);
     muteButton.setBounds (msRow.removeFromLeft (msRow.getWidth() / 2).reduced (2, 0));
@@ -212,6 +260,160 @@ void MixerStrip::resized()
     meter.setBounds (r.removeFromRight (10));
     r.removeFromRight (4);
     fader.setBounds (r);
+}
+
+namespace te = tracktion;
+
+te::PluginList* MixerStrip::getPluginList()
+{
+    if (isMaster())
+        return &session.getEdit().getMasterPluginList();
+
+    if (auto* t = session.getTrack (trackIndex))
+        return &t->pluginList;
+
+    return nullptr;
+}
+
+void MixerStrip::rebuildInserts()
+{
+    auto* list = getPluginList();
+
+    if (list == nullptr)
+        return;
+
+    auto fx = session.getFxPlugins (*list);
+    juce::String sig;
+
+    for (auto* p : fx)
+        sig << p->itemID.toString() << (p->isEnabled() ? "1" : "0") << ";";
+
+    if (sig == lastInsertSignature)
+        return;
+
+    lastInsertSignature = sig;
+    insertButtons.clear();
+
+    for (auto* p : fx)
+    {
+        auto* b = insertButtons.add (new InsertButton());
+        b->setButtonText (p->getName());
+        b->setColour (juce::TextButton::buttonColourId, p->isEnabled() ? juce::Colour (0xff2b4a6b) : juce::Colour (0xff2b2f33));
+        b->setColour (juce::TextButton::textColourOffId, juce::Colours::white.withAlpha (p->isEnabled() ? 0.95f : 0.4f));
+        b->setTooltip ("Click to open. Right-click to bypass or remove.");
+
+        te::Plugin::Ptr ptr (p);
+        juce::Component::SafePointer<MixerStrip> safe (this);
+
+        b->onClick = [safe, ptr, b] { if (safe != nullptr) safe->openPlugin (*ptr, *b); };
+
+        b->onRightClick = [safe, ptr]
+        {
+            if (safe == nullptr)
+                return;
+
+            auto* s = &safe->session;
+            juce::PopupMenu menu;
+            menu.addItem (ptr->isEnabled() ? "Bypass" : "Turn On", [ptr] { ptr->setEnabled (! ptr->isEnabled()); });
+            menu.addItem ("Remove", [s, ptr] { juce::MessageManager::callAsync ([s, ptr] { s->removePlugin (ptr.get()); }); });
+            menu.showMenuAsync ({});
+        };
+
+        addAndMakeVisible (b);
+    }
+
+    resized();
+}
+
+void MixerStrip::syncSendBuses()
+{
+    const auto buses = session.getBusNumbers();
+    juce::String sig;
+
+    for (int bus : buses)
+        sig << bus << ":" << session.getBusName (bus) << ";";
+
+    if (sig == lastBusSignature)
+        return;
+
+    lastBusSignature = sig;
+    sendBusBox.clear (juce::dontSendNotification);
+
+    for (int bus : buses)
+        sendBusBox.addItem (session.getBusName (bus), bus + 1);
+
+    if (! buses.contains (sendBus) && ! buses.isEmpty())
+        sendBus = buses.getFirst();
+
+    sendBusBox.setSelectedId (sendBus + 1, juce::dontSendNotification);
+}
+
+void MixerStrip::openPlugin (te::Plugin& plugin, juce::Component& anchor)
+{
+    if (dynamic_cast<te::ExternalPlugin*> (&plugin) != nullptr)
+        plugin.showWindowExplicitly();
+    else if (plugin.getPluginType().startsWith ("kng") && session.onShowPluginEditor)
+        session.onShowPluginEditor (plugin);
+    else
+        GenericPluginPanel::showFor (plugin, anchor);
+}
+
+void MixerStrip::addEffect (const juce::String& id)
+{
+    if (! isMaster())
+    {
+        session.addEffectById (trackIndex, id);
+        return;
+    }
+
+    // Master: KNG effects by type, VSTs by their description
+    auto& masterList = session.getEdit().getMasterPluginList();
+
+    if (id.startsWith ("kng"))
+    {
+        session.addBuiltInPlugin (masterList, id);
+        return;
+    }
+
+    for (auto& d : session.getEdit().engine.getPluginManager().knownPluginList.getTypes())
+    {
+        if (d.createIdentifierString() == id)
+        {
+            session.addPlugin (masterList, d);
+            return;
+        }
+    }
+}
+
+void MixerStrip::showAddFxMenu()
+{
+    juce::Component::SafePointer<MixerStrip> safe (this);
+    juce::PopupMenu menu;
+    std::map<juce::String, juce::PopupMenu> byMaker;
+
+    for (auto& e : PluginBrowser::buildEntries (session.getEdit().engine))
+    {
+        if (e.header || e.instrument)
+            continue;
+
+        const auto id = e.id;
+        auto add = [safe, id] { if (safe != nullptr) safe->addEffect (id); };
+
+        if (e.detail == "KNG")
+            menu.addItem (e.name, add);
+        else
+            byMaker[e.detail.isNotEmpty() ? e.detail : juce::String ("Other")].addItem (e.name, add);
+    }
+
+    if (! byMaker.empty())
+    {
+        menu.addSeparator();
+
+        for (auto& [maker, sub] : byMaker)
+            menu.addSubMenu (maker, sub);
+    }
+
+    menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&addFxButton));
 }
 
 //==============================================================================

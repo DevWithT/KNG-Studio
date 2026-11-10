@@ -195,6 +195,18 @@ public:
     void removeDucking (int targetIndex);
     int getDuckSource (int targetIndex);   // -1 if none
 
+    // Track folders: tracks with the same folder name sit together and collapse as one
+    juce::String getTrackFolder (int trackIndex);
+    void setTrackFolder (int trackIndex, const juce::String& folder);
+    juce::StringArray getFolderNames();
+    juce::Array<int> getFolderTracks (const juce::String& folder);
+    bool isFolderCollapsed (const juce::String& folder);
+    void setFolderCollapsed (const juce::String& folder, bool collapsed);
+    void renameFolder (const juce::String& from, const juce::String& to);
+    void removeFolder (const juce::String& folder);
+    void toggleFolderMute (const juce::String& folder);
+    void toggleFolderSolo (const juce::String& folder);
+
     // Patterns (the Rack). Copies of a pattern are linked: edit one, they all update.
     int getCurrentPattern() const               { return currentPattern; }
     void setCurrentPattern (int pattern)        { currentPattern = juce::jmax (1, pattern); }

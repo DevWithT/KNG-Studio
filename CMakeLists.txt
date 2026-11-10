@@ -92,7 +92,9 @@ target_sources(KNGStudio PRIVATE
     Source/KngDeEssPlugin.cpp
     Source/KngLimiterPlugin.cpp
     Source/KngDoublerPlugin.cpp
-    Source/KngPresets.cpp)
+    Source/KngPresets.cpp
+    Source/EditSessionFolders.cpp
+    Source/FolderHeader.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0
