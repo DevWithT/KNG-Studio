@@ -16,22 +16,49 @@ std::vector<PluginBrowser::Entry> PluginBrowser::buildEntries (te::Engine& engin
         return a.name.compareIgnoreCase (b.name) < 0;
     });
 
-    e.push_back ({ "Instruments", {}, {}, true, true });
+    // Built into KNG Studio
+    e.push_back ({ "KNG Instruments", {}, {}, true, true });
     e.push_back ({ "KNG Synth",   "Built-in synth",              KngSynthPlugin::xmlTypeName,   true, false });
     e.push_back ({ "KNG Sampler", "Play any sample on the keys", KngSamplerPlugin::xmlTypeName, true, false });
 
-    for (auto& d : types)
-        if (d.isInstrument)
-            e.push_back ({ d.name, d.manufacturerName, d.createIdentifierString(), true, false });
+    // Your VST instruments
+    bool anyInstruments = false;
 
-    e.push_back ({ "Effects", {}, {}, false, true });
+    for (auto& d : types)
+    {
+        if (! d.isInstrument)
+            continue;
+
+        if (! anyInstruments)
+        {
+            e.push_back ({ "Your Instruments", {}, {}, true, true });
+            anyInstruments = true;
+        }
+
+        e.push_back ({ d.name, d.manufacturerName, d.createIdentifierString(), true, false });
+    }
+
+    e.push_back ({ "KNG Effects", {}, {}, false, true });
 
     for (auto& [name, type] : EditSession::getBuiltInEffects())
-        e.push_back ({ name, type.startsWith ("kng") ? juce::String ("KNG") : juce::String ("Built-in"), type, false, false });
+        e.push_back ({ name, "KNG", type, false, false });
+
+    // Your VST effects
+    bool anyEffects = false;
 
     for (auto& d : types)
-        if (! d.isInstrument)
-            e.push_back ({ d.name, d.manufacturerName, d.createIdentifierString(), false, false });
+    {
+        if (d.isInstrument)
+            continue;
+
+        if (! anyEffects)
+        {
+            e.push_back ({ "Your Effects", {}, {}, false, true });
+            anyEffects = true;
+        }
+
+        e.push_back ({ d.name, d.manufacturerName, d.createIdentifierString(), false, false });
+    }
 
     return e;
 }

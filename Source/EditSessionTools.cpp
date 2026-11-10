@@ -24,14 +24,6 @@ std::vector<std::pair<juce::String, juce::String>> EditSession::getBuiltInEffect
         { "KNG De-Esser",         KngDeEssPlugin::xmlTypeName },
         { "KNG Limiter",          KngLimiterPlugin::xmlTypeName },
         { "KNG Doubler",          KngDoublerPlugin::xmlTypeName },
-        { "EQ (4 band)",          te::EqualiserPlugin::xmlTypeName },
-        { "Compressor",           te::CompressorPlugin::xmlTypeName },
-        { "Reverb",               te::ReverbPlugin::xmlTypeName },
-        { "Delay",                te::DelayPlugin::xmlTypeName },
-        { "Chorus",               te::ChorusPlugin::xmlTypeName },
-        { "Phaser",               te::PhaserPlugin::xmlTypeName },
-        { "Low / High Pass",      te::LowPassPlugin::xmlTypeName },
-        { "Pitch Shift",          te::PitchShiftPlugin::xmlTypeName }
     };
 }
 
