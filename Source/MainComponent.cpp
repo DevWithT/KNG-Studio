@@ -2,6 +2,7 @@
 #include "KngSamplerPlugin.h"
 #include "KngSynthPlugin.h"
 #include "KngEqPlugin.h"
+#include "KngCompPlugin.h"
 
 MainComponent::MainComponent (tracktion::Engine& engineToUse)
     : engine (engineToUse)
@@ -9,6 +10,7 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
     engine.getPluginManager().createBuiltInType<KngSamplerPlugin>();
     engine.getPluginManager().createBuiltInType<KngSynthPlugin>();
     engine.getPluginManager().createBuiltInType<KngEqPlugin>();
+    engine.getPluginManager().createBuiltInType<KngCompPlugin>();
 
     setWantsKeyboardFocus (true);
 

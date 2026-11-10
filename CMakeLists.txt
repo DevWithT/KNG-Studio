@@ -80,7 +80,9 @@ target_sources(KNGStudio PRIVATE
     Source/KngEqPlugin.cpp
     Source/KngEqView.cpp
     Source/EditSessionPlugins.cpp
-    Source/PluginBrowser.cpp)
+    Source/PluginBrowser.cpp
+    Source/KngCompPlugin.cpp
+    Source/KngCompView.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0
