@@ -32,7 +32,7 @@ KngEqPlugin::~KngEqPlugin()
 {
     notifyListenersOfDeletion();
 
-    for (auto* p : params)
+    for (auto& p : params)
         if (p != nullptr)
             p->detachFromCurrentValue();
 }

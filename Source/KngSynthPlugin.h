@@ -37,7 +37,7 @@ public:
     void applyToBuffer (const tracktion::PluginRenderContext&) override;
     void restorePluginStateFromValueTree (const juce::ValueTree&) override;
 
-    tracktion::AutomatableParameter* getParam (int index) const   { return params[(size_t) index]; }
+    tracktion::AutomatableParameter* getParam (int index) const   { return params[(size_t) index].get(); }
 
     /** Message thread: load a factory preset. */
     void applyPreset (int presetIndex);
@@ -53,7 +53,8 @@ private:
     void removeHeld (int note);
     void render (juce::AudioBuffer<float>& out, int start, int num, const Block&);
 
-    std::array<tracktion::AutomatableParameter*, KngSynth::numParams> params {};
+    // Counted references keep each parameter alive until this plugin is done with it
+    std::array<tracktion::AutomatableParameter::Ptr, KngSynth::numParams> params {};
     juce::OwnedArray<juce::CachedValue<float>> values;
 
     std::array<KngSynth::Voice, 16> voices;

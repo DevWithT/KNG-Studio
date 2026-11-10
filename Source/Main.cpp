@@ -2,6 +2,17 @@
 #include "PluginWindow.h"
 #include "KngLookAndFeel.h"
 
+// Any crash writes a stack trace to Documents\KNG Studio\crash_log.txt
+static void kngCrashHandler (void*)
+{
+    auto folder = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory).getChildFile ("KNG Studio");
+    folder.createDirectory();
+
+    folder.getChildFile ("crash_log.txt")
+          .appendText ("\n==== " + juce::Time::getCurrentTime().toString (true, true) + " ====\n"
+                       + juce::SystemStats::getStackBacktrace());
+}
+
 class KngStudioApplication : public juce::JUCEApplication
 {
 public:
@@ -11,6 +22,8 @@ public:
 
     void initialise (const juce::String&) override
     {
+        juce::SystemStats::setApplicationCrashHandler (kngCrashHandler);
+
         lookAndFeel = std::make_unique<KngLookAndFeel>();
         juce::LookAndFeel::setDefaultLookAndFeel (lookAndFeel.get());
         engine = std::make_unique<tracktion::Engine> (getApplicationName(), std::make_unique<KngUIBehaviour>(), nullptr);

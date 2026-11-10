@@ -30,7 +30,7 @@ public:
     void restorePluginStateFromValueTree (const juce::ValueTree&) override;
     std::unique_ptr<EditorComponent> createEditor() override;
 
-    tracktion::AutomatableParameter* getParam (int index) const   { return params[(size_t) index]; }
+    tracktion::AutomatableParameter* getParam (int index) const   { return params[(size_t) index].get(); }
     double getSampleRate() const                                  { return sampleRate; }
 
     /** Message thread: takes the newest output samples for the analyzer. Returns how many. */
@@ -39,7 +39,8 @@ public:
 private:
     void updateCoefficients (const float* v);
 
-    std::array<tracktion::AutomatableParameter*, KngEq::numParams> params {};
+    // Counted references keep each parameter alive until this plugin is done with it
+    std::array<tracktion::AutomatableParameter::Ptr, KngEq::numParams> params {};
     juce::OwnedArray<juce::CachedValue<float>> values;
 
     std::array<std::array<KngEq::Coefs, 4>, KngEq::numBands> coefs {};

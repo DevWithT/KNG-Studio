@@ -36,8 +36,8 @@ static juce::String formatComp (int p, double v)
 }
 
 //==============================================================================
-KngCompView::KngCompView (KngCompPlugin& p)
-    : plugin (p), pluginRef (&p)
+KngCompView::KngCompView (KngCompPlugin& owner)
+    : plugin (owner), pluginRef (&owner)
 {
     addAndMakeVisible (titleLabel);
     titleLabel.setText ("KNG Comp", juce::dontSendNotification);

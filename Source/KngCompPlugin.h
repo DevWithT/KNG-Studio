@@ -32,14 +32,15 @@ public:
     void restorePluginStateFromValueTree (const juce::ValueTree&) override;
     std::unique_ptr<EditorComponent> createEditor() override;
 
-    tracktion::AutomatableParameter* getParam (int index) const   { return params[(size_t) index]; }
+    tracktion::AutomatableParameter* getParam (int index) const   { return params[(size_t) index].get(); }
     void applyPreset (int presetIndex);
 
     /** Message thread: peaks since the last call (input and output as gain, reduction in dB). */
     void takeMeters (float& inputPeak, float& outputPeak, float& reductionDb);
 
 private:
-    std::array<tracktion::AutomatableParameter*, KngComp::numParams> params {};
+    // Counted references keep each parameter alive until this plugin is done with it
+    std::array<tracktion::AutomatableParameter::Ptr, KngComp::numParams> params {};
     juce::OwnedArray<juce::CachedValue<float>> values;
 
     float grDb = 0.0f;
