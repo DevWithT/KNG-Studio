@@ -1,10 +1,12 @@
 #include "MainComponent.h"
 #include "KngSamplerPlugin.h"
+#include "KngSynthPlugin.h"
 
 MainComponent::MainComponent (tracktion::Engine& engineToUse)
     : engine (engineToUse)
 {
     engine.getPluginManager().createBuiltInType<KngSamplerPlugin>();
+    engine.getPluginManager().createBuiltInType<KngSynthPlugin>();
 
     setWantsKeyboardFocus (true);
 

@@ -2,6 +2,7 @@
 #include "PatternGrid.h"
 #include "VolumeHelpers.h"
 #include "KngSamplerPlugin.h"
+#include "KngSynthPlugin.h"
 #include <map>
 
 namespace te = tracktion;
@@ -206,6 +207,7 @@ void RackRow::syncControls()
     const auto text = isChannel()                                        ? juce::String ("Sample")
                     : isDrum()                                           ? juce::String (getVisiblePads().isEmpty() ? "Load Kit" : "Kit")
                     : dynamic_cast<KngSamplerPlugin*> (inst) != nullptr ? juce::String ("Sampler")
+                    : dynamic_cast<KngSynthPlugin*> (inst) != nullptr   ? juce::String ("Synth")
                     : inst != nullptr                                    ? inst->getName()
                                                                          : juce::String ("+ Inst");
 
@@ -234,7 +236,7 @@ void RackRow::openInstrument()
 
     auto* inst = session.getInstrument (idx);
 
-    if (dynamic_cast<KngSamplerPlugin*> (inst) != nullptr)
+    if (dynamic_cast<KngSamplerPlugin*> (inst) != nullptr || dynamic_cast<KngSynthPlugin*> (inst) != nullptr)
     {
         if (session.onShowSampler)
             session.onShowSampler (idx);
@@ -258,6 +260,7 @@ void RackRow::showInstrumentMenu()
 
     juce::PopupMenu menu;
     menu.addItem ("KNG Sampler (built-in)", [s, idx] { s->setBuiltInSampler (idx); });
+    menu.addItem ("KNG Synth (built-in)", [s, idx] { s->setBuiltInSynth (idx); });
     menu.addSeparator();
 
     std::map<juce::String, juce::PopupMenu> byMaker;

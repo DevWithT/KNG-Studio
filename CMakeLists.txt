@@ -73,7 +73,10 @@ target_sources(KNGStudio PRIVATE
     Source/EditSessionTools.cpp
     Source/GenericPluginPanel.cpp
     Source/EditSessionRouting.cpp
-    Source/SettingsComponent.cpp)
+    Source/SettingsComponent.cpp
+    Source/KngSynthPlugin.cpp
+    Source/KngSynthView.cpp
+    Source/EditSessionSynth.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0

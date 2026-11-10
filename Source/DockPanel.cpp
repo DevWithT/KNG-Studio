@@ -7,6 +7,8 @@
 #include "MixerView.h"
 #include "RackView.h"
 #include "KngSamplerView.h"
+#include "KngSynthView.h"
+#include "KngSynthPlugin.h"
 
 namespace te = tracktion;
 
@@ -140,12 +142,16 @@ void DockPanel::showInstrument (te::Track& track, bool isDrumTrack)
 
     instrumentTrack = &track;
 
+    const bool isSynth = ! isDrumTrack && track.pluginList.findFirstPluginOfType<KngSynthPlugin>() != nullptr;
+
     if (isDrumTrack)
         slots[instrumentTab]->setContent (createDrumRackPanel (*session, track));
+    else if (isSynth)
+        slots[instrumentTab]->setContent (std::make_unique<KngSynthView> (*session, track));
     else
         slots[instrumentTab]->setContent (std::make_unique<KngSamplerView> (*session, track));
 
-    tabs.setTabName (instrumentTab, (isDrumTrack ? "Drum Kit - " : "Sampler - ") + track.getName());
+    tabs.setTabName (instrumentTab, (isDrumTrack ? "Drum Kit - " : isSynth ? "Synth - " : "Sampler - ") + track.getName());
     showTab (instrumentTab);
 }
 

@@ -2,6 +2,7 @@
 #include <map>
 #include "VolumeHelpers.h"
 #include "KngSamplerPlugin.h"
+#include "KngSynthPlugin.h"
 #include "SendPopup.h"
 
 namespace te = tracktion;
@@ -204,9 +205,9 @@ void TrackHeader::showInstrumentMenu()
     juce::PopupMenu menu;
     auto* inst = session.getInstrument (trackIndex);
 
-    if (dynamic_cast<KngSamplerPlugin*> (inst) != nullptr)
+    if (dynamic_cast<KngSamplerPlugin*> (inst) != nullptr || dynamic_cast<KngSynthPlugin*> (inst) != nullptr)
     {
-        menu.addItem ("Open KNG Sampler", [s, idx] { if (s->onShowSampler) s->onShowSampler (idx); });
+        menu.addItem ("Open " + inst->getName(), [s, idx] { if (s->onShowSampler) s->onShowSampler (idx); });
     }
     else if (inst != nullptr)
     {
@@ -221,6 +222,7 @@ void TrackHeader::showInstrumentMenu()
     }
 
     menu.addItem ("KNG Sampler (built-in)", [s, idx] { s->setBuiltInSampler (idx); });
+    menu.addItem ("KNG Synth (built-in)", [s, idx] { s->setBuiltInSynth (idx); });
     menu.addSeparator();
 
     std::map<juce::String, juce::PopupMenu> byMaker;
@@ -278,6 +280,7 @@ void TrackHeader::timerCallback()
         auto* inst = session.getInstrument (trackIndex);
         const auto text = session.isDrumTrack (trackIndex)                ? juce::String ("Drum Rack")
                         : dynamic_cast<KngSamplerPlugin*> (inst) != nullptr ? juce::String ("KNG Sampler")
+                        : dynamic_cast<KngSynthPlugin*> (inst) != nullptr   ? juce::String ("KNG Synth")
                         : inst != nullptr                                 ? inst->getName()
                                                                           : juce::String ("No instrument");
 

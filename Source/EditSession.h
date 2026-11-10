@@ -144,6 +144,7 @@ public:
     // Built-in sampler instrument, chopping, and quick piano roll access
     void setBuiltInSampler (int trackIndex);
     KngSamplerPlugin* getKngSampler (int trackIndex);
+    void setBuiltInSynth (int trackIndex);
     bool setSamplerSample (int trackIndex, const juce::File& file, int rootNote);
     juce::String getSamplerSampleName (int trackIndex);
     int getSamplerRoot (int trackIndex);
