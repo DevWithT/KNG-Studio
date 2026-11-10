@@ -86,7 +86,9 @@ target_sources(KNGStudio PRIVATE
     Source/KngVerbPlugin.cpp
     Source/KngVerbView.cpp
     Source/KngDelayPlugin.cpp
-    Source/KngDelayView.cpp)
+    Source/KngDelayView.cpp
+    Source/KngSatPlugin.cpp
+    Source/KngSatView.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0
