@@ -176,8 +176,7 @@ void EditSession::duckFromTrack (int targetIndex, int sourceIndex)
     comp->useSidechainTrigger = true;
 
     // A strong duck to start from; tweak it in the FX tab
-    if (comp->thresholdGain != nullptr)
-        comp->thresholdGain->setParameter (0.1f, juce::sendNotification);
+    comp->thresholdGain.setParameter (0.1f, juce::sendNotification);
 
     save();
 }

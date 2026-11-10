@@ -29,13 +29,14 @@ void EditSession::addBuiltInPlugin (te::PluginList& list, const juce::String& ty
     beginEdit();
 
     // Effects go before the track's own volume and meter
-    auto plugins = list.getPlugins();
-    int index = plugins.size();
+    int index = list.size();
 
-    for (int i = 0; i < plugins.size(); ++i)
+    for (int i = 0; i < list.size(); ++i)
     {
-        if (dynamic_cast<te::VolumeAndPanPlugin*> (plugins[i]) != nullptr
-             || dynamic_cast<te::LevelMeterPlugin*> (plugins[i]) != nullptr)
+        auto* p = list[i];
+
+        if (dynamic_cast<te::VolumeAndPanPlugin*> (p) != nullptr
+             || dynamic_cast<te::LevelMeterPlugin*> (p) != nullptr)
         {
             index = i;
             break;
