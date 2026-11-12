@@ -181,15 +181,16 @@ void TransportBar::timerCallback()
     patternModeButton.setToggleState (session.isPatternMode(), juce::dontSendNotification);
     songModeButton.setToggleState (! session.isPatternMode(), juce::dontSendNotification);
 
-    // Pattern mode follows the pattern you pick
-    if (session.isPatternMode() && session.getCurrentPattern() != lastCuedPattern)
+    // Turning Loop off leaves Pattern mode
+    if (session.isPatternMode() && ! session.isLooping())
+        session.setPatternMode (false);
+
+    // Pattern mode follows the pattern you pick (only when the loop isn't already on it)
+    if (session.isPatternMode()
+         && std::abs (session.getLoopStart() - session.getPatternHome (session.getCurrentPattern())) > 0.001)
     {
         lastCuedPattern = session.getCurrentPattern();
         session.cuePattern (lastCuedPattern, transport.isPlaying());
-    }
-    else if (! session.isPatternMode())
-    {
-        lastCuedPattern = 0;
     }
 
     if (! countInBox.isPopupActive())
