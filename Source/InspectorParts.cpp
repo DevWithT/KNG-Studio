@@ -1,5 +1,6 @@
 #include "InspectorParts.h"
 #include "GenericPluginPanel.h"
+#include "InspectorCards.h"
 
 namespace te = tracktion;
 
@@ -87,7 +88,10 @@ void EffectRow::paint (juce::Graphics& g)
     g.setColour (on ? juce::Colour (0xff5ad45a) : juce::Colours::white.withAlpha (0.25f));
     g.fillEllipse (12.0f, r.getCentreY() - 4.0f, 8.0f, 8.0f);
 
-    auto text = getLocalBounds().withTrimmedLeft (28).withTrimmedRight (10);
+    // The plugin's own color chip (dim when it's bypassed)
+    kngDrawChip (g, juce::Rectangle<float> (28.0f, r.getCentreY() - 11.0f, 22.0f, 22.0f), kngIdentityFor (*plugin), on ? 1.0f : 0.4f);
+
+    auto text = getLocalBounds().withTrimmedLeft (58).withTrimmedRight (10);
     g.setFont (juce::Font (juce::FontOptions (13.0f)));
     g.setColour (juce::Colours::white.withAlpha (0.55f));
     g.drawText ("Open", text.removeFromRight (44), juce::Justification::centredRight);

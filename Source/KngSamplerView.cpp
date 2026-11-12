@@ -691,10 +691,11 @@ void KngSamplerView::mouseDrag (const juce::MouseEvent& e)
     const float ls = propFloat (KngSamplerPlugin::loopStartProp, 0.4f);
     const float le = propFloat (KngSamplerPlugin::loopEndProp, 0.9f);
 
+    // The limits stay in order even if a saved loop is odd
     if (dragHandle == 1)
-        plugin.state.setProperty (KngSamplerPlugin::loopStartProp, juce::jlimit (0.0f, le - 0.02f, f), plugin.getUndoManager());
+        plugin.state.setProperty (KngSamplerPlugin::loopStartProp, juce::jlimit (0.0f, juce::jmax (0.0f, le - 0.02f), f), plugin.getUndoManager());
     else
-        plugin.state.setProperty (KngSamplerPlugin::loopEndProp, juce::jlimit (ls + 0.02f, 1.0f, f), plugin.getUndoManager());
+        plugin.state.setProperty (KngSamplerPlugin::loopEndProp, juce::jlimit (juce::jmin (1.0f, ls + 0.02f), 1.0f, f), plugin.getUndoManager());
 
     plugin.syncFromState();
     repaint (wave);

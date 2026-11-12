@@ -3,6 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "EditSession.h"
 #include "InspectorParts.h"
+#include "InspectorCards.h"
 
 /** Right-side panel: the selected track's volume, instrument, effects and sends. */
 class TrackInspector : public juce::Component,
@@ -40,6 +41,7 @@ private:
     juce::OwnedArray<juce::Slider> sendSliders;
     juce::Array<int> sendBuses;   // -1 means the single Reverb send used before any bus exists
     juce::Rectangle<int> instrumentCard;
+    std::unique_ptr<InstrumentCard> card;   // the instrument's own card, when it has an instrument
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TrackInspector)
 };

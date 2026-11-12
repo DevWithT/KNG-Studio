@@ -97,6 +97,7 @@ juce::String TrackInspector::getSignature()
 
 void TrackInspector::rebuild()
 {
+    card = nullptr;
     knobs.clear();
     effectRows.clear();
     sendLabels.clear();
@@ -136,8 +137,16 @@ void TrackInspector::rebuild()
     instrumentButton.setButtonText (drum ? juce::String ("Drum Kit") : inst != nullptr ? inst->getName() : juce::String ("Choose instrument"));
 
     if (inst != nullptr && ! drum)
-        for (auto* p : pickMainParams (*inst, 4))
-            addAndMakeVisible (knobs.add (new ParamKnob (session, p)));
+    {
+        card = std::make_unique<InstrumentCard> (session, *inst);
+        card->onOpen = [this] { openInstrument(); };
+        card->onChange = [this] { showInstrumentMenu(); };
+        addAndMakeVisible (*card);
+
+        // The card has its own Open and Change
+        instrumentButton.setVisible (false);
+        openInstrumentButton.setVisible (false);
+    }
 
     // Effects
     for (auto* p : session.getFxPlugins (t->pluginList))
@@ -291,7 +300,7 @@ void TrackInspector::showInstrumentMenu()
         menu.addItem ("Remove Instrument", [s, idx] { s->removeInstrument (idx); });
     }
 
-    menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&instrumentButton));
+    menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (card != nullptr ? (juce::Component*) card.get() : &instrumentButton));
 }
 
 void TrackInspector::showAddEffectMenu()
@@ -386,25 +395,23 @@ void TrackInspector::resized()
         instHeading.setBounds (r.removeFromTop (16));
         r.removeFromTop (4);
 
-        instrumentCard = r.removeFromTop (knobs.isEmpty() ? 42 : 112);
-        auto c = instrumentCard.reduced (8);
-        auto top = c.removeFromTop (26);
-
-        if (openInstrumentButton.isVisible())
+        if (card != nullptr)
         {
-            openInstrumentButton.setBounds (top.removeFromRight (60));
-            top.removeFromRight (6);
+            // The instrument's own card, in its own colors
+            card->setBounds (r.removeFromTop (card->getIdealHeight()));
         }
-
-        instrumentButton.setBounds (top);
-
-        if (! knobs.isEmpty())
+        else
         {
-            c.removeFromTop (8);
-            const int w = c.getWidth() / 4;
+            instrumentCard = r.removeFromTop (42);
+            auto top = instrumentCard.reduced (8).removeFromTop (26);
 
-            for (auto* k : knobs)
-                k->setBounds (c.removeFromLeft (w));
+            if (openInstrumentButton.isVisible())
+            {
+                openInstrumentButton.setBounds (top.removeFromRight (60));
+                top.removeFromRight (6);
+            }
+
+            instrumentButton.setBounds (top);
         }
 
         r.removeFromTop (14);
