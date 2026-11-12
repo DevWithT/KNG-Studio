@@ -187,9 +187,13 @@ void EditSession::placePattern (int pattern, double atSeconds)
         if (master->getLinkGroupID().isEmpty())
             master->setLinkGroupID (linkIdFor (pattern, *track));
 
-        // The copy keeps the pattern number and link, so it stays in sync
+        // The copy keeps the pattern number and link, so it stays in sync.
+        // It's exactly as long as the pattern, even if the source clip runs longer.
         if (auto copy = te::duplicateClip (*master))
+        {
             copy->setStart (te::TimePosition::fromSeconds (start), false, true);
+            copy->setEnd (te::TimePosition::fromSeconds (barsAfter (start, getPatternBars (pattern))), true);
+        }
     }
 
     save();
