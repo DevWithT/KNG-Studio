@@ -242,7 +242,7 @@ public:
     double getBarSeconds();
 
     // The Patterns strip on the timeline
-    struct PatternBlock { int pattern = 0; double start = 0.0, end = 0.0; };
+    struct PatternBlock { int pattern = 0; double start = 0.0, end = 0.0; juce::String lane; };
     std::vector<PatternBlock> getPatternBlocks();
     void removePatternAt (double seconds);
     float getPatternSwing (int pattern);
@@ -259,6 +259,24 @@ public:
     double getBankStart();
     /** Where the song ends, not counting the bank. */
     double getSongEnd();
+
+    // The Playlist: lanes are the audio tracks, and pattern blocks sit in a lane
+    bool isLaneTrack (int trackIndex);
+    juce::String getLaneId (int trackIndex);
+    int getLaneTrackIndex (const juce::String& laneId);
+    juce::String getDefaultLaneId();
+    void placePatternInLane (int pattern, double atSeconds, const juce::String& laneId);
+    void moveBlock (const PatternBlock& block, double toSeconds, const juce::String& toLane, bool copy);
+    void deleteBlock (const PatternBlock& block);
+    juce::Array<tracktion::Clip*> getBlockClips (const PatternBlock& block);
+
+    // Pattern mode loops the pattern you're editing; Song mode plays the Playlist
+    void setPatternMode (bool shouldLoopPattern);
+    bool isPatternMode() const                  { return patternMode; }
+    void cuePattern (int pattern, bool startPlaying);
+    int getPlaylistTool() const                 { return playlistTool; }   // 0 = Select, 1 = Paint
+    void setPlaylistTool (int tool)             { playlistTool = tool; }
+    std::function<void()> onShowRack;
 
     // Tempo, click, count-in
     void setBpm (double bpm);
@@ -391,6 +409,8 @@ private:
     bool recoveredFromCrash = false;
     juce::Time lastBackupTime;
     int currentPattern = 1;
+    bool patternMode = false;
+    int playlistTool = 0;
     double recordStartSeconds = 0.0;
     std::vector<tracktion::EditItemID> clipsBeforeRecording;
     std::shared_ptr<tracktion::EditRenderer::Handle> bounceHandle;

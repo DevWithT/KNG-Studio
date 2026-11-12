@@ -6,7 +6,9 @@
 #include "TrackLane.h"
 #include "AutomationLane.h"
 #include "FolderHeader.h"
+#include "BlockLayer.h"
 
+/** The Playlist: one row per lane (audio track). Instruments live in the Rack, buses in the Mixer. */
 class TracksView : public juce::Component,
                    public juce::DragAndDropTarget,
                    private juce::Timer
@@ -18,7 +20,7 @@ public:
     void resized() override;
     int getIdealHeight();
 
-    // Plugins dragged in from the Plugins browser
+    // Plugins from the Plugins browser and patterns from the Patterns list
     bool isInterestedInDragSource (const SourceDetails&) override;
     void itemDragMove (const SourceDetails& d) override   { hoverY = d.localPosition.y; repaint(); }
     void itemDragExit (const SourceDetails&) override     { hoverY = -1; repaint(); }
@@ -41,11 +43,10 @@ private:
     juce::OwnedArray<AutomationHeader> autoHeaders;
     juce::OwnedArray<AutomationLane> autoLanes;
     juce::OwnedArray<FolderHeader> folderHeaders;
+    juce::OwnedArray<BlockLayer> blockLayers;   // one per track index; null for tracks that aren't lanes
 
-    juce::TextButton addTrackButton { "+ Add Track" };
-    juce::TextButton addMidiTrackButton { "+ Instrument Track" };
+    juce::TextButton addTrackButton { "+ Add lane" };
 
-    // Rebuild when tracks, folders or shown automation change
     juce::Array<tracktion::AudioTrack*> builtTracks;
     juce::String lastSignature;
     int hoverY = -1;

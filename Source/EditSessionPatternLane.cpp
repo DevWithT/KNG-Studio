@@ -12,6 +12,7 @@ std::vector<EditSession::PatternBlock> EditSession::getPatternBlocks()
 {
     std::vector<PatternBlock> blocks;
     const double bankStart = getBankStart() - 0.001;
+    const auto defaultLane = getDefaultLaneId();
 
     for (int i = 0; i < getNumTracks(); ++i)
     {
@@ -32,10 +33,16 @@ std::vector<EditSession::PatternBlock> EditSession::getPatternBlocks()
                 if (s >= bankStart)
                     continue;
 
-                // Copies of the same pattern at the same spot are one block
+                // Which lane this copy sits in (old copies and copies from deleted lanes go in the first lane)
+                auto lane = c->state.getProperty ("kngLane").toString();
+
+                if (getLaneTrackIndex (lane) < 0)
+                    lane = defaultLane;
+
+                // Copies of the same pattern at the same spot in the same lane are one block
                 for (auto& b : blocks)
                 {
-                    if (b.pattern == p && std::abs (b.start - s) < 0.001)
+                    if (b.pattern == p && b.lane == lane && std::abs (b.start - s) < 0.001)
                     {
                         b.end = juce::jmax (b.end, e);
                         merged = true;
@@ -44,7 +51,7 @@ std::vector<EditSession::PatternBlock> EditSession::getPatternBlocks()
                 }
 
                 if (! merged)
-                    blocks.push_back ({ p, s, e });
+                    blocks.push_back ({ p, s, e, lane });
             }
         }
     }

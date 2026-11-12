@@ -129,6 +129,19 @@ te::MidiClip* EditSession::getPatternClip (int trackIndex, int pattern, bool cre
     clip->setLinkGroupID (linkIdFor (pattern, *track));
     clip->state.setProperty ("kngSwing", getPatternSwing (pattern), nullptr);
 
+    // This sound is new to the pattern: every placed copy of the pattern gets it too
+    for (auto& b : getPatternBlocks())
+    {
+        if (b.pattern != pattern)
+            continue;
+
+        if (auto copy = te::duplicateClip (*clip))
+        {
+            copy->setStart (te::TimePosition::fromSeconds (b.start), false, true);
+            copy->state.setProperty ("kngLane", b.lane, nullptr);
+        }
+    }
+
     save();
     return clip.get();
 }
@@ -193,6 +206,8 @@ void EditSession::loopPattern (int pattern)
     setLoopRange (home, home + length);
     setLooping (true);
     getTransport().setPosition (te::TimePosition::fromSeconds (home));
+
+    patternMode = true;
 
     if (! getTransport().isPlaying())
         play();

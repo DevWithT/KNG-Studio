@@ -208,3 +208,19 @@ void PatternListPanel::showMenu (int pattern)
     menu.addItem ("Loop It", [s, pattern] { s->loopPattern (pattern); });
     menu.showMenuAsync ({});
 }
+
+void PatternListPanel::mouseDrag (const juce::MouseEvent& e)
+{
+    // Drag a pattern into a Playlist lane
+    if (e.getDistanceFromDragStart() < 6 || e.mods.isPopupMenu())
+        return;
+
+    const int p = patternAt (e.getMouseDownY());
+
+    if (p <= 0)
+        return;
+
+    if (auto* container = juce::DragAndDropContainer::findParentDragContainerFor (this))
+        if (! container->isDragAndDropActive())
+            container->startDragging ("kngpattern|" + juce::String (p), this);
+}

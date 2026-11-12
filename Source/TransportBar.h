@@ -34,6 +34,8 @@ private:
     juce::TextButton timeSigButton { "4/4" };
     juce::TextButton learnButton { "Learn" };
     juce::TextButton rackButton { "Rack" }, mixerButton { "Mixer" };
+    juce::TextButton patternModeButton { "Pattern" }, songModeButton { "Song" };
+    int lastCuedPattern = 0;
     juce::ToggleButton clickButton { "Click" }, loopButton { "Loop" }, punchButton { "Punch" }, snapButton { "Snap" },
                        monitorButton { "Monitor" }, writeButton { "Auto Write" };
 

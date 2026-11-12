@@ -84,6 +84,18 @@ TransportBar::TransportBar (EditSession& sessionToUse)
     rackButton.onClick  = [this] { if (onShowRack) onShowRack(); };
     mixerButton.onClick = [this] { if (onShowMixer) onShowMixer(); };
 
+    for (auto* b : { &patternModeButton, &songModeButton })
+    {
+        addAndMakeVisible (b);
+        b->setClickingTogglesState (false);
+        b->setColour (juce::TextButton::buttonOnColourId, juce::Colour (0xff3a8ee6));
+    }
+
+    patternModeButton.setTooltip ("Pattern: loop just the pattern you're editing");
+    songModeButton.setTooltip ("Song: play the whole Playlist");
+    patternModeButton.onClick = [this] { session.setPatternMode (true); };
+    songModeButton.onClick    = [this] { session.setPatternMode (false); };
+
     // Tooltips
     playButton.setTooltip ("Play / Pause (Space)");
     stopButton.setTooltip ("Stop and return to where you started (Space)");
@@ -166,6 +178,19 @@ void TransportBar::timerCallback()
     monitorButton.setToggleState (session.isMonitoring(), juce::dontSendNotification);
     writeButton.setToggleState (session.isAutomationWrite(), juce::dontSendNotification);
     learnButton.setToggleState (session.isMidiLearn(), juce::dontSendNotification);
+    patternModeButton.setToggleState (session.isPatternMode(), juce::dontSendNotification);
+    songModeButton.setToggleState (! session.isPatternMode(), juce::dontSendNotification);
+
+    // Pattern mode follows the pattern you pick
+    if (session.isPatternMode() && session.getCurrentPattern() != lastCuedPattern)
+    {
+        lastCuedPattern = session.getCurrentPattern();
+        session.cuePattern (lastCuedPattern, transport.isPlaying());
+    }
+    else if (! session.isPatternMode())
+    {
+        lastCuedPattern = 0;
+    }
 
     if (! countInBox.isPopupActive())
         countInBox.setSelectedId (session.getCountInBars() + 1, juce::dontSendNotification);
@@ -237,6 +262,8 @@ void TransportBar::resized()
     place (playButton, 64);
     place (stopButton, 64);
     place (recordButton, 64);
+    place (patternModeButton, 70);
+    place (songModeButton, 56);
     divider();
 
     place (timeLabel, 130);

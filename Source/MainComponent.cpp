@@ -197,6 +197,7 @@ void MainComponent::closeProject()
     transportBar = nullptr;
     inspector = nullptr;
     patternList = nullptr;
+    playlistToolbar = nullptr;
     session = nullptr;   // saves on the way out
 }
 
@@ -214,6 +215,7 @@ void MainComponent::loadProject (const juce::File& editFile)
     session->onShowDrumRack  = [this] (int trackIndex) { showDrumRack (trackIndex); };
     session->onShowSampler   = [this] (int trackIndex) { showSampler (trackIndex); };
     session->onShowPluginEditor = [this] (tracktion::Plugin& p) { dock.showEffect (p); openDock(); };
+    session->onShowRack = [this] { dock.showTab (DockPanel::rackTab); openDock(); };
     dock.setSession (session.get());
     pluginBrowser->setSession (session.get());
 
@@ -228,6 +230,9 @@ void MainComponent::loadProject (const juce::File& editFile)
     patternList = std::make_unique<PatternListPanel> (*session);
     patternList->onPatternPicked = [this] { dock.showTab (DockPanel::rackTab); openDock(); };
     addAndMakeVisible (*patternList);
+
+    playlistToolbar = std::make_unique<PlaylistToolbar> (*session);
+    addAndMakeVisible (*playlistToolbar);
 
     ruler = std::make_unique<TimelineRuler> (*session);
     addAndMakeVisible (*ruler);
@@ -754,11 +759,14 @@ void MainComponent::resized()
         markerBar->setBounds (markerRow.withTrimmedLeft (laneOffset)
                                        .withTrimmedRight (tracksViewport.getScrollBarThickness()));
 
+    // The Playlist tools take the row the old Patterns strip used
     auto patternRow = area.removeFromTop (24);
 
     if (patternLane != nullptr)
-        patternLane->setBounds (patternRow.withTrimmedLeft (laneOffset)
-                                          .withTrimmedRight (tracksViewport.getScrollBarThickness()));
+        patternLane->setVisible (false);
+
+    if (playlistToolbar != nullptr)
+        playlistToolbar->setBounds (patternRow.reduced (0, 1));
 
     auto rulerRow = area.removeFromTop (24);
 

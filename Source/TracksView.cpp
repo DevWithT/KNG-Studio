@@ -4,19 +4,16 @@
 TracksView::TracksView (EditSession& sessionToUse)
     : session (sessionToUse)
 {
+    // The Playlist needs at least one lane
+    if (session.getDefaultLaneId().isEmpty())
+        session.addTrack();
+
     addAndMakeVisible (addTrackButton);
+    addTrackButton.setTooltip ("Add a lane for audio, recording and pattern blocks");
     addTrackButton.onClick = [this]
     {
         session.addTrack();
         rebuild();
-    };
-
-    addAndMakeVisible (addMidiTrackButton);
-    addMidiTrackButton.setTooltip ("Pick an instrument and get a new track with it, ready to play");
-    addMidiTrackButton.onClick = [this]
-    {
-        PluginBrowser::showInstrumentMenu (session.getEdit().engine, addMidiTrackButton,
-                                           [this] (const PluginBrowser::Entry& e) { session.addInstrumentTrack (e.id, e.name); });
     };
 
     rebuild();
@@ -26,6 +23,7 @@ TracksView::TracksView (EditSession& sessionToUse)
 TracksView::~TracksView()
 {
     stopTimer();
+    blockLayers.clear();
     folderHeaders.clear();
     autoLanes.clear();
     autoHeaders.clear();
@@ -51,7 +49,7 @@ juce::String TracksView::getLayoutSignature()
     {
         const auto folder = session.getTrackFolder (i);
         sig << folder << "|" << (folder.isNotEmpty() && session.isFolderCollapsed (folder) ? "c" : "o")
-            << (session.isAutomationShown (i) ? "a" : "-") << ";";
+            << (session.isAutomationShown (i) ? "a" : "-") << (session.isLaneTrack (i) ? "L" : "x") << ";";
     }
 
     return sig;
@@ -65,6 +63,7 @@ void TracksView::timerCallback()
 
 void TracksView::rebuild()
 {
+    blockLayers.clear();
     folderHeaders.clear();
     autoLanes.clear();
     autoHeaders.clear();
@@ -76,18 +75,37 @@ void TracksView::rebuild()
 
     for (int i = 0; i < builtTracks.size(); ++i)
     {
+        const bool isLane = session.isLaneTrack (i);
+
         // One folder bar where each folder begins
         const auto folder = session.getTrackFolder (i);
 
-        if (folder.isNotEmpty() && folder != previousFolder)
+        if (isLane && folder.isNotEmpty() && folder != previousFolder)
             addAndMakeVisible (folderHeaders.add (new FolderHeader (session, folder)));
 
-        previousFolder = folder;
+        if (isLane)
+            previousFolder = folder;
 
-        addAndMakeVisible (headers.add (new TrackHeader (session, i)));
-        addAndMakeVisible (lanes.add (new TrackLane (session, i)));
+        addChildComponent (headers.add (new TrackHeader (session, i)));
+        addChildComponent (lanes.add (new TrackLane (session, i)));
         addChildComponent (autoHeaders.add (new AutomationHeader (session, i)));
         addChildComponent (autoLanes.add (new AutomationLane (session, i)));
+
+        // Pattern blocks draw over the lane's audio
+        BlockLayer* layer = nullptr;
+
+        if (isLane)
+        {
+            layer = new BlockLayer (session, i);
+            layer->laneAtScreen = [this] (juce::Point<int> screenPos)
+            {
+                const int t = trackAtY (getLocalPoint (nullptr, screenPos).y);
+                return t >= 0 && session.isLaneTrack (t) ? session.getLaneId (t) : juce::String();
+            };
+            addChildComponent (layer);
+        }
+
+        blockLayers.add (layer);
     }
 
     lastSignature = getLayoutSignature();
@@ -102,9 +120,10 @@ int TracksView::layout (bool apply)
 
     for (int i = 0; i < headers.size(); ++i)
     {
+        const bool isLane = session.isLaneTrack (i);
         const auto folder = session.getTrackFolder (i);
 
-        if (folder.isNotEmpty() && folder != previousFolder)
+        if (isLane && folder.isNotEmpty() && folder != previousFolder)
         {
             if (apply && folderIndex < folderHeaders.size())
                 folderHeaders[folderIndex]->setBounds (0, y, getWidth(), folderHeight);
@@ -113,9 +132,11 @@ int TracksView::layout (bool apply)
             y += folderHeight + gap;
         }
 
-        previousFolder = folder;
+        if (isLane)
+            previousFolder = folder;
 
-        const bool hidden = folder.isNotEmpty() && session.isFolderCollapsed (folder);
+        // Instruments live in the Rack and buses in the Mixer, so only lanes show here
+        const bool hidden = ! isLane || (folder.isNotEmpty() && session.isFolderCollapsed (folder));
         const bool showAuto = ! hidden && session.isAutomationShown (i);
         const int x = folder.isNotEmpty() ? indent : 0;
 
@@ -125,6 +146,9 @@ int TracksView::layout (bool apply)
             lanes[i]->setVisible (! hidden);
             autoHeaders[i]->setVisible (showAuto);
             autoLanes[i]->setVisible (showAuto);
+
+            if (auto* layer = blockLayers[i])
+                layer->setVisible (! hidden);
         }
 
         if (hidden)
@@ -134,6 +158,9 @@ int TracksView::layout (bool apply)
         {
             headers[i]->setBounds (x, y, headerWidth - x, rowHeight);
             lanes[i]->setBounds (headerWidth + gap, y, laneWidth, rowHeight);
+
+            if (auto* layer = blockLayers[i])
+                layer->setBounds (headerWidth + gap, y, laneWidth, rowHeight);
         }
 
         y += rowHeight + gap;
@@ -151,10 +178,7 @@ int TracksView::layout (bool apply)
     }
 
     if (apply)
-    {
         addTrackButton.setBounds (0, y + 4, 140, 28);
-        addMidiTrackButton.setBounds (146, y + 4, 170, 28);
-    }
 
     return y + 36;
 }
@@ -203,7 +227,8 @@ int TracksView::trackAtY (int y) const
 bool TracksView::isInterestedInDragSource (const SourceDetails& details)
 {
     PluginBrowser::Entry e;
-    return PluginBrowser::parseDrag (details.description, e);
+    return details.description.toString().startsWith ("kngpattern|")
+        || PluginBrowser::parseDrag (details.description, e);
 }
 
 void TracksView::itemDropped (const SourceDetails& details)
@@ -211,25 +236,38 @@ void TracksView::itemDropped (const SourceDetails& details)
     hoverY = -1;
     repaint();
 
+    const auto text = details.description.toString();
+
+    // A pattern from the Patterns list: a block where it was dropped (below the lanes: a new lane)
+    if (text.startsWith ("kngpattern|"))
+    {
+        const int pattern = text.fromFirstOccurrenceOf ("|", false, false).getIntValue();
+        int lane = trackAtY (details.localPosition.y);
+
+        if (lane < 0 || ! session.isLaneTrack (lane))
+        {
+            session.addTrack();
+            lane = session.getNumTracks() - 1;
+        }
+
+        const int laneWidth = juce::jmax (1, getWidth() - headerWidth - gap);
+        const double t = session.xToTime (details.localPosition.x - (headerWidth + gap), laneWidth);
+        session.placePatternInLane (pattern, juce::jmax (0.0, t), session.getLaneId (lane));
+        return;
+    }
+
     PluginBrowser::Entry e;
 
-    if (! PluginBrowser::parseDrag (details.description, e))
+    if (! PluginBrowser::parseDrag (text, e))
         return;
 
     const int track = trackAtY (details.localPosition.y);
 
+    // Instruments go in the Rack; effects go on the lane they're dropped on
     if (e.instrument)
-    {
-        // On an instrument track: swap its instrument. Anywhere else: a new track.
-        if (track >= 0 && session.isMidiTrack (track) && ! session.isDrumTrack (track))
-            session.setInstrumentById (track, e.id);
-        else
-            session.addInstrumentTrack (e.id, e.name);
-    }
+        session.addInstrumentTrack (e.id, e.name);
     else if (track >= 0)
-    {
         session.addEffectById (track, e.id);
-    }
 }
 
 void TracksView::paintOverChildren (juce::Graphics& g)
@@ -250,7 +288,7 @@ void TracksView::paintOverChildren (juce::Graphics& g)
         return;
     }
 
-    // Below the tracks: a new track goes here
+    // Below the lanes
     const int top = addTrackButton.getY() - 4;
     auto area = juce::Rectangle<int> (0, top, getWidth(), juce::jmax (48, getHeight() - top)).toFloat().reduced (2.0f);
 
@@ -259,5 +297,5 @@ void TracksView::paintOverChildren (juce::Graphics& g)
     g.setColour (accent);
     g.drawRoundedRectangle (area, 6.0f, 2.0f);
     g.setFont (juce::Font (juce::FontOptions (14.0f)));
-    g.drawText ("Drop to create a new track", area.toNearestInt(), juce::Justification::centred);
+    g.drawText ("Drop here", area.toNearestInt(), juce::Justification::centred);
 }
