@@ -1042,6 +1042,13 @@ void MainComponent::showMidiMappings()
     if (session == nullptr)
         return;
 
+    // Already open: bring it forward instead of opening a second one
+    if (midiMapWindow != nullptr)
+    {
+        midiMapWindow->toFront (true);
+        return;
+    }
+
     juce::DialogWindow::LaunchOptions options;
     options.content.setOwned (new MidiMapDialog (*session));
     options.dialogTitle = "MIDI Mappings";
