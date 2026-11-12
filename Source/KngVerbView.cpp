@@ -3,232 +3,150 @@
 
 namespace te = tracktion;
 
-static const juce::Colour accent (0xff3a8ee6);
-
-static juce::String formatVerb (int p, double v)
+static KngParamDef verbDef (int p, const char* unit)
 {
-    using namespace KngVerb;
+    const auto& in = KngVerb::info (p);
+    return { "", "", (float) in.min, (float) in.max, (float) in.def, (float) in.mid, (float) in.step, unit, nullptr };
+}
 
-    switch (p)
-    {
-        case preDelay:
-            return juce::String (juce::roundToInt (v)) + " ms";
-
-        case decay:
-            return juce::String (v, v < 10.0 ? 2 : 1) + " s";
-
-        case damping: case lowCut: case highCut:
-            return v >= 1000.0 ? juce::String (v / 1000.0, 1) + " kHz" : juce::String (juce::roundToInt (v)) + " Hz";
-
-        default:
-            return juce::String (juce::roundToInt (v * 100.0)) + "%";
-    }
+static juce::String hzText (float v)
+{
+    return v >= 1000.0f ? juce::String (v / 1000.0f, 1) + " kHz" : juce::String (juce::roundToInt (v)) + " Hz";
 }
 
 //==============================================================================
 KngVerbView::KngVerbView (KngVerbPlugin& owner)
-    : plugin (owner), pluginRef (&owner)
+    : KngFaceView (owner,
+                   kngMakeStyle (0xff5b8cff, 0xff26335a, 0xff0c1124, 0xffeef2ff, 0xff8e9fd0, 0xffa8c0ff, 0xff0d1430, 0xff22305a,
+                                 KngFonts::sora, false),
+                   { juce::Colour (0xff060912), juce::Colour (0xff121a38), juce::Colour (0xff080c1c), juce::Colour (0xff1e2a52) }),
+      verb (owner)
 {
-    addAndMakeVisible (titleLabel);
-    titleLabel.setText ("KNG Verb", juce::dontSendNotification);
-    titleLabel.setFont (juce::Font (juce::FontOptions (17.0f, juce::Font::bold)));
+    titleWidth = 190;
+    sideWidth = 22;
+    maxKnobWidth = 86;
 
-    addAndMakeVisible (presetBox);
-    presetBox.setTooltip ("Start from a space made for the job, then adjust. Use Send Bus when it's on a bus.");
+    juce::StringArray names;
 
-    {
-        juce::StringArray names;
+    for (auto& preset : KngVerb::presets())
+        names.add (preset.name);
 
-        for (auto& preset : KngVerb::presets())
-            names.add (preset.name);
+    attachPresets (names, [this] (int i) { verb.applyPreset (i); });
 
-        presetBox.attach (plugin, names, [this] (int i) { plugin.applyPreset (i); });
-    }
+    using namespace KngVerb;
 
-    for (int param = 0; param < KngVerb::numParams; ++param)
-    {
-        const auto& in = KngVerb::info (param);
-        Knob k;
-        k.param = param;
+    addKnob (*verb.getParam (preDelay), verbDef (preDelay, "ms"), "Pre-Delay");
 
-        k.label = std::make_unique<juce::Label> (juce::String(), in.name);
-        k.label->setJustificationType (juce::Justification::centred);
-        k.label->setFont (juce::Font (juce::FontOptions (11.0f)));
-        k.label->setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.7f));
-        addAndMakeVisible (*k.label);
+    auto& decayKnob = addKnob (*verb.getParam (decay), verbDef (decay, ""), "Decay");
+    decayKnob.formatter = [] (float v) { return juce::String (v, v < 10.0f ? 2 : 1) + " s"; };
 
-        k.slider = std::make_unique<juce::Slider> (juce::Slider::RotaryHorizontalVerticalDrag, juce::Slider::TextBoxBelow);
-        auto* s = k.slider.get();
-        s->setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 16);
-        s->setRange (in.min, in.max, in.step);
-
-        if (in.mid > in.min && in.mid < in.max)
-            s->setSkewFactorFromMidPoint (in.mid);
-
-        s->setDoubleClickReturnValue (true, in.def);
-        s->textFromValueFunction = [param] (double v) { return formatVerb (param, v); };
-        s->setValue (value (param), juce::dontSendNotification);
-        s->onDragStart   = [this] { beginEdit(); };
-        s->onValueChange = [this, param, s] { setValue (param, (float) s->getValue()); };
-        addAndMakeVisible (*s);
-
-        knobs.push_back (std::move (k));
-    }
-
-    setSize (980, 380);
-    startTimerHz (30);
-}
-
-KngVerbView::~KngVerbView()
-{
-    stopTimer();
-}
-
-void KngVerbView::beginEdit()
-{
-    if (auto* um = plugin.getUndoManager())
-        um->beginNewTransaction();
+    addKnob (*verb.getParam (size),       verbDef (size, "%"),       "Size");
+    addKnob (*verb.getParam (diffusion),  verbDef (diffusion, "%"),  "Diffusion");
+    addKnob (*verb.getParam (damping),    verbDef (damping, "Hz"),   "Damping");
+    addKnob (*verb.getParam (modulation), verbDef (modulation, "%"), "Motion");
+    addKnob (*verb.getParam (width),      verbDef (width, "%"),      "Width");
+    addKnob (*verb.getParam (duck),       verbDef (duck, "%"),       "Duck");
+    addKnob (*verb.getParam (lowCut),     verbDef (lowCut, "Hz"),    "Low Cut");
+    addKnob (*verb.getParam (highCut),    verbDef (highCut, "Hz"),   "High Cut");
+    addKnob (*verb.getParam (mix),        verbDef (mix, "%"),        "Mix");
 }
 
 float KngVerbView::value (int p) const
 {
-    return plugin.getParam (p)->getCurrentValue();
+    return verb.getParam (p)->getCurrentValue();
 }
 
-void KngVerbView::setValue (int p, float v)
+void KngVerbView::tick()
 {
-    plugin.getParam (p)->setParameter (v, juce::sendNotification);
-}
+    wetDb = fallingDb (verb.takeWetPeak(), wetDb);
 
-void KngVerbView::timerCallback()
-{
-    const float db = juce::Decibels::gainToDecibels (plugin.takeWetPeak(), -100.0f);
-    wetDb = db > wetDb ? db : wetDb - 1.0f;
+    // The rings drift outward, faster for a small room
+    phase += 0.004f + 0.006f * (1.0f - value (KngVerb::size));
 
-    for (auto& k : knobs)
-        if (! k.slider->isMouseButtonDown())
-            k.slider->setValue (value (k.param), juce::dontSendNotification);
-
-    repaint (tailArea.getUnion (bandArea).getUnion (meterArea).toNearestInt().expanded (2));
+    if (phase >= 1.0f)
+        phase -= 1.0f;
 }
 
 //==============================================================================
-void KngVerbView::drawTail (juce::Graphics& g, juce::Rectangle<float> area)
+void KngVerbView::paintTitle (juce::Graphics& g, juce::Rectangle<float> area)
 {
-    g.setColour (juce::Colour (0xff141618));
-    g.fillRoundedRectangle (area, 6.0f);
-
-    const float pre = value (KngVerb::preDelay) * 0.001f;
-    const float decaySec = value (KngVerb::decay);
-    const float total = juce::jmax (1.0f, pre + decaySec * 1.3f);
-
-    auto toX = [&] (float t)  { return area.getX() + t / total * area.getWidth(); };
-    auto toY = [&] (float db) { return area.getY() + 10.0f + (-db / 60.0f) * (area.getHeight() - 20.0f); };
-
-    // Time grid
-    g.setFont (juce::Font (juce::FontOptions (10.0f)));
-    const float step = total > 8.0f ? 2.0f : total > 3.0f ? 1.0f : 0.5f;
-
-    for (float t = step; t < total; t += step)
-    {
-        g.setColour (juce::Colours::white.withAlpha (0.06f));
-        g.drawVerticalLine ((int) toX (t), area.getY(), area.getBottom());
-        g.setColour (juce::Colours::white.withAlpha (0.35f));
-        g.drawText (juce::String (t, step < 1.0f ? 1 : 0) + "s", (int) toX (t) + 3, (int) area.getBottom() - 14, 40, 12,
-                    juce::Justification::left);
-    }
-
-    // The tail: silence for the pre-delay, then a fade to -60 dB over the decay time
-    const float darkness = 1.0f - (value (KngVerb::damping) - 1000.0f) / 19000.0f;
-    const auto tailColour = accent.interpolatedWith (juce::Colour (0xff6a3ae6), darkness * 0.8f);
-
-    juce::Path tail;
-    tail.startNewSubPath (toX (pre), area.getBottom());
-
-    for (float t = pre; t <= total; t += total / 200.0f)
-    {
-        const float db = -60.0f * (t - pre) / juce::jmax (0.05f, decaySec);
-        tail.lineTo (toX (t), toY (juce::jmax (-60.0f, db)));
-    }
-
-    tail.lineTo (toX (total), area.getBottom());
-    tail.closeSubPath();
-
-    g.setColour (tailColour.withAlpha (0.35f));
-    g.fillPath (tail);
-    g.setColour (tailColour);
-    g.strokePath (tail, juce::PathStrokeType (1.5f));
-
-    // Pre-delay marker
-    g.setColour (juce::Colours::white.withAlpha (0.5f));
-    g.drawVerticalLine ((int) toX (pre), area.getY(), area.getBottom());
-
-    g.setColour (juce::Colours::white.withAlpha (0.9f));
-    g.setFont (juce::Font (juce::FontOptions (20.0f, juce::Font::bold)));
-    g.drawText (formatVerb (KngVerb::decay, decaySec), area.reduced (12.0f).toNearestInt(), juce::Justification::topRight);
-
-    g.setColour (juce::Colours::white.withAlpha (0.4f));
-    g.setFont (juce::Font (juce::FontOptions (10.0f)));
-    g.drawText ("DECAY", area.reduced (12.0f).toNearestInt().withTrimmedTop (26), juce::Justification::topRight);
+    drawTitle (g, area, "Verb", KngFonts::sora, 28.0f);
 }
 
-void KngVerbView::drawBand (juce::Graphics& g, juce::Rectangle<float> area)
+void KngVerbView::paintSide (juce::Graphics& g, juce::Rectangle<float> area)
 {
-    g.setColour (juce::Colour (0xff141618));
-    g.fillRoundedRectangle (area, 4.0f);
-
-    auto toX = [&] (float f) { return area.getX() + area.getWidth() * std::log (f / 20.0f) / std::log (1000.0f); };
-
-    const float x1 = toX (value (KngVerb::lowCut));
-    const float x2 = toX (value (KngVerb::highCut));
-
-    g.setColour (accent.withAlpha (0.4f));
-    g.fillRoundedRectangle (juce::Rectangle<float>::leftTopRightBottom (x1, area.getY() + 3.0f, x2, area.getBottom() - 3.0f), 3.0f);
-
-    g.setColour (juce::Colours::white.withAlpha (0.5f));
-    g.setFont (juce::Font (juce::FontOptions (10.0f)));
-    g.drawText ("REVERB RANGE", area.reduced (6.0f, 0.0f).toNearestInt(), juce::Justification::centredLeft);
+    drawMeter (g, area, wetDb, "WET");
 }
 
-void KngVerbView::paint (juce::Graphics& g)
+void KngVerbView::paintDisplay (juce::Graphics& g, juce::Rectangle<float> area)
 {
-    g.fillAll (juce::Colour (0xff1b1d20));
-    drawTail (g, tailArea);
-    drawBand (g, bandArea);
+    using namespace KngVerb;
 
-    // Reverb level meter
-    g.setColour (juce::Colour (0xff141618));
-    g.fillRoundedRectangle (meterArea, 3.0f);
+    drawScreen (g, area);
 
-    const float level = juce::jlimit (0.0f, 1.0f, (wetDb + 60.0f) / 60.0f);
-    auto bar = meterArea.reduced (2.0f);
-    g.setColour (accent);
-    g.fillRoundedRectangle (bar.removeFromBottom (bar.getHeight() * level), 2.0f);
-}
+    auto inner = area.reduced (10.0f);
+    const auto band = inner.removeFromBottom (20.0f);
+    inner.removeFromBottom (8.0f);
 
-void KngVerbView::resized()
-{
-    auto r = getLocalBounds().reduced (8);
+    const float sizeAmt = value (size), decaySec = value (decay), pre = value (preDelay);
+    const float level = juce::jlimit (0.0f, 1.0f, (wetDb + 50.0f) / 50.0f);
+    const float darkness = juce::jlimit (0.0f, 1.0f, 1.0f - (value (damping) - 1000.0f) / 19000.0f);
+    const auto ringColour = style.accent.interpolatedWith (juce::Colour (0xff8b5cf6), darkness * 0.8f);
 
-    auto top = r.removeFromTop (28);
-    titleLabel.setBounds (top.removeFromLeft (110));
-    presetBox.setBounds (top.removeFromLeft (200));
-
-    r.removeFromTop (6);
-    auto knobRow = r.removeFromBottom (92);
-    r.removeFromBottom (6);
-
-    meterArea = r.removeFromRight (14).toFloat();
-    r.removeFromRight (8);
-    bandArea = r.removeFromBottom (22).toFloat();
-    r.removeFromBottom (6);
-    tailArea = r.toFloat();
-
-    for (auto& k : knobs)
     {
-        auto col = knobRow.removeFromLeft (84);
-        k.label->setBounds (col.removeFromTop (16));
-        k.slider->setBounds (col);
-        knobRow.removeFromLeft (4);
+        juce::Graphics::ScopedSaveState saveState (g);
+        g.reduceClipRegion (inner.toNearestInt());
+
+        // The room: Size sets how far the rings reach, Pre-Delay leaves a gap around the source,
+        // Decay sets how slowly they fade, and the reverb's level lights them up
+        const auto c = inner.getCentre();
+        const float maxRx = inner.getWidth() * 0.48f * (0.45f + 0.55f * sizeAmt);
+        const float maxRy = inner.getHeight() * 0.46f * (0.45f + 0.55f * sizeAmt);
+        const float gap = juce::jlimit (0.06f, 0.46f, 0.06f + pre / 300.0f * 0.4f);
+        const float fadePower = 1.5f / juce::jlimit (0.2f, 4.0f, decaySec / 2.0f);
+        constexpr int rings = 8;
+
+        for (int k = 0; k < rings; ++k)
+        {
+            const float t = std::fmod ((float) k / (float) rings + phase, 1.0f);
+            const float rr = gap + (1.0f - gap) * t;
+            const float alpha = std::pow (1.0f - t, fadePower) * (0.25f + 0.75f * level);
+
+            g.setColour (ringColour.withAlpha (juce::jlimit (0.0f, 1.0f, alpha)));
+            g.drawEllipse (juce::Rectangle<float> (maxRx * 2.0f * rr, maxRy * 2.0f * rr).withCentre (c), 1.5f + 2.0f * (1.0f - t));
+        }
+
+        // The source
+        const float glowR = 26.0f + 20.0f * level;
+        juce::ColourGradient glow (ringColour.withAlpha (0.55f), c.x, c.y, ringColour.withAlpha (0.0f), c.x + glowR, c.y, true);
+        g.setGradientFill (glow);
+        g.fillEllipse (juce::Rectangle<float> (glowR * 2.0f, glowR * 2.0f).withCentre (c));
+        g.setColour (juce::Colours::white);
+        g.fillEllipse (juce::Rectangle<float> (10.0f, 10.0f).withCentre (c));
+
+        // Readouts
+        const auto text = inner.reduced (12.0f, 8.0f);
+        g.setFont (KngFonts::font (KngFonts::sora, 26.0f));
+        g.setColour (juce::Colours::white.withAlpha (0.92f));
+        g.drawText (juce::String (decaySec, decaySec < 10.0f ? 2 : 1) + " s", text, juce::Justification::topRight, false);
+        g.setFont (KngFonts::font (KngFonts::mono, 10.0f));
+        g.setColour (style.label);
+        g.drawText ("DECAY", text.withTrimmedTop (32.0f), juce::Justification::topRight, false);
+        g.drawText ("SIZE " + juce::String (juce::roundToInt (sizeAmt * 100.0f)) + "%   PRE " + juce::String (juce::roundToInt (pre)) + " ms",
+                    text, juce::Justification::topLeft, false);
     }
+
+    // The range the reverb covers (Low Cut to High Cut)
+    auto toX = [&band] (float f) { return band.getX() + band.getWidth() * std::log (f / 20.0f) / std::log (1000.0f); };
+    const float x1 = toX (juce::jmax (20.0f, value (lowCut)));
+    const float x2 = toX (juce::jmax (20.0f, value (highCut)));
+
+    g.setColour (juce::Colours::black.withAlpha (0.3f));
+    g.fillRoundedRectangle (band, 4.0f);
+    g.setColour (ringColour.withAlpha (0.45f));
+    g.fillRoundedRectangle (juce::Rectangle<float>::leftTopRightBottom (x1, band.getY() + 3.0f, juce::jmax (x1 + 2.0f, x2), band.getBottom() - 3.0f), 3.0f);
+    g.setFont (KngFonts::font (KngFonts::mono, 10.0f));
+    g.setColour (juce::Colours::white.withAlpha (0.75f));
+    g.drawText ("REVERB RANGE  " + hzText (value (lowCut)) + " - " + hzText (value (highCut)), band.reduced (8.0f, 0.0f),
+                juce::Justification::centredLeft, false);
 }

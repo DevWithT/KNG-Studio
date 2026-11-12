@@ -113,7 +113,11 @@ target_sources(KNGStudio PRIVATE
     Source/KngPopOut.cpp
     Source/Kng808View.cpp
     Source/KngFattenerView.cpp
-    Source/InspectorCards.cpp)
+    Source/InspectorCards.cpp
+    Source/KngFaceView.cpp
+    Source/KngDeEssView.cpp
+    Source/KngLimiterView.cpp
+    Source/KngDoublerView.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0

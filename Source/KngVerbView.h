@@ -1,48 +1,26 @@
 #pragma once
 
-#include <tracktion_engine/tracktion_engine.h>
-#include "KngPresets.h"
+#include "KngFaceView.h"
 
 class KngVerbPlugin;
 
-/** KNG Verb panel: picture of the tail, the wet EQ range, a level meter, knobs and presets. */
-class KngVerbView : public tracktion::Plugin::EditorComponent,
-                    private juce::Timer
+/** KNG Verb's face: deep blue, rings that grow with Size and fade with Decay. */
+class KngVerbView : public KngFaceView
 {
 public:
     explicit KngVerbView (KngVerbPlugin& owner);
-    ~KngVerbView() override;
-
-    bool allowWindowResizing() override                               { return true; }
-    juce::ComponentBoundsConstrainer* getBoundsConstrainer() override { return nullptr; }
-
-    void paint (juce::Graphics&) override;
-    void resized() override;
+    ~KngVerbView() override = default;
 
 private:
-    struct Knob
-    {
-        int param = 0;
-        std::unique_ptr<juce::Slider> slider;
-        std::unique_ptr<juce::Label> label;
-    };
+    void paintTitle (juce::Graphics&, juce::Rectangle<float> area) override;
+    void paintDisplay (juce::Graphics&, juce::Rectangle<float> area) override;
+    void paintSide (juce::Graphics&, juce::Rectangle<float> area) override;
+    void tick() override;
 
-    void timerCallback() override;
-    void beginEdit();
     float value (int p) const;
-    void setValue (int p, float v);
-    void drawTail (juce::Graphics&, juce::Rectangle<float> area);
-    void drawBand (juce::Graphics&, juce::Rectangle<float> area);
 
-    KngVerbPlugin& plugin;
-    tracktion::Plugin::Ptr pluginRef;
-
-    juce::Label titleLabel;
-    KngPresetMenu presetBox;
-    std::vector<Knob> knobs;
-
-    juce::Rectangle<float> tailArea, bandArea, meterArea;
-    float wetDb = -100.0f;
+    KngVerbPlugin& verb;
+    float wetDb = -100.0f, phase = 0.0f;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (KngVerbView)
 };

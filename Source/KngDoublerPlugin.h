@@ -22,6 +22,9 @@ public:
     void applyToBuffer (const tracktion::PluginRenderContext&) override;
     void drawDisplay (juce::Graphics&, juce::Rectangle<float>, const KngHistory&) override;
 
+    /** This effect's own face. */
+    std::unique_ptr<EditorComponent> createEditor() override;
+
 private:
     std::vector<float> buf;
     int writePos = 0;

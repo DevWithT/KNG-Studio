@@ -1,4 +1,5 @@
 #include "KngLimiterPlugin.h"
+#include "KngLimiterView.h"
 
 namespace te = tracktion;
 
@@ -139,6 +140,11 @@ void KngLimiterPlugin::applyToBuffer (const te::PluginRenderContext& fc)
     }
 
     reportMeters (inMax, outMax, grMax);
+}
+
+std::unique_ptr<te::Plugin::EditorComponent> KngLimiterPlugin::createEditor()
+{
+    return std::make_unique<KngLimiterView> (*this);
 }
 
 void KngLimiterPlugin::drawDisplay (juce::Graphics& g, juce::Rectangle<float> area, const KngHistory& h)

@@ -1,4 +1,5 @@
 #include "KngDoublerPlugin.h"
+#include "KngDoublerView.h"
 
 namespace te = tracktion;
 
@@ -151,6 +152,11 @@ void KngDoublerPlugin::applyToBuffer (const te::PluginRenderContext& fc)
     }
 
     reportMeters (inMax, outMax, 0.0f);
+}
+
+std::unique_ptr<te::Plugin::EditorComponent> KngDoublerPlugin::createEditor()
+{
+    return std::make_unique<KngDoublerView> (*this);
 }
 
 void KngDoublerPlugin::drawDisplay (juce::Graphics& g, juce::Rectangle<float> area, const KngHistory&)

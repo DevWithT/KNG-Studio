@@ -3,196 +3,136 @@
 
 namespace te = tracktion;
 
-static const juce::Colour accent (0xff3a8ee6);
-static const juce::Colour rightColour (0xffe6a23a);
+static const juce::Colour rightColour (0xffffb38a);
 
-static juce::String formatDelay (int p, double v)
+static KngParamDef delayDef (int p, const char* unit)
 {
-    using namespace KngDelay;
+    const auto& in = KngDelay::info (p);
+    return { "", "", (float) in.min, (float) in.max, (float) in.def, (float) in.mid, (float) in.step, unit, nullptr };
+}
 
-    switch (p)
-    {
-        case timeL: case timeR:
-            return v >= 1000.0 ? juce::String (v / 1000.0, 2) + " s" : juce::String (juce::roundToInt (v)) + " ms";
-
-        case lowCut: case highCut:
-            return v >= 1000.0 ? juce::String (v / 1000.0, 1) + " kHz" : juce::String (juce::roundToInt (v)) + " Hz";
-
-        default:
-            return juce::String (juce::roundToInt (v * 100.0)) + "%";
-    }
+static juce::String divisionText (float v)
+{
+    const auto& names = KngDelay::divisionNames();
+    return names.isEmpty() ? juce::String() : names[juce::jlimit (0, names.size() - 1, juce::roundToInt (v))];
 }
 
 //==============================================================================
 KngDelayView::KngDelayView (KngDelayPlugin& owner)
-    : plugin (owner), pluginRef (&owner)
+    : KngFaceView (owner,
+                   kngMakeStyle (0xff22c3b5, 0xff1e3a3a, 0xff0a1616, 0xffe6fffb, 0xff7fb8b1, 0xff7ff0e4, 0xff0b1b1c, 0xff1d3a3a,
+                                 KngFonts::spaceGrotesk, false),
+                   { juce::Colour (0xff050c0d), juce::Colour (0xff0f2224), juce::Colour (0xff071213), juce::Colour (0xff1a3536) }),
+      delay (owner)
 {
-    for (auto* c : std::initializer_list<juce::Component*> { &titleLabel, &presetBox, &modeBox, &syncButton,
-                                                             &divLBox, &divRBox, &leftLabel, &rightLabel })
-        addAndMakeVisible (c);
+    titleWidth = 170;
+    sideWidth = 22;
+    maxKnobWidth = 84;
 
-    titleLabel.setText ("KNG Delay", juce::dontSendNotification);
-    titleLabel.setFont (juce::Font (juce::FontOptions (17.0f, juce::Font::bold)));
+    juce::StringArray names;
 
-    presetBox.setTooltip ("Start from a setting made for the job, then adjust. Use Send Bus when it's on a bus.");
+    for (auto& preset : KngDelay::presets())
+        names.add (preset.name);
 
-    {
-        juce::StringArray names;
+    attachPresets (names, [this] (int i) { delay.applyPreset (i); });
 
-        for (auto& preset : KngDelay::presets())
-            names.add (preset.name);
+    using namespace KngDelay;
 
-        presetBox.attach (plugin, names, [this] (int i) { plugin.applyPreset (i); });
-    }
+    addHeaderChoice (*delay.getParam (mode), (float) info (mode).min, modeNames().joinIntoString ("|"), 270);
+    addHeaderSwitch (*delay.getParam (sync), "Sync", "Lock the echoes to the song's tempo", 100);
 
-    for (int i = 0; i < KngDelay::modeNames().size(); ++i)
-        modeBox.addItem (KngDelay::modeNames()[i], i + 1);
+    // Left and right: milliseconds when free, note lengths when synced
+    timeLKnob = &addKnob (*delay.getParam (timeL), delayDef (timeL, "ms"), "Left");
+    timeRKnob = &addKnob (*delay.getParam (timeR), delayDef (timeR, "ms"), "Right");
+    divLKnob  = &addKnob (*delay.getParam (divL),  delayDef (divL, ""),    "Left");
+    divRKnob  = &addKnob (*delay.getParam (divR),  delayDef (divR, ""),    "Right");
+    divLKnob->formatter = divisionText;
+    divRKnob->formatter = divisionText;
+    timeRKnob->setArcColour (rightColour);
+    divRKnob->setArcColour (rightColour);
 
-    modeBox.setTooltip ("Stereo: separate sides. Ping-Pong: bounces left to right. Mono: one echo, center.");
-    modeBox.onChange = [this] { beginEdit(); setValue (KngDelay::mode, (float) (modeBox.getSelectedId() - 1)); };
+    addKnob (*delay.getParam (feedback), delayDef (feedback, "%"), "Feedback");
+    addKnob (*delay.getParam (lowCut),   delayDef (lowCut, "Hz"),  "Low Cut");
+    addKnob (*delay.getParam (highCut),  delayDef (highCut, "Hz"), "High Cut");
+    addKnob (*delay.getParam (drive),    delayDef (drive, "%"),    "Tape");
+    addKnob (*delay.getParam (wobble),   delayDef (wobble, "%"),   "Wobble");
+    addKnob (*delay.getParam (width),    delayDef (width, "%"),    "Width");
+    addKnob (*delay.getParam (duck),     delayDef (duck, "%"),     "Duck");
+    addKnob (*delay.getParam (mix),      delayDef (mix, "%"),      "Mix");
 
-    syncButton.setTooltip ("Lock the echoes to the song's tempo");
-    syncButton.onClick = [this] { beginEdit(); setValue (KngDelay::sync, syncButton.getToggleState() ? 1.0f : 0.0f); };
-
-    for (auto* box : { &divLBox, &divRBox })
-        for (int i = 0; i < KngDelay::divisionNames().size(); ++i)
-            box->addItem (KngDelay::divisionNames()[i], i + 1);
-
-    divLBox.setTooltip ("Note length for the left echo (T = triplet, D = dotted)");
-    divRBox.setTooltip ("Note length for the right echo (T = triplet, D = dotted)");
-    divLBox.onChange = [this] { beginEdit(); setValue (KngDelay::divL, (float) (divLBox.getSelectedId() - 1)); };
-    divRBox.onChange = [this] { beginEdit(); setValue (KngDelay::divR, (float) (divRBox.getSelectedId() - 1)); };
-
-    for (auto* l : { &leftLabel, &rightLabel })
-    {
-        l->setJustificationType (juce::Justification::centred);
-        l->setFont (juce::Font (juce::FontOptions (11.0f)));
-        l->setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.7f));
-    }
-
-    timeLKnob = makeKnob (KngDelay::timeL);
-    timeRKnob = makeKnob (KngDelay::timeR);
-
-    for (int param : { KngDelay::feedback, KngDelay::lowCut, KngDelay::highCut, KngDelay::drive,
-                       KngDelay::wobble, KngDelay::width, KngDelay::duck, KngDelay::mix })
-        knobs.push_back (makeKnob (param));
-
-    setSize (980, 380);
-    startTimerHz (30);
-}
-
-KngDelayView::~KngDelayView()
-{
-    stopTimer();
-}
-
-KngDelayView::Knob KngDelayView::makeKnob (int param)
-{
-    const auto& in = KngDelay::info (param);
-    Knob k;
-    k.param = param;
-
-    k.label = std::make_unique<juce::Label> (juce::String(), in.name);
-    k.label->setJustificationType (juce::Justification::centred);
-    k.label->setFont (juce::Font (juce::FontOptions (11.0f)));
-    k.label->setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.7f));
-    addAndMakeVisible (*k.label);
-
-    k.slider = std::make_unique<juce::Slider> (juce::Slider::RotaryHorizontalVerticalDrag, juce::Slider::TextBoxBelow);
-    auto* s = k.slider.get();
-    s->setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 16);
-    s->setRange (in.min, in.max, in.step);
-
-    if (in.mid > in.min && in.mid < in.max)
-        s->setSkewFactorFromMidPoint (in.mid);
-
-    s->setDoubleClickReturnValue (true, in.def);
-    s->textFromValueFunction = [param] (double v) { return formatDelay (param, v); };
-    s->setValue (value (param), juce::dontSendNotification);
-    s->onDragStart   = [this] { beginEdit(); };
-    s->onValueChange = [this, param, s] { setValue (param, (float) s->getValue()); };
-    addAndMakeVisible (*s);
-
-    return k;
-}
-
-void KngDelayView::beginEdit()
-{
-    if (auto* um = plugin.getUndoManager())
-        um->beginNewTransaction();
+    tick();
 }
 
 float KngDelayView::value (int p) const
 {
-    return plugin.getParam (p)->getCurrentValue();
+    return delay.getParam (p)->getCurrentValue();
 }
 
-void KngDelayView::setValue (int p, float v)
+void KngDelayView::tick()
 {
-    plugin.getParam (p)->setParameter (v, juce::sendNotification);
-}
-
-//==============================================================================
-void KngDelayView::timerCallback()
-{
-    const float db = juce::Decibels::gainToDecibels (plugin.takeWetPeak(), -100.0f);
-    wetDb = db > wetDb ? db : wetDb - 1.0f;
+    wetDb = fallingDb (delay.takeWetPeak(), wetDb);
+    clock += 1.0 / 30.0;
 
     const bool synced = value (KngDelay::sync) > 0.5f;
     const bool isMono = juce::roundToInt (value (KngDelay::mode)) == KngDelay::mono;
 
-    // Synced: note-length boxes. Free: millisecond knobs.
-    divLBox.setVisible (synced);
-    divRBox.setVisible (synced && ! isMono);
-    timeLKnob.slider->setVisible (! synced);
-    timeRKnob.slider->setVisible (! synced && ! isMono);
-    timeLKnob.label->setVisible (false);
-    timeRKnob.label->setVisible (false);
-    rightLabel.setVisible (! isMono);
-
-    syncButton.setToggleState (synced, juce::dontSendNotification);
-
-    if (! modeBox.isPopupActive())
-        modeBox.setSelectedId (juce::roundToInt (value (KngDelay::mode)) + 1, juce::dontSendNotification);
-
-    if (! divLBox.isPopupActive())
-        divLBox.setSelectedId (juce::roundToInt (value (KngDelay::divL)) + 1, juce::dontSendNotification);
-
-    if (! divRBox.isPopupActive())
-        divRBox.setSelectedId (juce::roundToInt (value (KngDelay::divR)) + 1, juce::dontSendNotification);
-
-    for (auto* k : { &timeLKnob, &timeRKnob })
-        if (! k->slider->isMouseButtonDown())
-            k->slider->setValue (value (k->param), juce::dontSendNotification);
-
-    for (auto& k : knobs)
-        if (! k.slider->isMouseButtonDown())
-            k.slider->setValue (value (k.param), juce::dontSendNotification);
-
-    repaint (echoArea.getUnion (meterArea).toNearestInt().expanded (2));
+    timeLKnob->setVisible (! synced);
+    timeRKnob->setVisible (! synced && ! isMono);
+    divLKnob->setVisible (synced);
+    divRKnob->setVisible (synced && ! isMono);
 }
 
 //==============================================================================
-void KngDelayView::drawEchoes (juce::Graphics& g, juce::Rectangle<float> area)
+void KngDelayView::paintTitle (juce::Graphics& g, juce::Rectangle<float> area)
 {
-    g.setColour (juce::Colour (0xff141618));
-    g.fillRoundedRectangle (area, 6.0f);
+    drawTitle (g, area, "Delay", KngFonts::spaceGrotesk, 28.0f);
+}
+
+void KngDelayView::paintSide (juce::Graphics& g, juce::Rectangle<float> area)
+{
+    drawMeter (g, area, wetDb, "WET");
+}
+
+void KngDelayView::paintDisplay (juce::Graphics& g, juce::Rectangle<float> area)
+{
+    drawScreen (g, area);
+
+    juce::Graphics::ScopedSaveState saveState (g);
+    g.reduceClipRegion (area.reduced (1.0f).toNearestInt());
 
     const int m = juce::roundToInt (value (KngDelay::mode));
-    const double dL = plugin.getDelaySeconds (0);
-    const double dR = m == KngDelay::mono ? dL : plugin.getDelaySeconds (1);
+    const double dL = delay.getDelaySeconds (0);
+    const double dR = m == KngDelay::mono ? dL : delay.getDelaySeconds (1);
     const float fb = value (KngDelay::feedback);
     const double window = juce::jlimit (1.0, 6.0, juce::jmax (dL, dR) * 7.0);
+    const double beat = 60.0 / juce::jmax (30.0, delay.getBpm());
 
-    auto toX = [&] (double t) { return area.getX() + 12.0f + (float) (t / window) * (area.getWidth() - 24.0f); };
-    const float midY = area.getCentreY();
-    const float half = area.getHeight() * 0.5f - 22.0f;
+    const auto plot = area.reduced (14.0f).withTrimmedTop (22.0f);
+    auto toX = [&plot, window] (double t) { return plot.getX() + (float) (t / window) * plot.getWidth(); };
+    const float midY = plot.getCentreY();
+    const float half = plot.getHeight() * 0.5f - 6.0f;
 
-    // Centre line and the dry hit at 0
-    g.setColour (juce::Colours::white.withAlpha (0.12f));
-    g.drawHorizontalLine ((int) midY, area.getX(), area.getRight());
-    g.setColour (juce::Colours::white.withAlpha (0.6f));
-    g.fillRect (toX (0.0) - 1.0f, midY - half, 3.0f, half * 2.0f);
+    // The song's beats, with every 4th brighter
+    int beatIndex = 0;
+
+    for (double t = 0.0; t <= window; t += beat, ++beatIndex)
+    {
+        g.setColour (juce::Colours::white.withAlpha (beatIndex % 4 == 0 ? 0.12f : 0.045f));
+        g.drawVerticalLine ((int) toX (t), plot.getY(), plot.getBottom());
+    }
+
+    g.setColour (juce::Colours::white.withAlpha (0.1f));
+    g.drawHorizontalLine ((int) midY, plot.getX(), plot.getRight());
+
+    // A soft line sweeps across like a tape head
+    const float sweepX = toX (std::fmod (clock, window));
+    juce::ColourGradient sweep (style.accent.withAlpha (0.0f), sweepX - 60.0f, 0.0f, style.accent.withAlpha (0.18f), sweepX, 0.0f, false);
+    g.setGradientFill (sweep);
+    g.fillRect (sweepX - 60.0f, plot.getY(), 60.0f, plot.getHeight());
+
+    // The dry hit
+    g.setColour (juce::Colours::white.withAlpha (0.8f));
+    g.fillRoundedRectangle (toX (0.0) - 2.0f, midY - half, 4.0f, half * 2.0f, 2.0f);
 
     // Each echo, shrinking as it repeats (left on top, right underneath)
     auto drawTap = [&] (double t, float amp, bool isLeft)
@@ -201,8 +141,13 @@ void KngDelayView::drawEchoes (juce::Graphics& g, juce::Rectangle<float> area)
             return;
 
         const float h = half * amp;
-        g.setColour ((isLeft ? accent : rightColour).withAlpha (0.4f + 0.6f * amp));
-        g.fillRoundedRectangle (toX (t) - 2.0f, isLeft ? midY - h : midY, 4.0f, h, 2.0f);
+        const auto colour = isLeft ? style.accent : rightColour;
+        const auto bar = juce::Rectangle<float> (toX (t) - 3.0f, isLeft ? midY - h : midY, 6.0f, h);
+
+        g.setColour (colour.withAlpha (0.25f * amp));
+        g.fillRoundedRectangle (bar.expanded (3.0f, 0.0f), 3.0f);
+        g.setColour (colour.withAlpha (0.4f + 0.6f * amp));
+        g.fillRoundedRectangle (bar, 3.0f);
     };
 
     for (int k = 1; k <= 24; ++k)
@@ -211,14 +156,15 @@ void KngDelayView::drawEchoes (juce::Graphics& g, juce::Rectangle<float> area)
 
         if (m == KngDelay::pingPong)
         {
-            // Left first, then it bounces right, then left...
             const int lefts = (k + 1) / 2, rights = k / 2;
             drawTap (lefts * dL + rights * dR, amp, k % 2 == 1);
         }
         else
         {
             drawTap (k * dL, amp, true);
-            drawTap (k * dR, amp, false);
+
+            if (m != KngDelay::mono)
+                drawTap (k * dR, amp, false);
         }
     }
 
@@ -230,75 +176,17 @@ void KngDelayView::drawEchoes (juce::Graphics& g, juce::Rectangle<float> area)
         if (value (KngDelay::sync) < 0.5f)
             return ms;
 
-        const int div = juce::roundToInt (value (side == 0 ? KngDelay::divL : KngDelay::divR));
-        return KngDelay::divisionNames()[div] + " = " + ms;
+        return divisionText (value (side == 0 ? KngDelay::divL : KngDelay::divR)) + " = " + ms;
     };
 
-    juce::String text = "L " + describe (0, dL);
+    juce::String text = "L  " + describe (0, dL);
 
     if (m != KngDelay::mono)
-        text << "     R " + describe (1, dR);
+        text << "      R  " << describe (1, dR);
 
-    text << "     @ " << juce::String (plugin.getBpm(), 1) << " BPM";
+    text << "      " << juce::String (delay.getBpm(), 1) << " BPM";
 
-    g.setColour (juce::Colours::white.withAlpha (0.8f));
-    g.setFont (juce::Font (juce::FontOptions (13.0f, juce::Font::bold)));
-    g.drawText (text, area.reduced (12.0f, 6.0f).toNearestInt(), juce::Justification::topLeft);
-}
-
-void KngDelayView::paint (juce::Graphics& g)
-{
-    g.fillAll (juce::Colour (0xff1b1d20));
-    drawEchoes (g, echoArea);
-
-    g.setColour (juce::Colour (0xff141618));
-    g.fillRoundedRectangle (meterArea, 3.0f);
-
-    const float level = juce::jlimit (0.0f, 1.0f, (wetDb + 60.0f) / 60.0f);
-    auto bar = meterArea.reduced (2.0f);
-    g.setColour (accent);
-    g.fillRoundedRectangle (bar.removeFromBottom (bar.getHeight() * level), 2.0f);
-}
-
-void KngDelayView::resized()
-{
-    auto r = getLocalBounds().reduced (8);
-
-    auto top = r.removeFromTop (28);
-    titleLabel.setBounds (top.removeFromLeft (110));
-    presetBox.setBounds (top.removeFromLeft (200));
-    top.removeFromLeft (10);
-    modeBox.setBounds (top.removeFromLeft (120));
-    top.removeFromLeft (10);
-    syncButton.setBounds (top.removeFromLeft (140));
-
-    r.removeFromTop (6);
-    auto knobRow = r.removeFromBottom (92);
-    r.removeFromBottom (6);
-
-    meterArea = r.removeFromRight (14).toFloat();
-    r.removeFromRight (8);
-    echoArea = r.toFloat();
-
-    // Left and right: a note-length box when synced, a time knob when free
-    auto timeCell = [&knobRow] (juce::Label& label, juce::ComboBox& box, Knob& knob)
-    {
-        auto col = knobRow.removeFromLeft (96);
-        label.setBounds (col.removeFromTop (16));
-        box.setBounds (col.withSizeKeepingCentre (88, 26));
-        knob.slider->setBounds (col);
-        knobRow.removeFromLeft (4);
-    };
-
-    timeCell (leftLabel, divLBox, timeLKnob);
-    timeCell (rightLabel, divRBox, timeRKnob);
-    knobRow.removeFromLeft (8);
-
-    for (auto& k : knobs)
-    {
-        auto col = knobRow.removeFromLeft (84);
-        k.label->setBounds (col.removeFromTop (16));
-        k.slider->setBounds (col);
-        knobRow.removeFromLeft (4);
-    }
+    g.setFont (KngFonts::font (KngFonts::mono, 12.0f));
+    g.setColour (juce::Colours::white.withAlpha (0.85f));
+    g.drawText (text, area.reduced (14.0f, 8.0f).removeFromTop (16.0f), juce::Justification::centredLeft, false);
 }

@@ -1,4 +1,5 @@
 #include "KngDeEssPlugin.h"
+#include "KngDeEssView.h"
 
 namespace te = tracktion;
 
@@ -132,6 +133,11 @@ void KngDeEssPlugin::applyToBuffer (const te::PluginRenderContext& fc)
     }
 
     reportMeters (inMax, outMax, grMax);
+}
+
+std::unique_ptr<te::Plugin::EditorComponent> KngDeEssPlugin::createEditor()
+{
+    return std::make_unique<KngDeEssView> (*this);
 }
 
 void KngDeEssPlugin::drawDisplay (juce::Graphics& g, juce::Rectangle<float> area, const KngHistory& h)

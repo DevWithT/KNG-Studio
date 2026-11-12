@@ -3,190 +3,197 @@
 
 namespace te = tracktion;
 
-static const juce::Colour accent (0xff3a8ee6);
-static const juce::Colour reductionColour (0xffe6503a);
+static constexpr float maxAngle = 0.85f;   // the needle's swing either side of straight up
 
-static juce::String formatComp (int p, double v)
+static KngParamDef compDef (int p, const char* unit)
 {
-    using namespace KngComp;
-
-    switch (p)
-    {
-        case threshold: case makeup: case knee:
-            return juce::String (v, 1) + " dB";
-
-        case ratio:
-            return juce::String (v, v < 10.0 ? 1 : 0) + ":1";
-
-        case attack:
-            return juce::String (v, v < 1.0 ? 2 : 1) + " ms";
-
-        case release:
-            return v >= 1000.0 ? juce::String (v / 1000.0, 2) + " s" : juce::String (juce::roundToInt (v)) + " ms";
-
-        case mix:
-            return juce::String (juce::roundToInt (v * 100.0)) + "%";
-
-        case scHpf:
-            return juce::String (juce::roundToInt (v)) + " Hz";
-
-        default:
-            return juce::String (v, 2);
-    }
+    const auto& in = KngComp::info (p);
+    return { "", "", (float) in.min, (float) in.max, (float) in.def, (float) in.mid, (float) in.step, unit, nullptr };
 }
 
 //==============================================================================
 KngCompView::KngCompView (KngCompPlugin& owner)
-    : plugin (owner), pluginRef (&owner)
+    : KngFaceView (owner,
+                   kngMakeStyle (0xffffb020, 0xff4a3a22, 0xff1a140b, 0xfffff3dc, 0xffc8a978, 0xffffcf6a, 0xff1d160c, 0xff4a3a22,
+                                 KngFonts::barlowSemi, true),
+                   { juce::Colour (0xff0c0906), juce::Colour (0xff2a1f12), juce::Colour (0xff120d08), juce::Colour (0xff3a2c18) }),
+      comp (owner)
 {
-    addAndMakeVisible (titleLabel);
-    titleLabel.setText ("KNG Comp", juce::dontSendNotification);
-    titleLabel.setFont (juce::Font (juce::FontOptions (17.0f, juce::Font::bold)));
+    titleWidth = 170;
+    sideWidth = 50;
+    maxKnobWidth = 100;
 
-    addAndMakeVisible (presetBox);
-    presetBox.setTooltip ("Start from a setting made for the job, then adjust");
+    juce::StringArray names;
 
-    {
-        juce::StringArray names;
+    for (auto& preset : KngComp::presets())
+        names.add (preset.name);
 
-        for (auto& preset : KngComp::presets())
-            names.add (preset.name);
+    attachPresets (names, [this] (int i) { comp.applyPreset (i); });
 
-        presetBox.attach (plugin, names, [this] (int i) { plugin.applyPreset (i); });
-    }
+    addHeaderChoice (*comp.getParam (KngComp::mode), (float) KngComp::info (KngComp::mode).min,
+                     KngComp::modeNames().joinIntoString ("|"), 300);
+    addHeaderSwitch (*comp.getParam (KngComp::autoMakeup), "Auto Gain",
+                     "Turns the output back up by about what the compressor takes off", 130);
 
-    addAndMakeVisible (modeBox);
-    modeBox.setTooltip ("Clean: transparent. Punch: snappy drums. Opto: smooth vocals. Vintage: fast with grit.");
+    addKnob (*comp.getParam (KngComp::threshold), compDef (KngComp::threshold, "dB"), "Threshold");
 
-    for (int i = 0; i < KngComp::modeNames().size(); ++i)
-        modeBox.addItem (KngComp::modeNames()[i], i + 1);
+    auto& ratioKnob = addKnob (*comp.getParam (KngComp::ratio), compDef (KngComp::ratio, ""), "Ratio");
+    ratioKnob.formatter = [] (float v) { return juce::String (v, v < 10.0f ? 1 : 0) + ":1"; };
 
-    modeBox.onChange = [this]
-    {
-        beginEdit();
-        setValue (KngComp::mode, (float) (modeBox.getSelectedId() - 1));
-    };
+    auto& attackKnob = addKnob (*comp.getParam (KngComp::attack), compDef (KngComp::attack, ""), "Attack");
+    attackKnob.formatter = [] (float v) { return juce::String (v, v < 1.0f ? 2 : 1) + " ms"; };
 
-    addAndMakeVisible (autoButton);
-    autoButton.setTooltip ("Turns the output back up by about what the compressor takes off");
-    autoButton.onClick = [this]
-    {
-        beginEdit();
-        setValue (KngComp::autoMakeup, autoButton.getToggleState() ? 1.0f : 0.0f);
-    };
-
-    // One knob per continuous setting
-    for (int p : { KngComp::threshold, KngComp::ratio, KngComp::attack, KngComp::release,
-                   KngComp::knee, KngComp::makeup, KngComp::mix, KngComp::scHpf })
-    {
-        const auto& in = KngComp::info (p);
-        Knob k;
-        k.param = p;
-
-        k.label = std::make_unique<juce::Label> (juce::String(), in.name);
-        k.label->setJustificationType (juce::Justification::centred);
-        k.label->setFont (juce::Font (juce::FontOptions (11.0f)));
-        k.label->setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.7f));
-        addAndMakeVisible (*k.label);
-
-        k.slider = std::make_unique<juce::Slider> (juce::Slider::RotaryHorizontalVerticalDrag, juce::Slider::TextBoxBelow);
-        auto* s = k.slider.get();
-        s->setTextBoxStyle (juce::Slider::TextBoxBelow, false, 74, 16);
-        s->setRange (in.min, in.max, in.step);
-
-        if (in.mid > in.min && in.mid < in.max)
-            s->setSkewFactorFromMidPoint (in.mid);
-
-        s->setDoubleClickReturnValue (true, in.def);
-        s->textFromValueFunction = [p] (double v) { return formatComp (p, v); };
-        s->setValue (value (p), juce::dontSendNotification);
-        s->onDragStart   = [this] { beginEdit(); };
-        s->onValueChange = [this, p, s] { setValue (p, (float) s->getValue()); };
-        addAndMakeVisible (*s);
-
-        knobs.push_back (std::move (k));
-    }
-
-    setSize (900, 380);
-    startTimerHz (30);
-}
-
-KngCompView::~KngCompView()
-{
-    stopTimer();
-}
-
-void KngCompView::beginEdit()
-{
-    if (auto* um = plugin.getUndoManager())
-        um->beginNewTransaction();
+    addKnob (*comp.getParam (KngComp::release), compDef (KngComp::release, "ms"), "Release");
+    addKnob (*comp.getParam (KngComp::knee),    compDef (KngComp::knee, "dB"),    "Knee");
+    addKnob (*comp.getParam (KngComp::makeup),  compDef (KngComp::makeup, "dB"),  "Makeup");
+    addKnob (*comp.getParam (KngComp::mix),     compDef (KngComp::mix, "%"),      "Mix");
+    addKnob (*comp.getParam (KngComp::scHpf),   compDef (KngComp::scHpf, "Hz"),   "SC Filter");
 }
 
 float KngCompView::value (int p) const
 {
-    return plugin.getParam (p)->getCurrentValue();
+    return comp.getParam (p)->getCurrentValue();
 }
 
-void KngCompView::setValue (int p, float v)
-{
-    plugin.getParam (p)->setParameter (v, juce::sendNotification);
-}
-
-//==============================================================================
-void KngCompView::timerCallback()
+void KngCompView::tick()
 {
     float in = 0.0f, out = 0.0f, gr = 0.0f;
-    plugin.takeMeters (in, out, gr);
+    comp.takeMeters (in, out, gr);
 
-    const float newIn = juce::Decibels::gainToDecibels (in, -100.0f);
-    inDb = newIn > inDb ? newIn : inDb - 1.5f;
+    inDb = fallingDb (in, inDb);
+    outDb = fallingDb (out, outDb);
+    grNow = gr > grNow ? gr : grNow * 0.9f;
 
-    grHistory[(size_t) historyPos] = gr;
-    inHistory[(size_t) historyPos] = newIn;
-    historyPos = (historyPos + 1) % (int) grHistory.size();
-
-    // Follow automation, presets and undo
-    for (auto& k : knobs)
-        if (! k.slider->isMouseButtonDown())
-            k.slider->setValue (value (k.param), juce::dontSendNotification);
-
-    if (! modeBox.isPopupActive())
-        modeBox.setSelectedId (juce::roundToInt (value (KngComp::mode)) + 1, juce::dontSendNotification);
-
-    autoButton.setToggleState (value (KngComp::autoMakeup) > 0.5f, juce::dontSendNotification);
-
-    repaint (transferArea.toNearestInt().getUnion (historyArea.toNearestInt()).expanded (2));
+    // The needle has weight: quick to move, gentle to settle
+    needle += (grNow - needle) * 0.35f;
 }
 
 //==============================================================================
-void KngCompView::drawTransfer (juce::Graphics& g, juce::Rectangle<float> area)
+void KngCompView::paintTitle (juce::Graphics& g, juce::Rectangle<float> area)
 {
-    g.setColour (juce::Colour (0xff141618));
-    g.fillRoundedRectangle (area, 6.0f);
+    drawTitle (g, area, "COMP", KngFonts::barlowHeavy, 38.0f);
+}
+
+void KngCompView::paintSide (juce::Graphics& g, juce::Rectangle<float> area)
+{
+    drawInOut (g, area, inDb, outDb);
+}
+
+void KngCompView::paintDisplay (juce::Graphics& g, juce::Rectangle<float> area)
+{
+    drawScreen (g, area);
+
+    auto inner = area.reduced (12.0f);
+    auto vu = inner.removeFromLeft (inner.getWidth() * 0.56f);
+    inner.removeFromLeft (12.0f);
+
+    paintVu (g, vu);
+    paintTransfer (g, inner);
+}
+
+void KngCompView::paintVu (juce::Graphics& g, juce::Rectangle<float> a)
+{
+    if (a.getWidth() < 80.0f || a.getHeight() < 60.0f)
+        return;
+
+    const juce::Colour ink (0xff2a2015);
+
+    // A warm, lit faceplate
+    juce::ColourGradient plate (juce::Colour (0xfff6ead0), 0.0f, a.getY(), juce::Colour (0xffe2cfa6), 0.0f, a.getBottom(), false);
+    g.setGradientFill (plate);
+    g.fillRoundedRectangle (a, 10.0f);
+
+    juce::ColourGradient warm (style.accent.withAlpha (0.22f), a.getCentreX(), a.getBottom(),
+                               style.accent.withAlpha (0.0f), a.getCentreX(), a.getY(), true);
+    g.setGradientFill (warm);
+    g.fillRoundedRectangle (a, 10.0f);
+
+    g.setColour (juce::Colours::black.withAlpha (0.4f));
+    g.drawRoundedRectangle (a.reduced (0.75f), 10.0f, 1.5f);
+
+    juce::Graphics::ScopedSaveState saveState (g);
+    g.reduceClipRegion (a.reduced (1.0f).toNearestInt());
+
+    const juce::Point<float> pivot (a.getCentreX(), a.getBottom() + a.getHeight() * 0.18f);
+    const float radius = juce::jmin (a.getWidth() * 0.46f, a.getHeight() * 0.95f);
+
+    // 0 dB on the right, 20 dB of reduction on the left
+    auto angleFor = [] (float gr)
+    {
+        const float frac = 1.0f - std::sqrt (juce::jlimit (0.0f, 1.0f, gr / 20.0f));
+        return -maxAngle + frac * 2.0f * maxAngle;
+    };
+
+    auto pointAt = [&pivot] (float angle, float r)
+    {
+        return juce::Point<float> (pivot.x + std::sin (angle) * r, pivot.y - std::cos (angle) * r);
+    };
+
+    juce::Path arc;
+    arc.addCentredArc (pivot.x, pivot.y, radius * 0.86f, radius * 0.86f, 0.0f, -maxAngle, maxAngle, true);
+    g.setColour (ink);
+    g.strokePath (arc, juce::PathStrokeType (1.5f));
+
+    g.setFont (KngFonts::font (KngFonts::mono, 10.0f));
+
+    for (float db : { 0.0f, 1.0f, 2.0f, 3.0f, 5.0f, 7.0f, 10.0f, 15.0f, 20.0f })
+    {
+        const float angle = angleFor (db);
+        g.setColour (ink);
+        g.drawLine (juce::Line<float> (pointAt (angle, radius * 0.86f), pointAt (angle, radius * 0.95f)), 1.5f);
+
+        const auto label = juce::Rectangle<float> (30.0f, 14.0f).withCentre (pointAt (angle, radius * 1.05f));
+        g.drawText (db == 0.0f ? juce::String ("0") : "-" + juce::String ((int) db), label, juce::Justification::centred, false);
+    }
+
+    g.setFont (KngFonts::font (KngFonts::barlowSemi, 12.0f, 0.2f));
+    g.setColour (juce::Colour (0xff6b5434));
+    g.drawText ("GAIN REDUCTION", juce::Rectangle<float> (a.getX(), a.getY() + a.getHeight() * 0.5f, a.getWidth(), 16.0f),
+                juce::Justification::centred, false);
+
+    g.setFont (KngFonts::font (KngFonts::mono, 16.0f));
+    g.setColour (ink);
+    g.drawText ((grNow > 0.05f ? "-" : "") + juce::String (grNow, 1) + " dB",
+                juce::Rectangle<float> (a.getX(), a.getY() + a.getHeight() * 0.5f + 18.0f, a.getWidth(), 20.0f),
+                juce::Justification::centred, false);
+
+    // The needle, with a soft shadow
+    const float angle = angleFor (needle);
+    const auto tip = pointAt (angle, radius * 0.97f);
+    g.setColour (juce::Colours::black.withAlpha (0.2f));
+    g.drawLine (juce::Line<float> (pivot.translated (2.0f, 2.0f), tip.translated (2.0f, 2.0f)), 2.5f);
+    g.setColour (juce::Colour (0xff1a1209));
+    g.drawLine (juce::Line<float> (pivot, tip), 2.0f);
+}
+
+void KngCompView::paintTransfer (juce::Graphics& g, juce::Rectangle<float> area)
+{
+    if (area.getWidth() < 60.0f || area.getHeight() < 60.0f)
+        return;
 
     const float T = value (KngComp::threshold), R = value (KngComp::ratio), K = value (KngComp::knee);
+    const float size = juce::jmin (area.getWidth(), area.getHeight());
+    const auto a = area.withSizeKeepingCentre (size, size);
 
-    auto toX = [&] (float db) { return area.getX() + (db + 60.0f) / 60.0f * area.getWidth(); };
-    auto toY = [&] (float db) { return area.getBottom() - (db + 60.0f) / 60.0f * area.getHeight(); };
+    auto toX = [&a] (float db) { return a.getX() + (db + 60.0f) / 60.0f * a.getWidth(); };
+    auto toY = [&a] (float db) { return a.getBottom() - (db + 60.0f) / 60.0f * a.getHeight(); };
 
-    // Grid every 12 dB
-    g.setColour (juce::Colours::white.withAlpha (0.06f));
+    g.setColour (juce::Colours::white.withAlpha (0.05f));
 
     for (float db = -48.0f; db < 0.0f; db += 12.0f)
     {
-        g.drawVerticalLine ((int) toX (db), area.getY(), area.getBottom());
-        g.drawHorizontalLine ((int) toY (db), area.getX(), area.getRight());
+        g.drawVerticalLine ((int) toX (db), a.getY(), a.getBottom());
+        g.drawHorizontalLine ((int) toY (db), a.getX(), a.getRight());
     }
 
     // Straight line = no compression
-    g.setColour (juce::Colours::white.withAlpha (0.15f));
-    g.drawLine (area.getX(), area.getBottom(), area.getRight(), area.getY(), 1.0f);
+    g.setColour (juce::Colours::white.withAlpha (0.14f));
+    g.drawLine (a.getX(), a.getBottom(), a.getRight(), a.getY(), 1.0f);
 
     // Threshold
-    g.setColour (accent.withAlpha (0.5f));
-    g.drawVerticalLine ((int) toX (T), area.getY(), area.getBottom());
+    g.setColour (style.accent.withAlpha (0.5f));
+    g.drawVerticalLine ((int) toX (T), a.getY(), a.getBottom());
 
-    // The curve: what comes out for what goes in
     juce::Path curve;
 
     for (float db = -60.0f; db <= 0.0f; db += 0.5f)
@@ -199,108 +206,24 @@ void KngCompView::drawTransfer (juce::Graphics& g, juce::Rectangle<float> area)
             curve.lineTo (toX (db), y);
     }
 
-    g.setColour (juce::Colours::white);
-    g.strokePath (curve, juce::PathStrokeType (2.0f));
+    g.setColour (style.accent.withAlpha (0.3f));
+    g.strokePath (curve, juce::PathStrokeType (7.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+    g.setColour (juce::Colour (0xfffff3dc));
+    g.strokePath (curve, juce::PathStrokeType (2.2f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
 
     // Where the signal is right now
     if (inDb > -60.0f)
     {
         const float x = toX (inDb);
         const float y = toY (inDb + KngComp::gainComputer (inDb, T, R, K));
-        g.setColour (accent);
+        g.setColour (style.accent.withAlpha (0.35f));
+        g.fillEllipse (juce::Rectangle<float> (22.0f, 22.0f).withCentre ({ x, y }));
+        g.setColour (style.accent);
         g.fillEllipse (juce::Rectangle<float> (12.0f, 12.0f).withCentre ({ x, y }));
     }
 
-    g.setColour (juce::Colours::white.withAlpha (0.4f));
-    g.setFont (juce::Font (juce::FontOptions (10.0f)));
-    g.drawText ("IN", area.reduced (6.0f).toNearestInt(), juce::Justification::bottomRight);
-    g.drawText ("OUT", area.reduced (6.0f).toNearestInt(), juce::Justification::topLeft);
-}
-
-void KngCompView::drawHistory (juce::Graphics& g, juce::Rectangle<float> area)
-{
-    g.setColour (juce::Colour (0xff141618));
-    g.fillRoundedRectangle (area, 6.0f);
-
-    juce::Graphics::ScopedSaveState saveState (g);
-    g.reduceClipRegion (area.toNearestInt());
-
-    const int n = (int) grHistory.size();
-    const float colW = area.getWidth() / (float) n;
-
-    for (int k = 0; k < n; ++k)
-    {
-        const int idx = (historyPos + k) % n;
-        const float x = area.getX() + k * colW;
-
-        // Input level, from the bottom
-        const float inH = juce::jlimit (0.0f, 1.0f, (inHistory[(size_t) idx] + 60.0f) / 60.0f) * area.getHeight();
-        g.setColour (juce::Colours::white.withAlpha (0.08f));
-        g.fillRect (x, area.getBottom() - inH, colW + 1.0f, inH);
-
-        // Gain reduction, from the top (24 dB = full height)
-        const float grH = juce::jlimit (0.0f, 1.0f, grHistory[(size_t) idx] / 24.0f) * area.getHeight();
-        g.setColour (reductionColour.withAlpha (0.6f));
-        g.fillRect (x, area.getY(), colW + 1.0f, grH);
-    }
-
-    // Reduction scale
-    g.setFont (juce::Font (juce::FontOptions (10.0f)));
-
-    for (int db : { 6, 12, 18 })
-    {
-        const float y = area.getY() + db / 24.0f * area.getHeight();
-        g.setColour (juce::Colours::white.withAlpha (0.08f));
-        g.drawHorizontalLine ((int) y, area.getX(), area.getRight());
-        g.setColour (juce::Colours::white.withAlpha (0.35f));
-        g.drawText ("-" + juce::String (db), (int) area.getX() + 4, (int) y - 12, 30, 12, juce::Justification::left);
-    }
-
-    // Live reduction readout
-    const float now = grHistory[(size_t) ((historyPos + n - 1) % n)];
-    g.setColour (now > 0.05f ? reductionColour : juce::Colours::white.withAlpha (0.4f));
-    g.setFont (juce::Font (juce::FontOptions (22.0f, juce::Font::bold)));
-    g.drawText ((now > 0.05f ? "-" : "") + juce::String (now, 1) + " dB",
-                area.reduced (10.0f).toNearestInt(), juce::Justification::topRight);
-
-    g.setColour (juce::Colours::white.withAlpha (0.4f));
-    g.setFont (juce::Font (juce::FontOptions (10.0f)));
-    g.drawText ("GAIN REDUCTION", area.reduced (10.0f).toNearestInt().withTrimmedTop (28),
-                juce::Justification::topRight);
-}
-
-void KngCompView::paint (juce::Graphics& g)
-{
-    g.fillAll (juce::Colour (0xff1b1d20));
-    drawTransfer (g, transferArea);
-    drawHistory (g, historyArea);
-}
-
-void KngCompView::resized()
-{
-    auto r = getLocalBounds().reduced (8);
-
-    auto top = r.removeFromTop (28);
-    titleLabel.setBounds (top.removeFromLeft (110));
-    presetBox.setBounds (top.removeFromLeft (200));
-    top.removeFromLeft (10);
-    modeBox.setBounds (top.removeFromLeft (120));
-    top.removeFromLeft (10);
-    autoButton.setBounds (top.removeFromLeft (110));
-
-    r.removeFromTop (6);
-    auto knobRow = r.removeFromBottom (92);
-    r.removeFromBottom (6);
-
-    transferArea = r.removeFromLeft (juce::jmin (r.getHeight(), r.getWidth() / 3)).toFloat();
-    r.removeFromLeft (8);
-    historyArea = r.toFloat();
-
-    for (auto& k : knobs)
-    {
-        auto col = knobRow.removeFromLeft (84);
-        k.label->setBounds (col.removeFromTop (16));
-        k.slider->setBounds (col);
-        knobRow.removeFromLeft (4);
-    }
+    g.setColour (style.label);
+    g.setFont (KngFonts::font (KngFonts::mono, 10.0f));
+    g.drawText ("IN", a.reduced (6.0f), juce::Justification::bottomRight, false);
+    g.drawText ("OUT", a.reduced (6.0f), juce::Justification::topLeft, false);
 }

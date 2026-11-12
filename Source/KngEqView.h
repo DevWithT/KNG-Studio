@@ -1,24 +1,17 @@
 #pragma once
 
-#include <tracktion_engine/tracktion_engine.h>
 #include <juce_dsp/juce_dsp.h>
-#include "KngPresets.h"
+#include "KngFaceView.h"
 
 class KngEqPlugin;
 
-/** KNG EQ panel: draggable band dots over a live spectrum, with controls for the selected band. */
-class KngEqView : public tracktion::Plugin::EditorComponent,
-                  private juce::Timer
+/** KNG EQ's face: mint on graphite, numbered band dots you drag over a live spectrum. */
+class KngEqView : public KngFaceView
 {
 public:
-    explicit KngEqView (KngEqPlugin& pluginToEdit);
-    ~KngEqView() override;
+    explicit KngEqView (KngEqPlugin& owner);
+    ~KngEqView() override = default;
 
-    bool allowWindowResizing() override                            { return true; }
-    juce::ComponentBoundsConstrainer* getBoundsConstrainer() override { return nullptr; }
-
-    void paint (juce::Graphics&) override;
-    void resized() override;
     void mouseDown (const juce::MouseEvent&) override;
     void mouseDrag (const juce::MouseEvent&) override;
     void mouseUp (const juce::MouseEvent&) override;
@@ -26,10 +19,13 @@ public:
     void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails&) override;
 
 private:
-    void timerCallback() override;
+    void paintTitle (juce::Graphics&, juce::Rectangle<float> area) override;
+    void paintDisplay (juce::Graphics&, juce::Rectangle<float> area) override;
+    void tick() override;
+
     void updateSpectrum();
-    void syncControls();
     void selectBand (int band);
+    void rebuildKnobs();
     void showBandMenu (int band);
     void beginEdit();
 
@@ -38,22 +34,15 @@ private:
     int bandAt (juce::Point<float> p) const;
     juce::Point<float> handlePos (int band) const;
 
+    juce::Rectangle<float> graph() const   { return displayArea.reduced (4.0f); }
     float freqToX (double f) const;
     double xToFreq (float x) const;
     float gainToY (double db) const;
     double yToGain (float y) const;
 
-    KngEqPlugin& plugin;
-    tracktion::Plugin::Ptr pluginRef;
-    juce::Rectangle<float> graph;
-    int selected = -1, dragging = -1;
-
-    juce::Label bandLabel;
-    juce::ToggleButton onButton { "On" };
-    KngPresetMenu presetBox;
-    juce::ComboBox typeBox, slopeBox;
-    juce::Slider freqKnob, gainKnob, qKnob, outKnob;
-    juce::Label freqLabel { {}, "Freq" }, gainLabel { {}, "Gain" }, qLabel { {}, "Q" }, outLabel { {}, "Output" };
+    KngEqPlugin& eq;
+    int selected = -1, dragging = -1, builtFor = -2;
+    KngFaceKnob* gainKnob = nullptr;
 
     static constexpr int fftOrder = 11;
     static constexpr int fftSize = 1 << fftOrder;

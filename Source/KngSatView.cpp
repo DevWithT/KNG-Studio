@@ -3,150 +3,173 @@
 
 namespace te = tracktion;
 
-static const juce::Colour accent (0xff3a8ee6);
-static const juce::Colour heat (0xffe6893a);
-
-static juce::String formatSat (int p, double v)
+static KngParamDef satDef (int p, const char* unit)
 {
-    using namespace KngSat;
-
-    switch (p)
-    {
-        case drive: case output:
-            return (v > 0.0 && p == output ? "+" : "") + juce::String (v, 1) + " dB";
-
-        case tone:
-            return std::abs (v) < 0.01 ? juce::String ("Neutral")
-                 : v > 0.0 ? "Bright " + juce::String (juce::roundToInt (v * 100.0)) + "%"
-                           : "Dark " + juce::String (juce::roundToInt (-v * 100.0)) + "%";
-
-        default:
-            return juce::String (juce::roundToInt (v * 100.0)) + "%";
-    }
+    const auto& in = KngSat::info (p);
+    return { "", "", (float) in.min, (float) in.max, (float) in.def, (float) in.mid, (float) in.step, unit, nullptr };
 }
 
 //==============================================================================
 KngSatView::KngSatView (KngSatPlugin& owner)
-    : plugin (owner), pluginRef (&owner)
+    : KngFaceView (owner,
+                   kngMakeStyle (0xffff7a45, 0xff4a2a1a, 0xff1a0d07, 0xfffff0e6, 0xffc99a80, 0xffffae85, 0xff1e0f08, 0xff4a2a1a,
+                                 KngFonts::barlowSemi, true),
+                   { juce::Colour (0xff0c0604), juce::Colour (0xff2a140a), juce::Colour (0xff120804), juce::Colour (0xff3a1e10) }),
+      sat (owner)
 {
-    for (auto* c : std::initializer_list<juce::Component*> { &titleLabel, &presetBox, &modeBox, &autoButton })
-        addAndMakeVisible (c);
+    titleWidth = 250;
+    sideWidth = 50;
+    maxKnobWidth = 120;
 
-    titleLabel.setText ("KNG Saturator", juce::dontSendNotification);
-    titleLabel.setFont (juce::Font (juce::FontOptions (17.0f, juce::Font::bold)));
+    juce::StringArray names;
 
+    for (auto& preset : KngSat::presets())
+        names.add (preset.name);
+
+    attachPresets (names, [this] (int i) { sat.applyPreset (i); });
+
+    addHeaderChoice (*sat.getParam (KngSat::mode), (float) KngSat::info (KngSat::mode).min,
+                     KngSat::modeNames().joinIntoString ("|"), 330);
+    addHeaderSwitch (*sat.getParam (KngSat::autoGain), "Auto Gain",
+                     "Keeps the output as loud as the input, so you hear the color, not just more volume", 130);
+
+    auto& driveKnob = addKnob (*sat.getParam (KngSat::drive), satDef (KngSat::drive, ""), "Drive");
+    driveKnob.formatter = [] (float v) { return juce::String (v, 1) + " dB"; };
+
+    auto& toneKnob = addKnob (*sat.getParam (KngSat::tone), satDef (KngSat::tone, ""), "Tone");
+    toneKnob.formatter = [] (float v)
     {
-        juce::StringArray names;
+        return std::abs (v) < 0.01f ? juce::String ("Neutral")
+             : v > 0.0f ? "Bright " + juce::String (juce::roundToInt (v * 100.0f)) + "%"
+                        : "Dark " + juce::String (juce::roundToInt (-v * 100.0f)) + "%";
+    };
 
-        for (auto& preset : KngSat::presets())
-            names.add (preset.name);
-
-        presetBox.attach (plugin, names, [this] (int i) { plugin.applyPreset (i); });
-    }
-
-    for (int i = 0; i < KngSat::modeNames().size(); ++i)
-        modeBox.addItem (KngSat::modeNames()[i], i + 1);
-
-    modeBox.setTooltip ("Tape: smooth and warm. Tube: body and presence. Soft Clip: thick. Hard Clip: aggressive.");
-    modeBox.onChange = [this] { beginEdit(); setValue (KngSat::mode, (float) (modeBox.getSelectedId() - 1)); };
-
-    autoButton.setTooltip ("Keeps the output as loud as the input, so you hear the color, not just more volume");
-    autoButton.onClick = [this] { beginEdit(); setValue (KngSat::autoGain, autoButton.getToggleState() ? 1.0f : 0.0f); };
-
-    for (int param : { KngSat::drive, KngSat::tone, KngSat::mix, KngSat::output })
-    {
-        const auto& in = KngSat::info (param);
-        Knob k;
-        k.param = param;
-
-        k.label = std::make_unique<juce::Label> (juce::String(), in.name);
-        k.label->setJustificationType (juce::Justification::centred);
-        k.label->setFont (juce::Font (juce::FontOptions (11.0f)));
-        k.label->setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.7f));
-        addAndMakeVisible (*k.label);
-
-        k.slider = std::make_unique<juce::Slider> (juce::Slider::RotaryHorizontalVerticalDrag, juce::Slider::TextBoxBelow);
-        auto* s = k.slider.get();
-        s->setTextBoxStyle (juce::Slider::TextBoxBelow, false, 84, 16);
-        s->setRange (in.min, in.max, in.step);
-        s->setDoubleClickReturnValue (true, in.def);
-        s->textFromValueFunction = [param] (double v) { return formatSat (param, v); };
-        s->setValue (value (param), juce::dontSendNotification);
-        s->onDragStart   = [this] { beginEdit(); };
-        s->onValueChange = [this, param, s] { setValue (param, (float) s->getValue()); };
-        addAndMakeVisible (*s);
-
-        knobs.push_back (std::move (k));
-    }
-
-    setSize (760, 380);
-    startTimerHz (30);
-}
-
-KngSatView::~KngSatView()
-{
-    stopTimer();
-}
-
-void KngSatView::beginEdit()
-{
-    if (auto* um = plugin.getUndoManager())
-        um->beginNewTransaction();
+    addKnob (*sat.getParam (KngSat::mix), satDef (KngSat::mix, "%"), "Mix");
+    addKnob (*sat.getParam (KngSat::output), satDef (KngSat::output, "dB"), "Output");
 }
 
 float KngSatView::value (int p) const
 {
-    return plugin.getParam (p)->getCurrentValue();
+    return sat.getParam (p)->getCurrentValue();
 }
 
-void KngSatView::setValue (int p, float v)
-{
-    plugin.getParam (p)->setParameter (v, juce::sendNotification);
-}
-
-void KngSatView::timerCallback()
+void KngSatView::tick()
 {
     float in = 0.0f, out = 0.0f;
-    plugin.takeMeters (in, out);
+    sat.takeMeters (in, out);
+    inDb = fallingDb (in, inDb);
+    outDb = fallingDb (out, outDb);
 
-    const float newIn = juce::Decibels::gainToDecibels (in, -100.0f);
-    const float newOut = juce::Decibels::gainToDecibels (out, -100.0f);
-    inDb  = newIn  > inDb  ? newIn  : inDb  - 1.0f;
-    outDb = newOut > outDb ? newOut : outDb - 1.0f;
-
-    for (auto& k : knobs)
-        if (! k.slider->isMouseButtonDown())
-            k.slider->setValue (value (k.param), juce::dontSendNotification);
-
-    if (! modeBox.isPopupActive())
-        modeBox.setSelectedId (juce::roundToInt (value (KngSat::mode)) + 1, juce::dontSendNotification);
-
-    autoButton.setToggleState (value (KngSat::autoGain) > 0.5f, juce::dontSendNotification);
-
-    repaint (curveArea.getUnion (inMeterArea).getUnion (outMeterArea).toNearestInt().expanded (2));
+    // The tube heats with Drive and flickers with the music
+    const float heat = juce::jlimit (0.0f, 1.0f, value (KngSat::drive) / 24.0f);
+    const float level = juce::jlimit (0.0f, 1.0f, (outDb + 40.0f) / 40.0f);
+    const float target = 0.12f + heat * (0.35f + 0.65f * level);
+    glow += (target - glow) * 0.25f;
 }
 
 //==============================================================================
-void KngSatView::drawCurve (juce::Graphics& g, juce::Rectangle<float> area)
+void KngSatView::paintTitle (juce::Graphics& g, juce::Rectangle<float> area)
 {
-    g.setColour (juce::Colour (0xff141618));
-    g.fillRoundedRectangle (area, 6.0f);
+    drawTitle (g, area, "SATURATOR", KngFonts::barlowHeavy, 34.0f);
+}
+
+void KngSatView::paintSide (juce::Graphics& g, juce::Rectangle<float> area)
+{
+    drawInOut (g, area, inDb, outDb);
+}
+
+void KngSatView::paintDisplay (juce::Graphics& g, juce::Rectangle<float> area)
+{
+    drawScreen (g, area);
+
+    auto inner = area.reduced (12.0f);
+    auto tube = inner.removeFromLeft (inner.getWidth() * 0.36f);
+    inner.removeFromLeft (12.0f);
+
+    paintTube (g, tube);
+    paintCurve (g, inner);
+}
+
+void KngSatView::paintTube (juce::Graphics& g, juce::Rectangle<float> a)
+{
+    if (a.getHeight() < 60.0f)
+        return;
+
+    auto nameArea = a.removeFromBottom (24.0f);
+    const auto glass = a.withSizeKeepingCentre (juce::jmin (90.0f, a.getWidth() * 0.5f), a.getHeight() * 0.92f);
+    const auto c = glass.getCentre();
+    const auto hot = style.accent.interpolatedWith (juce::Colour (0xffffe6b0), glow * 0.6f);
+
+    // Glow behind the glass
+    const float glowR = glass.getWidth() * (1.0f + glow * 0.8f);
+    juce::ColourGradient halo (style.accent.withAlpha (0.55f * glow), c.x, c.y, style.accent.withAlpha (0.0f), c.x + glowR, c.y, true);
+    g.setGradientFill (halo);
+    g.fillEllipse (juce::Rectangle<float> (glowR * 2.0f, glowR * 2.0f).withCentre (c));
+
+    // Glass
+    const float corner = glass.getWidth() * 0.5f;
+    g.setColour (juce::Colours::white.withAlpha (0.05f));
+    g.fillRoundedRectangle (glass.withTrimmedBottom (16.0f), corner);
+    g.setColour (juce::Colours::white.withAlpha (0.25f));
+    g.drawRoundedRectangle (glass.withTrimmedBottom (16.0f), corner, 1.5f);
+
+    // Filament
+    juce::Path filament;
+    const float top = glass.getY() + glass.getHeight() * 0.22f, bottom = glass.getBottom() - glass.getHeight() * 0.28f;
+    const float swing = glass.getWidth() * 0.18f;
+    constexpr int zigs = 7;
+
+    for (int k = 0; k <= zigs; ++k)
+    {
+        const float y = top + (bottom - top) * (float) k / (float) zigs;
+        const float x = c.x + (k % 2 == 0 ? -swing : swing);
+
+        if (k == 0)
+            filament.startNewSubPath (x, y);
+        else
+            filament.lineTo (x, y);
+    }
+
+    g.setColour (hot.withAlpha (0.4f * glow + 0.1f));
+    g.strokePath (filament, juce::PathStrokeType (9.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+    g.setColour (hot.withAlpha (0.5f + 0.5f * glow));
+    g.strokePath (filament, juce::PathStrokeType (2.5f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+
+    // Base and pins
+    const auto base = glass.withTrimmedTop (glass.getHeight() - 18.0f);
+    g.setColour (juce::Colour (0xff2a1a12));
+    g.fillRoundedRectangle (base, 4.0f);
+    g.setColour (juce::Colour (0xff6b5446));
+
+    for (int k = 0; k < 4; ++k)
+        g.fillRect (base.getX() + base.getWidth() * (0.2f + 0.2f * k) - 1.0f, base.getBottom() - 2.0f, 2.0f, 6.0f);
+
+    // The flavor's name under the tube
+    const int m = juce::roundToInt (value (KngSat::mode));
+    g.setFont (KngFonts::font (KngFonts::barlowHeavy, 18.0f, 0.1f));
+    g.setColour (style.accent);
+    g.drawText (KngSat::modeNames()[m].toUpperCase(), nameArea, juce::Justification::centred, false);
+}
+
+void KngSatView::paintCurve (juce::Graphics& g, juce::Rectangle<float> area)
+{
+    if (area.getWidth() < 60.0f || area.getHeight() < 60.0f)
+        return;
 
     const int m = juce::roundToInt (value (KngSat::mode));
     const float driveGain = juce::Decibels::decibelsToGain (value (KngSat::drive));
 
-    auto toX = [&] (float x) { return area.getCentreX() + x * area.getWidth() * 0.45f; };
-    auto toY = [&] (float y) { return area.getCentreY() - y * area.getHeight() * 0.45f; };
+    auto toX = [&area] (float x) { return area.getCentreX() + x * area.getWidth() * 0.45f; };
+    auto toY = [&area] (float y) { return area.getCentreY() - y * area.getHeight() * 0.45f; };
 
-    g.setColour (juce::Colours::white.withAlpha (0.08f));
+    g.setColour (juce::Colours::white.withAlpha (0.07f));
     g.drawHorizontalLine ((int) area.getCentreY(), area.getX(), area.getRight());
     g.drawVerticalLine ((int) area.getCentreX(), area.getY(), area.getBottom());
 
     // Clean, for comparison
-    g.setColour (juce::Colours::white.withAlpha (0.18f));
+    g.setColour (juce::Colours::white.withAlpha (0.16f));
     g.drawLine (toX (-1.0f), toY (-1.0f), toX (1.0f), toY (1.0f), 1.0f);
 
-    // What this flavor does to the signal at this drive
     juce::Path curve;
 
     for (float x = -1.0f; x <= 1.0f; x += 0.01f)
@@ -159,67 +182,13 @@ void KngSatView::drawCurve (juce::Graphics& g, juce::Rectangle<float> area)
             curve.lineTo (toX (x), toY (y));
     }
 
-    const float heatAmount = value (KngSat::drive) / 24.0f;
-    g.setColour (accent.interpolatedWith (heat, heatAmount));
-    g.strokePath (curve, juce::PathStrokeType (2.5f));
+    const auto hot = style.accent.interpolatedWith (juce::Colour (0xffffe6b0), glow * 0.5f);
+    g.setColour (hot.withAlpha (0.3f));
+    g.strokePath (curve, juce::PathStrokeType (8.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+    g.setColour (hot);
+    g.strokePath (curve, juce::PathStrokeType (2.5f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
 
-    g.setColour (juce::Colours::white.withAlpha (0.85f));
-    g.setFont (juce::Font (juce::FontOptions (20.0f, juce::Font::bold)));
-    g.drawText (KngSat::modeNames()[m], area.reduced (12.0f).toNearestInt(), juce::Justification::topLeft);
-}
-
-void KngSatView::drawMeter (juce::Graphics& g, juce::Rectangle<float> area, float db, const juce::String& label)
-{
-    auto labelArea = area.removeFromBottom (16.0f);
-
-    g.setColour (juce::Colour (0xff141618));
-    g.fillRoundedRectangle (area, 3.0f);
-
-    const float level = juce::jlimit (0.0f, 1.0f, (db + 60.0f) / 60.0f);
-    auto bar = area.reduced (2.0f);
-    g.setColour (db > -0.5f ? juce::Colour (0xffe6503a) : accent);
-    g.fillRoundedRectangle (bar.removeFromBottom (bar.getHeight() * level), 2.0f);
-
-    g.setColour (juce::Colours::white.withAlpha (0.5f));
-    g.setFont (juce::Font (juce::FontOptions (10.0f)));
-    g.drawText (label, labelArea.toNearestInt(), juce::Justification::centred);
-}
-
-void KngSatView::paint (juce::Graphics& g)
-{
-    g.fillAll (juce::Colour (0xff1b1d20));
-    drawCurve (g, curveArea);
-    drawMeter (g, inMeterArea, inDb, "IN");
-    drawMeter (g, outMeterArea, outDb, "OUT");
-}
-
-void KngSatView::resized()
-{
-    auto r = getLocalBounds().reduced (8);
-
-    auto top = r.removeFromTop (28);
-    titleLabel.setBounds (top.removeFromLeft (140));
-    presetBox.setBounds (top.removeFromLeft (200));
-    top.removeFromLeft (10);
-    modeBox.setBounds (top.removeFromLeft (120));
-    top.removeFromLeft (10);
-    autoButton.setBounds (top.removeFromLeft (110));
-
-    r.removeFromTop (6);
-    auto knobRow = r.removeFromBottom (92);
-    r.removeFromBottom (6);
-
-    outMeterArea = r.removeFromRight (18).toFloat();
-    r.removeFromRight (6);
-    inMeterArea = r.removeFromRight (18).toFloat();
-    r.removeFromRight (8);
-    curveArea = r.toFloat();
-
-    for (auto& k : knobs)
-    {
-        auto col = knobRow.removeFromLeft (96);
-        k.label->setBounds (col.removeFromTop (16));
-        k.slider->setBounds (col);
-        knobRow.removeFromLeft (4);
-    }
+    g.setFont (KngFonts::font (KngFonts::mono, 11.0f));
+    g.setColour (style.label);
+    g.drawText ("DRIVE " + juce::String (value (KngSat::drive), 1) + " dB", area.reduced (6.0f), juce::Justification::topLeft, false);
 }

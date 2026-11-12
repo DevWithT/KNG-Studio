@@ -242,7 +242,8 @@ void KngFaceKnob::paint (juce::Graphics& g)
 
     g.setFont (KngFonts::font (style.valueFace, valueSize));
     g.setColour (style.value);
-    g.drawText (kngFormat (def, (float) knob.getValue()), valueArea, juce::Justification::centred, false);
+    const float v = (float) knob.getValue();
+    g.drawText (formatter ? formatter (v) : kngFormat (def, v), valueArea, juce::Justification::centred, false);
 }
 
 //==============================================================================

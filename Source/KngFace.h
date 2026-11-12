@@ -52,6 +52,7 @@ public:
 
     float labelSize = 13.0f, valueSize = 12.0f;
     juce::Colour labelColour;
+    std::function<juce::String (float)> formatter;   // optional: how the value reads (for example "4.0:1")
 
 private:
     void timerCallback() override;
