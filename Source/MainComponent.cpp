@@ -10,7 +10,7 @@
 #include "KngLimiterPlugin.h"
 #include "KngDoublerPlugin.h"
 #include "KngLoudnessPlugin.h"
-#include "KngUIBehaviour.h"
+#include "PluginWindow.h"
 #include "MidiMapDialog.h"
 
 MainComponent::MainComponent (tracktion::Engine& engineToUse)

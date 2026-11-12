@@ -41,4 +41,17 @@ public:
 
     std::unique_ptr<juce::Component> createPluginWindow (tracktion::PluginWindowState&) override;
     void recreatePluginWindowContentAsync (tracktion::Plugin&) override;
+
+    /** Tells the engine which song is open, so MIDI controller moves and MIDI learn reach it. */
+    static void setCurrentEdit (tracktion::Edit* edit)        { current() = edit; }
+
+    tracktion::Edit* getCurrentlyFocusedEdit() override       { return current(); }
+    tracktion::Edit* getLastFocusedEdit() override            { return current(); }
+
+private:
+    static tracktion::Edit*& current()
+    {
+        static tracktion::Edit* edit = nullptr;
+        return edit;
+    }
 };
