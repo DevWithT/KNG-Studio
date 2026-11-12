@@ -293,12 +293,16 @@ void PianoRoll::paintRuler (juce::Graphics& g)
         g.drawVerticalLine (beatToX (b), (float) r.getBottom() - 5.0f, (float) r.getBottom());
     }
 
-    // Bar numbers, counted the same as the main timeline
+    // A pattern in the bank counts its own bars from 1; a copy in the song shows song bars
+    const bool inBank = clip->getPosition().getStart().inSeconds() >= session.getBankStart() - 0.001;
+    const double clipStartBeat = getClipStartBeat();
+
     for (int b = (int) std::floor (viewBeat / 4.0) * 4; b <= endBeat; b += 4)
     {
         const int x = beatToX (b);
         const double songBeat = tempo.toBeats (clip->getTimeOfContentBeat (te::BeatPosition::fromBeats (b))).inBeats();
-        const int bar = (int) std::round (songBeat / 4.0) + 1;
+        const int bar = inBank ? (int) std::round ((b - clipStartBeat) / 4.0) + 1
+                               : (int) std::round (songBeat / 4.0) + 1;
 
         g.setColour (juce::Colours::white.withAlpha (0.35f));
         g.drawVerticalLine (x, (float) r.getY() + 6.0f, (float) r.getBottom());
