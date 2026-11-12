@@ -193,7 +193,6 @@ void MainComponent::closeProject()
     masterStrip = nullptr;
     ruler = nullptr;
     markerBar = nullptr;
-    patternLane = nullptr;
     transportBar = nullptr;
     inspector = nullptr;
     patternList = nullptr;
@@ -239,9 +238,6 @@ void MainComponent::loadProject (const juce::File& editFile)
 
     markerBar = std::make_unique<MarkerBar> (*session);
     addAndMakeVisible (*markerBar);
-
-    patternLane = std::make_unique<PatternLane> (*session);
-    addAndMakeVisible (*patternLane);
 
     masterStrip = std::make_unique<MasterStrip> (*session);
     addAndMakeVisible (*masterStrip);
@@ -761,9 +757,6 @@ void MainComponent::resized()
 
     // The Playlist tools take the row the old Patterns strip used
     auto patternRow = area.removeFromTop (24);
-
-    if (patternLane != nullptr)
-        patternLane->setVisible (false);
 
     if (playlistToolbar != nullptr)
         playlistToolbar->setBounds (patternRow.reduced (0, 1));

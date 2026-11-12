@@ -55,12 +55,15 @@ private:
         paintButton.setToggleState (tool == 1, juce::dontSendNotification);
         cutButton.setToggleState (tool == 2, juce::dontSendNotification);
 
-        session.tidyPlaylist();
+        // Tidy twice a second, not every tick
+        if (++tidyCount % 4 == 0)
+            session.tidyPlaylist();
     }
 
     EditSession& session;
     juce::TextButton selectButton { "Select" }, paintButton { "Paint" }, cutButton { "Cut" };
     juce::Label hint;
+    int tidyCount = 0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PlaylistToolbar)
 };

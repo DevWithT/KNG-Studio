@@ -14,7 +14,6 @@
 #include "MixerView.h"
 #include "CompView.h"
 #include "MarkerBar.h"
-#include "PatternLane.h"
 #include "ClipProps.h"
 #include "KitBrowser.h"
 #include "DrumRack.h"
@@ -112,7 +111,6 @@ private:
     std::unique_ptr<PlaylistToolbar> playlistToolbar;
     std::unique_ptr<TimelineRuler> ruler;
     std::unique_ptr<MarkerBar> markerBar;
-    std::unique_ptr<PatternLane> patternLane;
     std::unique_ptr<MasterStrip> masterStrip;
 
     juce::Viewport tracksViewport;

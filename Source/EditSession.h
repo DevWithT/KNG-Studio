@@ -285,6 +285,9 @@ public:
     /** Keeps the Playlist tidy: loose MIDI clips become pattern blocks, and muted lanes silence their blocks. */
     void tidyPlaylist();
 
+    /** Older songs: blocks of different patterns stacked on the same bars go into their own lane. */
+    void separateOverlappingBlocks();
+
     // Tempo, click, count-in
     void setBpm (double bpm);
     double getBpm() const;

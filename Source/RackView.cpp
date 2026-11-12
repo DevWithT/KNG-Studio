@@ -78,7 +78,7 @@ juce::Array<te::Track*> RackView::getRackTracks()
     juce::Array<te::Track*> result;
 
     for (int i = 0; i < session.getNumTracks(); ++i)
-        if (session.isMidiTrack (i) && ! session.isDrumTrack (i))
+        if (session.isMidiTrack (i))
             result.add (session.getTrack (i));
 
     return result;

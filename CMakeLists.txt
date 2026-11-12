@@ -64,7 +64,6 @@ target_sources(KNGStudio PRIVATE
     Source/EditSessionChannels.cpp
     Source/EditSessionVolume.cpp
     Source/EditSessionPatternLane.cpp
-    Source/PatternLane.cpp
     Source/KngSamplerPlugin.cpp
     Source/KngSamplerView.cpp
     Source/StartScreen.cpp

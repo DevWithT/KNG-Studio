@@ -189,8 +189,7 @@ void TransportBar::timerCallback()
     if (session.isPatternMode()
          && std::abs (session.getLoopStart() - session.getPatternHome (session.getCurrentPattern())) > 0.001)
     {
-        lastCuedPattern = session.getCurrentPattern();
-        session.cuePattern (lastCuedPattern, transport.isPlaying());
+        session.cuePattern (session.getCurrentPattern(), transport.isPlaying());
     }
 
     if (! countInBox.isPopupActive())

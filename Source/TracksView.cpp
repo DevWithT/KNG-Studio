@@ -8,6 +8,9 @@ TracksView::TracksView (EditSession& sessionToUse)
     if (session.getDefaultLaneId().isEmpty())
         session.addTrack();
 
+    // Older songs: patterns stacked on the same bars go into their own lane
+    session.separateOverlappingBlocks();
+
     addAndMakeVisible (addTrackButton);
     addTrackButton.setTooltip ("Add a lane for audio, recording and pattern blocks");
     addTrackButton.onClick = [this]

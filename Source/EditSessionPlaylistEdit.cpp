@@ -1,4 +1,6 @@
 #include "EditSession.h"
+#include <map>
+#include <algorithm>
 
 namespace te = tracktion;
 
@@ -143,4 +145,58 @@ void EditSession::tidyPlaylist()
             for (auto* c : t->getClips())
                 if (c->getPosition().getStart().inSeconds() >= bank && c->disabled.get())
                     c->disabled = false;
+}
+
+//==============================================================================
+void EditSession::separateOverlappingBlocks()
+{
+    if (getTransport().isRecording())
+        return;
+
+    auto blocks = getPatternBlocks();
+
+    std::sort (blocks.begin(), blocks.end(), [] (const PatternBlock& a, const PatternBlock& b)
+    {
+        return a.start < b.start;
+    });
+
+    std::map<juce::String, std::vector<PatternBlock>> kept;   // blocks that stay, per lane
+    std::map<juce::String, juce::String> overflow;            // each lane's "More Patterns" lane
+
+    for (auto& b : blocks)
+    {
+        auto& laneKept = kept[b.lane];
+        bool clash = false;
+
+        for (auto& k : laneKept)
+        {
+            if (k.start < b.end - 0.001 && k.end > b.start + 0.001)
+            {
+                clash = true;
+                break;
+            }
+        }
+
+        if (! clash)
+        {
+            laneKept.push_back (b);
+            continue;
+        }
+
+        auto& target = overflow[b.lane];
+
+        if (target.isEmpty())
+        {
+            addTrack();
+            const int idx = getNumTracks() - 1;
+
+            if (auto* t = getTrack (idx))
+                t->setName ("More Patterns");
+
+            target = getLaneId (idx);
+        }
+
+        moveBlock (b, b.start, target, false);
+        kept[target].push_back ({ b.pattern, b.start, b.end, target });
+    }
 }
