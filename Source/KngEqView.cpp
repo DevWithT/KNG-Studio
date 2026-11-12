@@ -498,6 +498,13 @@ void KngEqView::mouseDoubleClick (const juce::MouseEvent& e)
 
 void KngEqView::mouseWheelMove (const juce::MouseEvent& e, const juce::MouseWheelDetails& wheel)
 {
+    // Only over the EQ screen; anywhere else the scroll goes to whatever is behind
+    if (! graph().contains (e.position))
+    {
+        juce::Component::mouseWheelMove (e, wheel);
+        return;
+    }
+
     int b = bandAt (e.position);
 
     if (b < 0)
