@@ -50,6 +50,19 @@ RackRow::RackRow (EditSession& sessionToUse, te::Track& trackToUse)
 
     instrumentButton.onClick = [this] { openInstrument(); };
 
+    // Record from your MIDI keyboard; the take becomes a pattern block in the Playlist
+    addAndMakeVisible (armButton);
+    armButton.setClickingTogglesState (false);
+    armButton.setColour (juce::TextButton::buttonOnColourId, juce::Colours::red);
+    armButton.setTooltip ("Arm to record from your MIDI keyboard (in Song mode). The take becomes a pattern block.");
+    armButton.onClick = [this]
+    {
+        const int idx = getTrackIndex();
+
+        if (idx >= 0)
+            session.setArmed (idx, ! session.isArmed (idx));
+    };
+
     // Tooltips
     expandButton.setTooltip ("Show or hide this row's pads");
     muteButton.setTooltip ("Mute");
@@ -193,6 +206,7 @@ void RackRow::syncControls()
 
     muteButton.setToggleState (at->isMuted (false), juce::dontSendNotification);
     soloButton.setToggleState (at->isSolo (false), juce::dontSendNotification);
+    armButton.setToggleState (session.isArmed (idx), juce::dontSendNotification);
 
     if (auto* vp = at->getVolumePlugin())
     {
@@ -498,6 +512,8 @@ void RackRow::resized()
     soloButton.setBounds (r.removeFromRight (22));
     r.removeFromRight (2);
     muteButton.setBounds (r.removeFromRight (22));
+    r.removeFromRight (2);
+    armButton.setBounds (r.removeFromRight (22));
     r.removeFromRight (4);
     nameLabel.setBounds (r);
 }

@@ -18,6 +18,12 @@ juce::String BlockLayer::laneId()
     return session.getLaneId (trackIndex);
 }
 
+bool BlockLayer::laneMuted()
+{
+    auto* t = session.getTrack (trackIndex);
+    return t != nullptr && t->isMuted (false);
+}
+
 std::vector<EditSession::PatternBlock> BlockLayer::myBlocks()
 {
     std::vector<EditSession::PatternBlock> mine;
@@ -44,9 +50,14 @@ bool BlockLayer::blockAt (double seconds, EditSession::PatternBlock& out)
     return false;
 }
 
+bool BlockLayer::onRightEdge (const EditSession::PatternBlock& b, int x)
+{
+    return x >= session.timeToX (b.end, getWidth()) - edgeZone;
+}
+
 bool BlockLayer::hitTest (int x, int)
 {
-    // Paint takes every click; Select only takes clicks on blocks (the rest goes to the audio below)
+    // Paint takes every click; Select and Cut only take clicks on blocks (the rest goes to the audio below)
     if (session.getPlaylistTool() == 1)
         return true;
 
@@ -58,6 +69,7 @@ bool BlockLayer::hitTest (int x, int)
 void BlockLayer::paint (juce::Graphics& g)
 {
     const int current = session.getCurrentPattern();
+    const bool muted = laneMuted();
 
     for (auto& b : myBlocks())
     {
@@ -68,22 +80,22 @@ void BlockLayer::paint (juce::Graphics& g)
             continue;
 
         auto r = juce::Rectangle<int> (x1, 3, juce::jmax (4, x2 - x1), getHeight() - 6).toFloat().reduced (1.0f, 0.0f);
-        const bool dragged = moving && b.pattern == dragBlock.pattern && std::abs (b.start - dragBlock.start) < 0.001;
+        const bool dragged = (moving || resizing) && b.pattern == dragBlock.pattern && std::abs (b.start - dragBlock.start) < 0.001;
         const auto colour = session.getPatternColour (b.pattern);
 
-        g.setColour (colour.withAlpha (dragged ? 0.35f : 0.92f));
+        g.setColour (colour.withAlpha (muted ? 0.3f : dragged ? 0.35f : 0.92f));
         g.fillRoundedRectangle (r, 4.0f);
 
         // Name strip
         auto strip = r.withHeight (16.0f);
         g.setColour (juce::Colours::black.withAlpha (0.18f));
         g.fillRoundedRectangle (strip, 4.0f);
-        g.setColour (juce::Colours::white);
+        g.setColour (juce::Colours::white.withAlpha (muted ? 0.5f : 1.0f));
         g.setFont (juce::Font (juce::FontOptions (11.0f, juce::Font::bold)));
         g.drawText (session.getPatternName (b.pattern), strip.toNearestInt().reduced (6, 0), juce::Justification::centredLeft, true);
 
         // A hint of notes
-        g.setColour (juce::Colours::white.withAlpha (0.35f));
+        g.setColour (juce::Colours::white.withAlpha (muted ? 0.15f : 0.35f));
 
         for (float x = r.getX() + 6.0f; x < r.getRight() - 8.0f; x += 10.0f)
             g.fillRect (x, r.getCentreY() + 4.0f, 5.0f, 3.0f);
@@ -97,6 +109,19 @@ void BlockLayer::paint (juce::Graphics& g)
     {
         const int x1 = session.timeToX (dropTime, getWidth());
         const int x2 = session.timeToX (dropTime + (dragBlock.end - dragBlock.start), getWidth());
+        auto r = juce::Rectangle<int> (x1, 3, juce::jmax (4, x2 - x1), getHeight() - 6).toFloat();
+
+        g.setColour (session.getPatternColour (dragBlock.pattern).withAlpha (0.55f));
+        g.fillRoundedRectangle (r, 4.0f);
+        g.setColour (juce::Colours::white);
+        g.drawRoundedRectangle (r, 4.0f, 1.5f);
+    }
+
+    // The new length while stretching
+    if (resizing)
+    {
+        const int x1 = session.timeToX (dragBlock.start, getWidth());
+        const int x2 = session.timeToX (resizeEnd, getWidth());
         auto r = juce::Rectangle<int> (x1, 3, juce::jmax (4, x2 - x1), getHeight() - 6).toFloat();
 
         g.setColour (session.getPatternColour (dragBlock.pattern).withAlpha (0.55f));
@@ -165,22 +190,38 @@ void BlockLayer::showMenu (EditSession::PatternBlock block)
 }
 
 //==============================================================================
+void BlockLayer::mouseMove (const juce::MouseEvent& e)
+{
+    const int tool = session.getPlaylistTool();
+    EditSession::PatternBlock b;
+
+    if (tool == 2)
+        setMouseCursor (juce::MouseCursor::IBeamCursor);
+    else if (tool == 0 && blockAt (session.xToTime (e.x, getWidth()), b) && onRightEdge (b, e.x))
+        setMouseCursor (juce::MouseCursor::LeftRightResizeCursor);
+    else if (tool == 1)
+        setMouseCursor (juce::MouseCursor::CrosshairCursor);
+    else
+        setMouseCursor (juce::MouseCursor::DraggingHandCursor);
+}
+
 void BlockLayer::mouseDown (const juce::MouseEvent& e)
 {
-    moving = painting = erasing = false;
+    moving = painting = erasing = resizing = false;
     lastPaintBar = -1.0;
 
     if (session.getTransport().isRecording())
         return;
 
+    const int tool = session.getPlaylistTool();
     const double t = session.xToTime (e.x, getWidth());
     EditSession::PatternBlock hit;
     const bool onBlock = blockAt (t, hit);
 
     if (e.mods.isPopupMenu())
     {
-        // Paint: right-drag erases. Select: right-click a block for its menu.
-        if (session.getPlaylistTool() == 1)
+        // Paint: right-drag erases. Select and Cut: right-click a block for its menu.
+        if (tool == 1)
         {
             erasing = true;
             eraseAt (e.x);
@@ -193,17 +234,35 @@ void BlockLayer::mouseDown (const juce::MouseEvent& e)
         return;
     }
 
+    // Cut: slice the block where you click
+    if (tool == 2)
+    {
+        if (onBlock)
+            session.cutBlock (hit, t);
+
+        return;
+    }
+
     if (onBlock)
     {
         session.setCurrentPattern (hit.pattern);
-        moving = true;
         dragBlock = hit;
+
+        // Select: the right edge stretches, anywhere else moves
+        if (tool == 0 && onRightEdge (hit, e.x))
+        {
+            resizing = true;
+            resizeEnd = hit.end;
+            return;
+        }
+
+        moving = true;
         grab = t - hit.start;
         dropTime = hit.start;
         return;
     }
 
-    if (session.getPlaylistTool() == 1)
+    if (tool == 1)
     {
         painting = true;
         paintAt (e.x);
@@ -220,6 +279,12 @@ void BlockLayer::mouseDrag (const juce::MouseEvent& e)
     {
         paintAt (e.x);
     }
+    else if (resizing)
+    {
+        const double t = session.xToTime (e.x, getWidth());
+        resizeEnd = juce::jmax (dragBlock.start + 0.01, session.isSnapEnabled() && ! e.mods.isAltDown() ? session.snapTime (t) : t);
+        repaint();
+    }
     else if (moving)
     {
         // Land on the nearest bar line
@@ -233,7 +298,11 @@ void BlockLayer::mouseDrag (const juce::MouseEvent& e)
 
 void BlockLayer::mouseUp (const juce::MouseEvent& e)
 {
-    if (moving && e.getDistanceFromDragStart() > 3)
+    if (resizing && std::abs (resizeEnd - dragBlock.end) > 0.001)
+    {
+        session.resizeBlock (dragBlock, resizeEnd);
+    }
+    else if (moving && e.getDistanceFromDragStart() > 3)
     {
         auto lane = laneAtScreen ? laneAtScreen (e.getScreenPosition()) : laneId();
 
@@ -243,7 +312,7 @@ void BlockLayer::mouseUp (const juce::MouseEvent& e)
         session.moveBlock (dragBlock, dropTime, lane, e.mods.isCtrlDown());
     }
 
-    moving = painting = erasing = false;
+    moving = painting = erasing = resizing = false;
     lastPaintBar = -1.0;
     repaint();
 }

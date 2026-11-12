@@ -104,7 +104,8 @@ target_sources(KNGStudio PRIVATE
     Source/EditSessionPatternInfo.cpp
     Source/PatternListPanel.cpp
     Source/EditSessionPlaylist.cpp
-    Source/BlockLayer.cpp)
+    Source/BlockLayer.cpp
+    Source/EditSessionPlaylistEdit.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0

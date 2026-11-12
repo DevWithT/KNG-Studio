@@ -278,6 +278,13 @@ public:
     void setPlaylistTool (int tool)             { playlistTool = tool; }
     std::function<void()> onShowRack;
 
+    // Playlist editing
+    void cutBlock (const PatternBlock& block, double atSeconds);
+    void resizeBlock (const PatternBlock& block, double newEnd);
+
+    /** Keeps the Playlist tidy: loose MIDI clips become pattern blocks, and muted lanes silence their blocks. */
+    void tidyPlaylist();
+
     // Tempo, click, count-in
     void setBpm (double bpm);
     double getBpm() const;

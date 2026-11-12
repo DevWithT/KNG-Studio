@@ -3,7 +3,8 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "EditSession.h"
 
-/** Sits over one lane and draws its pattern blocks. Select: drag blocks. Paint: click to place the current pattern. */
+/** Sits over one lane and draws its pattern blocks.
+    Select: drag blocks, drag a right edge to stretch. Paint: click to place. Cut: click to slice. */
 class BlockLayer : public juce::Component,
                    private juce::Timer
 {
@@ -16,6 +17,7 @@ public:
 
     bool hitTest (int x, int y) override;
     void paint (juce::Graphics&) override;
+    void mouseMove (const juce::MouseEvent&) override;
     void mouseDown (const juce::MouseEvent&) override;
     void mouseDrag (const juce::MouseEvent&) override;
     void mouseUp (const juce::MouseEvent&) override;
@@ -24,8 +26,10 @@ public:
 private:
     void timerCallback() override   { repaint(); }
     juce::String laneId();
+    bool laneMuted();
     std::vector<EditSession::PatternBlock> myBlocks();
     bool blockAt (double seconds, EditSession::PatternBlock& out);
+    bool onRightEdge (const EditSession::PatternBlock& b, int x);
     void paintAt (int x);
     void eraseAt (int x);
     void showMenu (EditSession::PatternBlock block);
@@ -33,9 +37,11 @@ private:
     EditSession& session;
     const int trackIndex;
 
-    bool moving = false, painting = false, erasing = false;
+    bool moving = false, painting = false, erasing = false, resizing = false;
     EditSession::PatternBlock dragBlock;
-    double grab = 0.0, dropTime = 0.0, lastPaintBar = -1.0;
+    double grab = 0.0, dropTime = 0.0, resizeEnd = 0.0, lastPaintBar = -1.0;
+
+    static constexpr int edgeZone = 6;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BlockLayer)
 };

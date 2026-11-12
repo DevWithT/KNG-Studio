@@ -74,6 +74,7 @@ private:
     tracktion::Track::Ptr track;
 
     juce::TextButton expandButton, muteButton { "M" }, soloButton { "S" }, instrumentButton;
+    juce::TextButton armButton { "R" };
     juce::Label nameLabel;
     juce::Slider volKnob, panKnob;
 
