@@ -142,7 +142,8 @@ void TrackInspector::rebuild()
     // Effects
     for (auto* p : session.getFxPlugins (t->pluginList))
     {
-        if ((bool) p->state.getProperty ("kngBoost", false))
+        // The instrument has its own card, and the boost stage stays hidden
+        if (p == inst || (bool) p->state.getProperty ("kngBoost", false))
             continue;
 
         addAndMakeVisible (effectRows.add (new EffectRow (session, *p)));

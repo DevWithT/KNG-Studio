@@ -2,6 +2,77 @@
 
 namespace te = tracktion;
 
+// A block's real notes, from every sound in it (stretched blocks show each repeat). False if it has none.
+static bool drawBlockNotes (juce::Graphics& g, EditSession& session, const EditSession::PatternBlock& b,
+                            juce::Rectangle<float> area, int width, float alpha)
+{
+    auto& ts = session.getEdit().tempoSequence;
+    const auto clips = session.getBlockClips (b);
+    int lo = 127, hi = 0;
+
+    for (auto* c : clips)
+        if (auto* mc = dynamic_cast<te::MidiClip*> (c))
+            for (auto* n : mc->getSequence().getNotes())
+            {
+                lo = juce::jmin (lo, n->getNoteNumber());
+                hi = juce::jmax (hi, n->getNoteNumber());
+            }
+
+    if (hi < lo)
+        return false;
+
+    const float span = (float) juce::jmax (12, hi - lo + 1);
+    g.setColour (juce::Colours::white.withAlpha (alpha));
+
+    for (auto* c : clips)
+    {
+        auto* mc = dynamic_cast<te::MidiClip*> (c);
+
+        if (mc == nullptr)
+            continue;
+
+        const auto pos = mc->getPosition();
+        const double startBeat = ts.toBeats (pos.getStart()).inBeats();
+        const double endBeat = ts.toBeats (pos.getEnd()).inBeats();
+        const bool looped = mc->isLooping();
+        const double loopStart = looped ? mc->getLoopStartBeats().inBeats()
+                                        : mc->getContentBeatAtTime (pos.getStart()).inBeats();
+        const double loopLen = looped ? juce::jmax (0.25, mc->getLoopLengthBeats().inBeats()) : 1.0e9;
+
+        for (auto* n : mc->getSequence().getNotes())
+        {
+            const double ns = n->getStartBeat().inBeats();
+            const double ne = n->getEndBeat().inBeats();
+
+            if (looped && (ns < loopStart || ns >= loopStart + loopLen))
+                continue;
+
+            for (int k = 0; k < 64; ++k)
+            {
+                const double a = startBeat + (ns - loopStart) + k * loopLen;
+
+                if (a >= endBeat)
+                    break;
+
+                const double z = juce::jmin (endBeat, startBeat + (ne - loopStart) + k * loopLen);
+
+                if (z > startBeat)
+                {
+                    const float x1 = (float) session.timeToX (ts.toTime (te::BeatPosition::fromBeats (juce::jmax (startBeat, a))).inSeconds(), width);
+                    const float x2 = (float) session.timeToX (ts.toTime (te::BeatPosition::fromBeats (z)).inSeconds(), width);
+                    const float y = area.getY() + (1.0f - (n->getNoteNumber() - lo + 0.5f) / span) * area.getHeight();
+                    g.fillRect (x1, y - 1.0f, juce::jmax (2.0f, x2 - x1 - 1.0f), 2.5f);
+                }
+
+                if (! looped)
+                    break;
+            }
+        }
+    }
+
+    return true;
+}
+
 BlockLayer::BlockLayer (EditSession& sessionToUse, int trackIndexToUse)
     : session (sessionToUse), trackIndex (trackIndexToUse)
 {
@@ -94,11 +165,18 @@ void BlockLayer::paint (juce::Graphics& g)
         g.setFont (juce::Font (juce::FontOptions (11.0f, juce::Font::bold)));
         g.drawText (session.getPatternName (b.pattern), strip.toNearestInt().reduced (6, 0), juce::Justification::centredLeft, true);
 
-        // A hint of notes
-        g.setColour (juce::Colours::white.withAlpha (muted ? 0.15f : 0.35f));
+        // The pattern's real notes
+        {
+            juce::Graphics::ScopedSaveState clip (g);
+            g.reduceClipRegion (r.toNearestInt());
 
-        for (float x = r.getX() + 6.0f; x < r.getRight() - 8.0f; x += 10.0f)
-            g.fillRect (x, r.getCentreY() + 4.0f, 5.0f, 3.0f);
+            if (! drawBlockNotes (g, session, b, r.withTrimmedTop (18.0f).reduced (2.0f, 3.0f), getWidth(), muted ? 0.3f : 0.9f))
+            {
+                g.setColour (juce::Colours::white.withAlpha (0.45f));
+                g.setFont (juce::Font (juce::FontOptions (11.0f)));
+                g.drawText ("Empty", r.withTrimmedTop (16.0f).toNearestInt(), juce::Justification::centred);
+            }
+        }
 
         g.setColour (b.pattern == current ? juce::Colours::white : juce::Colours::black.withAlpha (0.35f));
         g.drawRoundedRectangle (r, 4.0f, b.pattern == current ? 1.5f : 1.0f);

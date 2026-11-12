@@ -99,7 +99,11 @@ void EditSession::tidyPlaylist()
 
             const int p = newPattern();
             auto* firstTrack = getTrack (loose[a].track);
-            const auto name = first->getName().isNotEmpty() ? first->getName()
+            // A placeholder clip name ("New MIDI Clip") gives way to the sound's name
+            const auto clipName = first->getName();
+            const bool generic = clipName.isEmpty() || clipName.startsWithIgnoreCase ("New MIDI")
+                                  || clipName.startsWithIgnoreCase ("Pattern");
+            const auto name = ! generic ? clipName
                             : firstTrack != nullptr ? firstTrack->getName() : juce::String ("Recording");
 
             const int bars = juce::jlimit (1, 4, barNumberAt (juce::jmax (s, e - 0.001)) - barNumberAt (s) + 1);
@@ -125,6 +129,24 @@ void EditSession::tidyPlaylist()
 
         currentPattern = keep;
         save();
+    }
+
+    // Patterns adopted earlier with a placeholder name take their sound's name
+    for (int p = 1; p <= getNumPatterns(); ++p)
+    {
+        if (! getPatternName (p).startsWithIgnoreCase ("New MIDI"))
+            continue;
+
+        for (int i = 0; i < getNumTracks(); ++i)
+        {
+            if (getPatternClip (i, p, false) != nullptr)
+            {
+                if (auto* t = getTrack (i))
+                    edit->state.setProperty ("kngPatternName" + juce::String (p), t->getName(), nullptr);
+
+                break;
+            }
+        }
     }
 
     // 2. A muted lane silences its blocks
