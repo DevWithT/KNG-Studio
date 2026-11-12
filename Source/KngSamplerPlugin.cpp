@@ -1,4 +1,5 @@
 #include "KngSamplerPlugin.h"
+#include "KngSamplerView.h"
 
 namespace te = tracktion;
 
@@ -13,6 +14,11 @@ KngSamplerPlugin::KngSamplerPlugin (te::PluginCreationInfo info)
 KngSamplerPlugin::~KngSamplerPlugin()
 {
     notifyListenersOfDeletion();
+}
+
+std::unique_ptr<te::Plugin::EditorComponent> KngSamplerPlugin::createEditor()
+{
+    return std::make_unique<KngSamplerView> (*this);
 }
 
 void KngSamplerPlugin::initialise (const te::PluginInitialisationInfo& info)
@@ -345,4 +351,24 @@ void KngSamplerPlugin::applyToBuffer (const te::PluginRenderContext& fc)
     }
 
     renderUpTo (fc.bufferNumSamples);
+
+    // Where the sound is, for the panel
+    float pos = -1.0f;
+    int note = -1;
+
+    if (smp != nullptr && smp->getNumSamples() > 0)
+    {
+        for (auto& v : voices)
+        {
+            if (v.active && ! v.fast)
+            {
+                pos = (float) (v.pos / smp->getNumSamples());
+                note = v.note;
+                break;
+            }
+        }
+    }
+
+    displayPos = pos;
+    displayNote = note;
 }

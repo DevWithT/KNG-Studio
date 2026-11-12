@@ -1,21 +1,45 @@
 #pragma once
 
-#include <juce_gui_basics/juce_gui_basics.h>
 #include <juce_audio_utils/juce_audio_utils.h>
-#include "EditSession.h"
+#include "KngSamplerPlugin.h"
+#include "KngFace.h"
 
-class KngSamplerPlugin;
+class EditSession;
 
-/** Panel for the KNG Sampler: waveform with loop handles, settings, and a keyboard. */
-class KngSamplerView : public juce::Component,
+/** The Sampler's keyboard: the root key glows pink, the note playing glows purple.
+    Right-click a key to make it the root. */
+class KngSamplerKeys : public juce::MidiKeyboardComponent
+{
+public:
+    KngSamplerKeys (juce::MidiKeyboardState& state, KngSamplerPlugin& owner, std::function<void (int)> onRootPicked);
+
+    void drawWhiteNote (int midiNoteNumber, juce::Graphics&, juce::Rectangle<float> area, bool isDown, bool isOver,
+                        juce::Colour lineColour, juce::Colour textColour) override;
+    void drawBlackNote (int midiNoteNumber, juce::Graphics&, juce::Rectangle<float> area, bool isDown, bool isOver,
+                        juce::Colour noteFillColour) override;
+    void mouseDown (const juce::MouseEvent&) override;
+
+private:
+    KngSamplerPlugin& plugin;
+    std::function<void (int)> onRoot;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (KngSamplerKeys)
+};
+
+/** KNG Sampler's face: the waveform is the instrument. Violet loop edges, a playhead, a keyboard with the root. */
+class KngSamplerView : public tracktion::Plugin::EditorComponent,
                        public juce::DragAndDropTarget,
                        public juce::FileDragAndDropTarget,
                        private juce::MidiKeyboardState::Listener,
                        private juce::Timer
 {
 public:
-    KngSamplerView (EditSession& sessionToUse, tracktion::Track& trackToUse);
+    /** With a session, new samples load the same way the Rack loads them. */
+    explicit KngSamplerView (KngSamplerPlugin& owner, EditSession* sessionToUse = nullptr);
     ~KngSamplerView() override;
+
+    bool allowWindowResizing() override                               { return true; }
+    juce::ComponentBoundsConstrainer* getBoundsConstrainer() override { return nullptr; }
 
     void paint (juce::Graphics&) override;
     void resized() override;
@@ -38,40 +62,40 @@ private:
     void handleNoteOn (juce::MidiKeyboardState*, int, int midiNoteNumber, float velocity) override;
     void handleNoteOff (juce::MidiKeyboardState*, int, int, float) override;
 
-    KngSamplerPlugin* getPlugin();
-    int getTrackIndex();
+    void setProp (const juce::Identifier& id, const juce::var& value);
+    float propFloat (const juce::Identifier& id, float fallback) const;
     void loadFile (const juce::File& file);
     void chooseFile();
-    void set (const juce::Identifier& id, const juce::var& value);
-    void syncControls();
-    void rebuildPeaks();
-    void setupKnob (juce::Slider& s, double min, double max, double mid, const juce::String& suffix,
-                    const juce::Identifier& id);
-
-    juce::Rectangle<int> getWaveArea() const;
+    void rebuildPeaks (int bars);
     int fracToX (float f) const;
     float xToFrac (int x) const;
+    void paintHeader (juce::Graphics&);
+    void paintWave (juce::Graphics&);
 
-    EditSession& session;
-    tracktion::Track::Ptr track;
+    KngSamplerPlugin& plugin;
+    tracktion::Plugin::Ptr pluginRef;
+    EditSession* session = nullptr;
 
-    juce::TextButton loadButton { "Load Sample..." };
-    juce::Label nameLabel, tipLabel;
-    juce::Label rootLabel { {}, "Root" }, gainLabel { {}, "Volume" }, attackLabel { {}, "Attack" },
-                releaseLabel { {}, "Release" }, glideLabel { {}, "Glide" };
-    juce::ComboBox rootBox;
-    juce::Slider gainSlider, attackSlider, releaseSlider, glideSlider;
-    juce::ToggleButton monoButton { "Mono (808)" }, loopButton { "Sustain loop" }, oneShotButton { "One-shot" };
+    KngFaceStyle style;
+    KngFaceLook look;
+
+    juce::TextButton loadButton { "Load sample" };
+    KngPopButton popButton;
 
     juce::MidiKeyboardState keyboardState;
-    juce::MidiKeyboardComponent keyboard { keyboardState, juce::MidiKeyboardComponent::horizontalKeyboard };
+    KngSamplerKeys keyboard;
+
+    std::vector<std::unique_ptr<juce::Component>> knobs, pills;
 
     std::unique_ptr<juce::FileChooser> chooser;
     std::vector<float> peaks;
     juce::File peaksFile;
-    int peaksWidth = 0;
+    const juce::AudioBuffer<float>* peaksBuffer = nullptr;
+
+    juce::Rectangle<int> panel, header, wave;
     bool hovering = false;
     int dragHandle = 0;   // 1 = loop start, 2 = loop end
+    int shownNote = -2;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (KngSamplerView)
 };

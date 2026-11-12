@@ -2,6 +2,7 @@
 
 #include <tracktion_engine/tracktion_engine.h>
 #include <array>
+#include <atomic>
 
 /** KNG Sampler: one sample across the keyboard, with sustain loop, glide and mono cut. */
 class KngSamplerPlugin : public tracktion::Plugin
@@ -41,6 +42,14 @@ public:
     juce::File getSampleFile() const;
     void syncFromState();
     std::shared_ptr<juce::AudioBuffer<float>> getSampleForDisplay();
+    double getFileSampleRate()   { juce::SpinLock::ScopedLockType sl (lock); return sampleFileRate; }
+
+    /** The KNG Sampler's own panel (used by the pop-out window). */
+    std::unique_ptr<EditorComponent> createEditor() override;
+
+    /** For the panel: the first sounding voice's place in the sample (0 to 1) and its note, or -1. */
+    std::atomic<float> displayPos { -1.0f };
+    std::atomic<int> displayNote { -1 };
 
     // Settings, stored in the plugin's state
     static inline const juce::Identifier fileProp      { "kngFile" };
