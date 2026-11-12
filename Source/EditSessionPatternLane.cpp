@@ -11,6 +11,7 @@ static int blockPatternOf (te::Clip& c)
 std::vector<EditSession::PatternBlock> EditSession::getPatternBlocks()
 {
     std::vector<PatternBlock> blocks;
+    const double bankStart = getBankStart() - 0.001;
 
     for (int i = 0; i < getNumTracks(); ++i)
     {
@@ -26,6 +27,10 @@ std::vector<EditSession::PatternBlock> EditSession::getPatternBlocks()
                 const double s = c->getPosition().getStart().inSeconds();
                 const double e = c->getPosition().getEnd().inSeconds();
                 bool merged = false;
+
+                // Bank copies aren't part of the song
+                if (s >= bankStart)
+                    continue;
 
                 // Copies of the same pattern at the same spot are one block
                 for (auto& b : blocks)

@@ -100,7 +100,9 @@ target_sources(KNGStudio PRIVATE
     Source/LoudnessDisplay.cpp
     Source/MidiMapDialog.cpp
     Source/InspectorParts.cpp
-    Source/TrackInspector.cpp)
+    Source/TrackInspector.cpp
+    Source/EditSessionPatternInfo.cpp
+    Source/PatternListPanel.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0

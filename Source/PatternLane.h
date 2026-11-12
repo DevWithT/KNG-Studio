@@ -23,7 +23,6 @@ private:
     double barStartAt (int x);
     void paintAt (int x);
     void eraseAt (int x);
-    static juce::Colour colourFor (int pattern);
 
     EditSession& session;
     bool painting = false, erasing = false, moving = false;

@@ -30,7 +30,7 @@ te::TimeRange EditSession::getExportRange (bool loopOnly)
     if (loopOnly && getLoopEnd() > getLoopStart())
         return getTransport().getLoopRange();
 
-    return te::TimeRange (te::TimePosition(), te::TimePosition() + edit->getLength());
+    return te::TimeRange (te::TimePosition(), te::TimePosition::fromSeconds (juce::jmax (1.0, getSongEnd())));
 }
 
 te::Renderer::Parameters EditSession::makeRenderParams (const juce::File& dest, bool loopOnly, int normaliseMode,

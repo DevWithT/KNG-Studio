@@ -196,6 +196,7 @@ void MainComponent::closeProject()
     patternLane = nullptr;
     transportBar = nullptr;
     inspector = nullptr;
+    patternList = nullptr;
     session = nullptr;   // saves on the way out
 }
 
@@ -223,6 +224,10 @@ void MainComponent::loadProject (const juce::File& editFile)
 
     inspector = std::make_unique<TrackInspector> (*session);
     addAndMakeVisible (*inspector);
+
+    patternList = std::make_unique<PatternListPanel> (*session);
+    patternList->onPatternPicked = [this] { dock.showTab (DockPanel::rackTab); openDock(); };
+    addAndMakeVisible (*patternList);
 
     ruler = std::make_unique<TimelineRuler> (*session);
     addAndMakeVisible (*ruler);
@@ -528,7 +533,7 @@ void MainComponent::zoomToFit()
     if (session == nullptr)
         return;
 
-    const double length = juce::jmax (10.0, session->getEdit().getLength().inSeconds());
+    const double length = juce::jmax (10.0, session->getSongEnd());
     session->setView (0.0, length * 1.05);
 }
 
@@ -540,6 +545,7 @@ void MainComponent::showShortcuts()
         "M\tMixer\n"
         "R\tRack\n"
         "I\tTrack inspector\n"
+        "P\tPatterns list\n"
         "S\tSplit selected clip at playhead\n"
         "Del\tDelete selected clip\n"
         "Ctrl+Z / Ctrl+Y\tUndo / Redo\n"
@@ -722,6 +728,18 @@ void MainComponent::resized()
         area.removeFromLeft (8);
     }
 
+    // Patterns list next to the timeline
+    if (patternList != nullptr)
+    {
+        patternList->setVisible (patternsVisible);
+
+        if (patternsVisible)
+        {
+            patternList->setBounds (area.removeFromLeft (180));
+            area.removeFromLeft (8);
+        }
+    }
+
     // Master strip along the bottom
     if (masterStrip != nullptr)
         masterStrip->setBounds (area.removeFromBottom (40));
@@ -867,6 +885,14 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
     if (code == 'I' || code == 'i')
     {
         inspectorVisible = ! inspectorVisible;
+        resized();
+        return true;
+    }
+
+    // P shows and hides the Patterns list
+    if (code == 'P' || code == 'p')
+    {
+        patternsVisible = ! patternsVisible;
         resized();
         return true;
     }

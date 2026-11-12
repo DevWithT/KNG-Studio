@@ -248,6 +248,18 @@ public:
     float getPatternSwing (int pattern);
     void setPatternSwing (int pattern, float percent);
 
+    // Pattern names and colours
+    juce::String getPatternName (int pattern);
+    void setPatternName (int pattern, const juce::String& name);
+    juce::Colour getPatternColour (int pattern);
+    void setPatternColour (int pattern, juce::Colour colour);
+    int duplicatePattern (int pattern);
+
+    /** Each pattern keeps a copy in the "bank", far past the song, so new patterns never land on each other. */
+    double getBankStart();
+    /** Where the song ends, not counting the bank. */
+    double getSongEnd();
+
     // Tempo, click, count-in
     void setBpm (double bpm);
     double getBpm() const;

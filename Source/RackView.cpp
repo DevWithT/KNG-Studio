@@ -202,13 +202,19 @@ void RackView::syncToolbar()
     const int count = session.getNumPatterns();
     const int current = session.getCurrentPattern();
 
-    if (count != builtPatternCount)
+    juce::String names;
+
+    for (int i = 1; i <= count; ++i)
+        names << session.getPatternName (i) << ";";
+
+    if (count != builtPatternCount || names != builtPatternNames)
     {
         builtPatternCount = count;
+        builtPatternNames = names;
         patternBox.clear (juce::dontSendNotification);
 
         for (int i = 1; i <= count; ++i)
-            patternBox.addItem ("Pattern " + juce::String (i), i);
+            patternBox.addItem (session.getPatternName (i), i);
 
         patternBox.addSeparator();
         patternBox.addItem ("New pattern", 1000);

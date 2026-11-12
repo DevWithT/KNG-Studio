@@ -78,32 +78,6 @@ void EditSession::setPatternBars (int pattern, int bars)
     save();
 }
 
-double EditSession::getPatternHome (int pattern)
-{
-    const juce::Identifier key ("kngPatternHome" + juce::String (pattern));
-
-    if (edit->state.hasProperty (key))
-        return (double) edit->state.getProperty (key);
-
-    // Earliest copy on any track, otherwise the bar under the playhead
-    double home = -1.0;
-
-    for (int i = 0; i < getNumTracks(); ++i)
-        if (auto* t = getTrack (i))
-            for (auto* c : t->getClips())
-                if (patternOf (*c) == pattern)
-                {
-                    const double start = c->getPosition().getStart().inSeconds();
-                    home = home < 0.0 ? start : juce::jmin (home, start);
-                }
-
-    if (home < 0.0)
-        home = barStartAt (getTransport().getPosition().inSeconds());
-
-    edit->state.setProperty (key, home, nullptr);
-    return home;
-}
-
 te::MidiClip* EditSession::getPatternClip (int trackIndex, int pattern, bool createIfMissing)
 {
     auto* track = getTrack (trackIndex);
@@ -210,6 +184,9 @@ void EditSession::placePattern (int pattern, double atSeconds)
 
 void EditSession::loopPattern (int pattern)
 {
+    // Make sure the pattern has its bank copy, then loop that
+    placePattern (pattern, getPatternHome (pattern));
+
     const double home = getPatternHome (pattern);
     const double length = barsAfter (home, getPatternBars (pattern)) - home;
 

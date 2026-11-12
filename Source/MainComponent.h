@@ -23,6 +23,7 @@
 #include "SettingsComponent.h"
 #include "PluginBrowser.h"
 #include "TrackInspector.h"
+#include "PatternListPanel.h"
 
 class MainComponent : public juce::Component,
                       public juce::MenuBarModel,
@@ -105,6 +106,8 @@ private:
     std::unique_ptr<TransportBar> transportBar;
     std::unique_ptr<TrackInspector> inspector;
     bool inspectorVisible = true;
+    std::unique_ptr<PatternListPanel> patternList;
+    bool patternsVisible = true;
     std::unique_ptr<TimelineRuler> ruler;
     std::unique_ptr<MarkerBar> markerBar;
     std::unique_ptr<PatternLane> patternLane;

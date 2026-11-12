@@ -53,6 +53,7 @@ private:
     juce::Array<tracktion::Track*> builtTracks;
     juce::String lastLayoutSignature;
     int builtPatternCount = 0;
+    juce::String builtPatternNames;
     bool hovering = false;
 
     static constexpr int toolbarHeight = 40;

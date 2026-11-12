@@ -13,11 +13,6 @@ PatternLane::~PatternLane()
     stopTimer();
 }
 
-juce::Colour PatternLane::colourFor (int pattern)
-{
-    return juce::Colour::fromHSV (std::fmod (0.58f + (pattern - 1) * 0.13f, 1.0f), 0.55f, 0.85f, 1.0f);
-}
-
 double PatternLane::barStartAt (int x)
 {
     return session.barStartAt (juce::jmax (0.0, session.xToTime (x, getWidth())));
@@ -83,7 +78,7 @@ void PatternLane::paint (juce::Graphics& g)
         const bool current = b.pattern == session.getCurrentPattern();
         const bool beingMoved = moving && b.pattern == movePattern && std::abs (b.start - moveFrom) < 0.001;
 
-        g.setColour (colourFor (b.pattern).withAlpha (beingMoved ? 0.3f : current ? 0.9f : 0.55f));
+        g.setColour (session.getPatternColour (b.pattern).withAlpha (beingMoved ? 0.3f : current ? 0.9f : 0.55f));
         g.fillRoundedRectangle (r, 4.0f);
 
         if (current)
@@ -93,7 +88,7 @@ void PatternLane::paint (juce::Graphics& g)
         }
 
         g.setColour (juce::Colours::black.withAlpha (0.85f));
-        g.drawText ("Pattern " + juce::String (b.pattern), r.toNearestInt().reduced (6, 0),
+        g.drawText (session.getPatternName (b.pattern), r.toNearestInt().reduced (6, 0),
                     juce::Justification::centredLeft, true);
     }
 
@@ -104,7 +99,7 @@ void PatternLane::paint (juce::Graphics& g)
         const int x2 = session.timeToX (moveTo + moveLength, getWidth());
         auto r = juce::Rectangle<int> (x1, 2, juce::jmax (4, x2 - x1), getHeight() - 4).toFloat();
 
-        g.setColour (colourFor (movePattern).withAlpha (0.6f));
+        g.setColour (session.getPatternColour (movePattern).withAlpha (0.6f));
         g.fillRoundedRectangle (r, 4.0f);
         g.setColour (juce::Colours::white);
         g.drawRoundedRectangle (r, 4.0f, 1.5f);
