@@ -1,4 +1,5 @@
 #include "KngFattenerPlugin.h"
+#include "KngFattenerView.h"
 
 namespace te = tracktion;
 
@@ -15,7 +16,8 @@ static std::vector<KngParamDef> fattenerParams()
         { "clip",     "Clip",       0.0f,  1.0f, 0.0f,  0.0f, 0.0f, "%",  nullptr },
         { "monoLows", "Mono Lows",  0.0f,  1.0f, 1.0f,  0.0f, 1.0f, "",   "toggle" },
         { "output",   "Output",   -12.0f, 12.0f, 0.0f,  0.0f, 0.0f, "dB", nullptr },
-        { "mix",      "Mix",        0.0f,  1.0f, 1.0f,  0.0f, 0.0f, "%",  nullptr }
+        { "mix",      "Mix",        0.0f,  1.0f, 1.0f,  0.0f, 0.0f, "%",  nullptr },
+        { "fat",      "FAT",        0.0f,  1.0f, 0.0f,  0.0f, 0.0f, "%",  nullptr }
     };
 }
 
@@ -90,7 +92,12 @@ void KngFattenerPlugin::applyToBuffer (const te::PluginRenderContext& fc)
     juce::ScopedNoDenormals noDenormals;
 
     const double sr = sampleRate;
-    const float subAmt = get (sub), octAmt = get (octave), punchAmt = get (punch), driveAmt = get (drive);
+    // FAT turns up Sub, Punch and Drive together
+    const float fatAmt   = get (fat);
+    const float subAmt   = juce::jlimit (0.0f, 1.0f, get (sub) + fatAmt * 0.5f);
+    const float punchAmt = juce::jlimit (0.0f, 1.0f, get (punch) + fatAmt * 0.5f);
+    const float driveAmt = juce::jlimit (0.0f, 1.0f, get (drive) + fatAmt * 0.45f);
+    const float octAmt   = get (octave);
     const float toneAmt = get (tone), clipAmt = get (clip), mixAmt = get (mix);
     const bool monoOn = get (monoLows) > 0.5f;
     const float outGain = juce::Decibels::decibelsToGain (get (output));
@@ -195,6 +202,23 @@ void KngFattenerPlugin::applyToBuffer (const te::PluginRenderContext& fc)
     }
 
     reportMeters (inMax, outMax, 0.0f);
+}
+
+std::unique_ptr<te::Plugin::EditorComponent> KngFattenerPlugin::createEditor()
+{
+    return std::make_unique<KngFattenerView> (*this);
+}
+
+float KngFattenerPlugin::curveAt (float x)
+{
+    const float driveAmt = juce::jlimit (0.0f, 1.0f, get (drive) + get (fat) * 0.45f);
+    const float clipAmt = get (clip);
+    float y = saturate (x, driveAmt);
+
+    if (clipAmt > 0.001f)
+        y = clipSample (y, juce::Decibels::decibelsToGain (clipAmt * 12.0f));
+
+    return y;
 }
 
 void KngFattenerPlugin::drawDisplay (juce::Graphics& g, juce::Rectangle<float> area, const KngHistory&)

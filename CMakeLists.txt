@@ -111,7 +111,8 @@ target_sources(KNGStudio PRIVATE
     Source/KngFonts.cpp
     Source/KngFace.cpp
     Source/KngPopOut.cpp
-    Source/Kng808View.cpp)
+    Source/Kng808View.cpp
+    Source/KngFattenerView.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0

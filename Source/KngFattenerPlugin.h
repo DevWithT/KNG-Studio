@@ -8,7 +8,7 @@
 class KngFattenerPlugin : public KngFxBase
 {
 public:
-    enum Param { sub, octave, punch, drive, tone, clip, monoLows, output, mix };
+    enum Param { sub, octave, punch, drive, tone, clip, monoLows, output, mix, fat };
 
     KngFattenerPlugin (tracktion::PluginCreationInfo);
     ~KngFattenerPlugin() override   { notifyListenersOfDeletion(); }
@@ -22,6 +22,12 @@ public:
     void reset() override;
     void applyToBuffer (const tracktion::PluginRenderContext&) override;
     void drawDisplay (juce::Graphics&, juce::Rectangle<float>, const KngHistory&) override;
+
+    /** The Fattener's own panel. */
+    std::unique_ptr<EditorComponent> createEditor() override;
+
+    /** The drive and clip curve at an input level from 0 to 1, for the panel. */
+    float curveAt (float x);
 
 private:
     std::array<KngDsp::Biquad, 2> subShelf, toneShelf, monoSplit;
