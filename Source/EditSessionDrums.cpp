@@ -13,25 +13,6 @@ juce::File EditSession::getKitsFolder()
     return folder;
 }
 
-void EditSession::addDrumTrack()
-{
-    addMidiTrack();
-    const int index = getNumTracks() - 1;
-
-    if (auto* t = getTrack (index))
-    {
-        t->state.setProperty ("kngDrum", true, nullptr);
-        t->setName ("Drums");
-
-        auto p = edit->getPluginCache().createNewPlugin (te::SamplerPlugin::xmlTypeName, juce::PluginDescription());
-
-        if (p != nullptr)
-            t->pluginList.insertPlugin (p, 0, nullptr);
-    }
-
-    save();
-}
-
 bool EditSession::isDrumTrack (int trackIndex)
 {
     if (auto* t = getTrack (trackIndex))

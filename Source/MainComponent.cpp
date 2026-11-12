@@ -177,6 +177,13 @@ void MainComponent::closeProject()
     if (midiMapWindow != nullptr)
         delete midiMapWindow.getComponent();
 
+    // Clip Properties and Latency Check also read the song
+    for (auto& w : songWindows)
+        if (w != nullptr)
+            delete w.getComponent();
+
+    songWindows.clear();
+
     KngUIBehaviour::setCurrentEdit (nullptr);
     dock.setSession (nullptr);
     if (pluginBrowser != nullptr)
@@ -623,7 +630,7 @@ void MainComponent::showLatencyDialog()
     options.escapeKeyTriggersCloseButton = true;
     options.useNativeTitleBar = true;
     options.resizable = false;
-    options.launchAsync();
+    songWindows.add (options.launchAsync());
 }
 
 void MainComponent::showAudioSettings()
@@ -902,7 +909,7 @@ void MainComponent::showClipProps (tracktion::AudioClipBase& clip)
     options.escapeKeyTriggersCloseButton = true;
     options.useNativeTitleBar = true;
     options.resizable = false;
-    options.launchAsync();
+    songWindows.add (options.launchAsync());
 }
 
 void MainComponent::restoreBackup()

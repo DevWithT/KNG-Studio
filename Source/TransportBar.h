@@ -34,6 +34,7 @@ private:
                        monitorButton { "Monitor" }, writeButton { "Auto Write" };
 
     std::unique_ptr<juce::FileChooser> chooser;
+    juce::Component::SafePointer<juce::DialogWindow> exportWindow;
     juce::Array<int> dividers;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TransportBar)

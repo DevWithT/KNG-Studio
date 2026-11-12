@@ -131,7 +131,6 @@ public:
     // Drums
     static juce::File getKitsFolder();
     static int getPadNote (int pad)             { return 36 + pad; }
-    void addDrumTrack();
     bool isDrumTrack (int trackIndex);
     tracktion::SamplerPlugin* getDrumSampler (int trackIndex);
     juce::String getPadName (int trackIndex, int pad);

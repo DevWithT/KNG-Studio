@@ -97,6 +97,10 @@ TransportBar::TransportBar (EditSession& sessionToUse)
 TransportBar::~TransportBar()
 {
     stopTimer();
+
+    // The Export window reads the song, so it closes with it (this also cancels a running export)
+    if (exportWindow != nullptr)
+        delete exportWindow.getComponent();
 }
 
 //==============================================================================
@@ -120,6 +124,13 @@ void TransportBar::importBeat()
 
 void TransportBar::showExportDialog()
 {
+    // Already open: bring it forward instead of opening a second one
+    if (exportWindow != nullptr)
+    {
+        exportWindow->toFront (true);
+        return;
+    }
+
     auto* dialog = new ExportDialog (session);
 
     juce::DialogWindow::LaunchOptions options;
@@ -129,7 +140,7 @@ void TransportBar::showExportDialog()
     options.escapeKeyTriggersCloseButton = true;
     options.useNativeTitleBar = true;
     options.resizable = false;
-    options.launchAsync();
+    exportWindow = options.launchAsync();
 }
 
 //==============================================================================

@@ -61,6 +61,7 @@ private:
     void showSettings();
     void showMidiMappings();
     juce::Component::SafePointer<juce::DialogWindow> midiMapWindow;
+    juce::Array<juce::Component::SafePointer<juce::DialogWindow>> songWindows;
     void showPluginScanner();
     void showLatencyDialog();
     void showFxChain (tracktion::PluginList& list, const juce::String& title);
