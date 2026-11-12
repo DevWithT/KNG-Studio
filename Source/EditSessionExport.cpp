@@ -161,3 +161,56 @@ std::shared_ptr<te::EditRenderer::Handle> EditSession::exportStem (int trackInde
         });
     });
 }
+
+std::shared_ptr<te::EditRenderer::Handle> EditSession::exportTracks (const juce::Array<int>& trackIndices, const juce::File& dest,
+                                                                     bool loopOnly, std::function<void (const juce::String&)> onDone)
+{
+    getTransport().stop (false, false);
+
+    juce::Array<te::Track*> tracks;
+    bool includesBus = false;
+
+    for (int i : trackIndices)
+    {
+        if (auto* t = getTrack (i))
+        {
+            tracks.add (t);
+            includesBus = includesBus || isReverbBus (i);
+        }
+    }
+
+    if (tracks.isEmpty())
+    {
+        juce::MessageManager::callAsync ([onDone] { if (onDone) onDone ("No tracks to export"); });
+        return {};
+    }
+
+    auto format = std::make_shared<juce::WavAudioFormat>();
+
+    // Stems are never normalised so their balance stays intact
+    auto p = makeRenderParams (dest, loopOnly, 0, *format);
+    p.useMasterPlugins = false;
+    p.checkNodesForAudio = false;
+    p.tracksToDo = te::toBitSet (tracks);
+
+    // A bus is silent on its own, so let the other tracks feed it without being heard
+    if (includesBus)
+        for (int i = 0; i < getNumTracks(); ++i)
+            if (! trackIndices.contains (i))
+                if (auto* other = getTrack (i))
+                    p.tracksToProcessWhileMuted.add (other->itemID);
+
+    if (! loopOnly)
+        p.endAllowance = te::TimeDuration::fromSeconds (4.0);
+
+    return te::EditRenderer::render (p, [onDone, format] (tl::expected<juce::File, std::string> result)
+    {
+        const juce::String error = result.has_value() ? juce::String() : juce::String (result.error());
+
+        juce::MessageManager::callAsync ([onDone, error]
+        {
+            if (onDone)
+                onDone (error);
+        });
+    });
+}

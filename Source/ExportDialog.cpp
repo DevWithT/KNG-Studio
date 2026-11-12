@@ -5,18 +5,15 @@ ExportDialog::ExportDialog (EditSession& sessionToUse)
 {
     for (auto* c : std::initializer_list<juce::Component*> { &whatLabel, &whatBox, &formatLabel, &formatBox,
                                                              &rangeLabel, &rangeBox, &normaliseLabel, &normaliseBox,
-                                                             &exportButton, &progressBar, &statusLabel })
+                                                             &tracksLabel, &trackViewport, &allButton, &noneButton,
+                                                             &exportButton, &openFolderButton, &progressBar, &statusLabel })
         addAndMakeVisible (c);
 
     whatBox.addItem ("Full mix", 1);
-    whatBox.addItem ("Stems, one per track (always WAV)", 2);
+    whatBox.addItem ("Stems: one per track (WAV)", 2);
+    whatBox.addItem ("Stems: one per folder (WAV)", 3);
     whatBox.setSelectedId (1, juce::dontSendNotification);
-    whatBox.onChange = [this]
-    {
-        const bool mix = whatBox.getSelectedId() == 1;
-        normaliseBox.setEnabled (mix);
-        formatBox.setEnabled (mix);
-    };
+    whatBox.onChange = [this] { updateVisibility(); };
 
     formatBox.addItem ("WAV 24-bit", 1);
     formatBox.addItem ("MP3 320k", 2);
@@ -31,19 +28,66 @@ ExportDialog::ExportDialog (EditSession& sessionToUse)
     normaliseBox.addItem ("Loudness -14 LUFS", 3);
     normaliseBox.setSelectedId (1, juce::dontSendNotification);
 
+    trackViewport.setViewedComponent (&trackList, false);
+    trackViewport.setScrollBarsShown (true, false);
+
+    allButton.onClick  = [this] { for (auto* t : trackToggles) t->setToggleState (true, juce::dontSendNotification); };
+    noneButton.onClick = [this] { for (auto* t : trackToggles) t->setToggleState (false, juce::dontSendNotification); };
+
     exportButton.onClick = [this] { startExport(); };
+    openFolderButton.onClick = [this] { session.getExportsFolder().startAsProcess(); };
 
     statusLabel.setJustificationType (juce::Justification::centredLeft);
-    statusLabel.setText ("Files go to this project's Exports folder.", juce::dontSendNotification);
+    statusLabel.setText ("Files are named after the song and go in its Exports folder.", juce::dontSendNotification);
+
+    rebuildTrackList();
+    updateVisibility();
 
     startTimerHz (15);
-    setSize (460, 280);
+    setSize (500, 470);
 }
 
 ExportDialog::~ExportDialog()
 {
     stopTimer();
+    trackViewport.setViewedComponent (nullptr, false);
     handle = nullptr;   // cancels any render still running
+}
+
+void ExportDialog::rebuildTrackList()
+{
+    trackToggles.clear();
+    toggleTracks.clear();
+
+    for (int i = 0; i < session.getNumTracks(); ++i)
+    {
+        if (! session.trackHasContent (i))
+            continue;
+
+        auto* t = session.getTrack (i);
+        auto* toggle = trackToggles.add (new juce::ToggleButton (t != nullptr ? t->getName() : "Track " + juce::String (i + 1)));
+        toggle->setToggleState (true, juce::dontSendNotification);
+        trackList.addAndMakeVisible (toggle);
+        toggleTracks.add (i);
+    }
+
+    trackList.setSize (440, juce::jmax (1, trackToggles.size() * 26));
+
+    for (int i = 0; i < trackToggles.size(); ++i)
+        trackToggles[i]->setBounds (4, i * 26, 420, 24);
+}
+
+void ExportDialog::updateVisibility()
+{
+    const int what = whatBox.getSelectedId();
+    const bool mix = what == 1;
+
+    formatBox.setEnabled (mix);
+    normaliseBox.setEnabled (mix);
+
+    // The checklist only applies to one-per-track stems
+    for (auto* c : std::initializer_list<juce::Component*> { &tracksLabel, &trackViewport, &allButton, &noneButton })
+        c->setVisible (what == 2);
 }
 
 //==============================================================================
@@ -66,8 +110,8 @@ void ExportDialog::startExport()
         return;
     }
 
-    const bool isMix = whatBox.getSelectedId() == 1;
-    const bool asMp3 = isMix && formatBox.getSelectedId() == 2;
+    const int what = whatBox.getSelectedId();
+    const bool asMp3 = what == 1 && formatBox.getSelectedId() == 2;
 
     if (asMp3 && ! EditSession::getLameExecutable().existsAsFile())
     {
@@ -76,20 +120,19 @@ void ExportDialog::startExport()
         return;
     }
 
-    exporting = true;
-    exportButton.setEnabled (false);
-    progress = 0.0;
-
-    const auto stamp = juce::Time::getCurrentTime().formatted ("%Y-%m-%d %H%M%S");
+    const auto songName = juce::File::createLegalFileName (session.getProjectName());
     juce::Component::SafePointer<ExportDialog> safe (this);
 
-    if (isMix)
+    if (what == 1)
     {
+        exporting = true;
         exportingStems = false;
+        exportButton.setEnabled (false);
+        progress = 0.0;
 
-        auto dest = session.getExportsFolder().getChildFile (session.getProjectName() + " " + stamp
-                                                             + (asMp3 ? ".mp3" : ".wav"));
-        statusLabel.setText ("Exporting mix...", juce::dontSendNotification);
+        // "My Song.wav", then "My Song (2).wav" and so on
+        auto dest = session.getExportsFolder().getNonexistentChildFile (songName, asMp3 ? ".mp3" : ".wav", true);
+        statusLabel.setText ("Exporting " + dest.getFileName() + "...", juce::dontSendNotification);
 
         handle = session.exportMix (dest, loopOnly, normaliseBox.getSelectedId() - 1, asMp3,
                                     [safe, dest] (const juce::String& error)
@@ -97,70 +140,105 @@ void ExportDialog::startExport()
                                         if (safe != nullptr)
                                             safe->finish (error, dest.getParentDirectory());
                                     });
+        return;
+    }
+
+    // Stems: work out what goes in each file
+    stemJobs.clear();
+
+    if (what == 2)
+    {
+        for (int i = 0; i < trackToggles.size(); ++i)
+        {
+            if (! trackToggles[i]->getToggleState())
+                continue;
+
+            const int trackIndex = toggleTracks[i];
+            auto* t = session.getTrack (trackIndex);
+            stemJobs.push_back ({ t != nullptr ? t->getName() : "Track", { trackIndex } });
+        }
     }
     else
     {
-        exportingStems = true;
-        stemLoopOnly = loopOnly;
-
-        stemFolder = session.getExportsFolder().getChildFile (session.getProjectName() + " Stems " + stamp);
-        stemFolder.createDirectory();
-
-        // Skip empty tracks
-        stemTracks.clear();
+        // One stem per folder; tracks outside folders get their own
+        juce::StringArray doneFolders;
 
         for (int i = 0; i < session.getNumTracks(); ++i)
-            if (session.trackHasContent (i))
-                stemTracks.add (i);
-
-        stemPosition = 0;
-
-        if (stemTracks.isEmpty())
         {
-            finish ("No tracks have anything on them.", {});
-            return;
-        }
+            if (! session.trackHasContent (i))
+                continue;
 
-        exportNextStem();
+            const auto folder = session.getTrackFolder (i);
+
+            if (folder.isEmpty())
+            {
+                auto* t = session.getTrack (i);
+                stemJobs.push_back ({ t != nullptr ? t->getName() : "Track", { i } });
+            }
+            else if (! doneFolders.contains (folder))
+            {
+                doneFolders.add (folder);
+                juce::Array<int> members;
+
+                for (int m : session.getFolderTracks (folder))
+                    if (session.trackHasContent (m))
+                        members.add (m);
+
+                stemJobs.push_back ({ folder, members });
+            }
+        }
     }
+
+    if (stemJobs.empty())
+    {
+        statusLabel.setText ("Nothing selected to export.", juce::dontSendNotification);
+        return;
+    }
+
+    exporting = true;
+    exportingStems = true;
+    stemLoopOnly = loopOnly;
+    exportButton.setEnabled (false);
+    progress = 0.0;
+
+    stemFolder = session.getExportsFolder().getNonexistentChildFile (songName + " Stems", "", true);
+    stemFolder.createDirectory();
+    stemPosition = 0;
+
+    exportNextStem();
 }
 
 void ExportDialog::exportNextStem()
 {
-    if (stemPosition >= stemTracks.size())
+    if (stemPosition >= (int) stemJobs.size())
     {
         finish ({}, stemFolder);
         return;
     }
 
-    const int trackIndex = stemTracks[stemPosition];
-    auto* track = session.getTrack (trackIndex);
-
-    const auto trackName = track != nullptr ? track->getName() : juce::String ("Track");
-    const auto fileName = juce::File::createLegalFileName (juce::String (trackIndex + 1).paddedLeft ('0', 2)
-                                                           + " " + trackName);
-
+    const auto job = stemJobs[(size_t) stemPosition];
+    const auto fileName = juce::File::createLegalFileName (juce::String (stemPosition + 1).paddedLeft ('0', 2) + " " + job.name);
     auto dest = stemFolder.getChildFile (fileName + ".wav");
 
     statusLabel.setText ("Exporting stem " + juce::String (stemPosition + 1) + " of "
-                         + juce::String (stemTracks.size()) + ": " + trackName,
+                         + juce::String ((int) stemJobs.size()) + ": " + job.name,
                          juce::dontSendNotification);
 
     ++stemPosition;
 
     juce::Component::SafePointer<ExportDialog> safe (this);
 
-    handle = session.exportStem (trackIndex, dest, stemLoopOnly,
-                                 [safe] (const juce::String& error)
-                                 {
-                                     if (safe == nullptr)
-                                         return;
+    handle = session.exportTracks (job.tracks, dest, stemLoopOnly,
+                                   [safe] (const juce::String& error)
+                                   {
+                                       if (safe == nullptr)
+                                           return;
 
-                                     if (error.isNotEmpty())
-                                         safe->finish (error, safe->stemFolder);
-                                     else
-                                         safe->exportNextStem();
-                                 });
+                                       if (error.isNotEmpty())
+                                           safe->finish (error, safe->stemFolder);
+                                       else
+                                           safe->exportNextStem();
+                                   });
 }
 
 void ExportDialog::finish (const juce::String& error, const juce::File& folderToOpen)
@@ -189,8 +267,8 @@ void ExportDialog::timerCallback()
 
     const double current = handle->getProgress();
 
-    if (exportingStems && stemTracks.size() > 0)
-        progress = ((stemPosition - 1) + current) / (double) stemTracks.size();
+    if (exportingStems && ! stemJobs.empty())
+        progress = ((stemPosition - 1) + current) / (double) stemJobs.size();
     else
         progress = current;
 }
@@ -205,7 +283,7 @@ void ExportDialog::resized()
 {
     auto r = getLocalBounds().reduced (12);
 
-    auto row = [&r] { auto x = r.removeFromTop (26); r.removeFromTop (8); return x; };
+    auto row = [&r] (int h = 26) { auto x = r.removeFromTop (h); r.removeFromTop (8); return x; };
 
     auto r1 = row();
     whatLabel.setBounds (r1.removeFromLeft (80));
@@ -223,7 +301,19 @@ void ExportDialog::resized()
     normaliseLabel.setBounds (r4.removeFromLeft (80));
     normaliseBox.setBounds (r4);
 
-    exportButton.setBounds (row().removeFromLeft (120));
+    auto r5 = row (22);
+    tracksLabel.setBounds (r5.removeFromLeft (80));
+    noneButton.setBounds (r5.removeFromRight (60));
+    r5.removeFromRight (4);
+    allButton.setBounds (r5.removeFromRight (60));
+
+    trackViewport.setBounds (row (130));
+
+    auto buttons = row();
+    exportButton.setBounds (buttons.removeFromLeft (120));
+    buttons.removeFromLeft (8);
+    openFolderButton.setBounds (buttons.removeFromLeft (170));
+
     progressBar.setBounds (row());
     statusLabel.setBounds (r.removeFromTop (24));
 }

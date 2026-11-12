@@ -28,6 +28,7 @@ MasterStrip::MasterStrip (EditSession& sessionToUse)
 
     addAndMakeVisible (meter);
     meter.attachTo (session.getMasterMeterPlugin());
+    addAndMakeVisible (loudness);
 }
 
 void MasterStrip::paint (juce::Graphics& g)
@@ -44,6 +45,8 @@ void MasterStrip::resized()
     fxButton.setBounds (r.removeFromLeft (44));
     r.removeFromLeft (10);
     meter.setBounds (r.removeFromRight (200).reduced (0, 4));
+    r.removeFromRight (10);
+    loudness.setBounds (r.removeFromRight (270));
     r.removeFromRight (10);
     volumeSlider.setBounds (r.removeFromLeft (juce::jmin (360, r.getWidth())));
 }

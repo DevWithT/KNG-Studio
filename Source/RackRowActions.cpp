@@ -1,5 +1,6 @@
 #include "RackRow.h"
 #include "PatternGrid.h"
+#include "KitBrowser.h"
 
 namespace te = tracktion;
 
@@ -253,6 +254,11 @@ bool RackRow::isInterestedInDragSource (const SourceDetails& details)
     if (isDrum())
         return false;
 
+    juce::File f;
+
+    if (KitBrowser::getDraggedFile (details.description, f))
+        return isAudioFile (f);
+
     if (auto* tree = dynamic_cast<juce::FileTreeComponent*> (details.sourceComponent.get()))
         return tree->getNumSelectedFiles() == 1 && isAudioFile (tree->getSelectedFile());
 
@@ -262,8 +268,11 @@ bool RackRow::isInterestedInDragSource (const SourceDetails& details)
 void RackRow::itemDropped (const SourceDetails& details)
 {
     hovering = false;
+    juce::File f;
 
-    if (auto* tree = dynamic_cast<juce::FileTreeComponent*> (details.sourceComponent.get()))
+    if (KitBrowser::getDraggedFile (details.description, f))
+        dropFile (f);
+    else if (auto* tree = dynamic_cast<juce::FileTreeComponent*> (details.sourceComponent.get()))
         dropFile (tree->getSelectedFile());
 
     repaint();

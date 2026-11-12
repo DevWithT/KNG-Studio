@@ -1,4 +1,5 @@
 #include "EditSession.h"
+#include "KngLoudnessPlugin.h"
 
 namespace te = tracktion;
 
@@ -8,7 +9,8 @@ static bool isUtilityPlugin (te::Plugin* p)
     return dynamic_cast<te::VolumeAndPanPlugin*> (p) != nullptr
         || dynamic_cast<te::LevelMeterPlugin*> (p) != nullptr
         || dynamic_cast<te::AuxSendPlugin*> (p) != nullptr
-        || dynamic_cast<te::AuxReturnPlugin*> (p) != nullptr;
+        || dynamic_cast<te::AuxReturnPlugin*> (p) != nullptr
+        || dynamic_cast<KngLoudnessPlugin*> (p) != nullptr;
 }
 
 //==============================================================================
@@ -172,4 +174,21 @@ te::Plugin* EditSession::getMasterMeterPlugin()
         list.insertPlugin (p, list.size(), nullptr);
 
     return list.findFirstPluginOfType<te::LevelMeterPlugin>();
+}
+
+KngLoudnessPlugin* EditSession::getLoudnessMeter()
+{
+    auto& list = edit->getMasterPluginList();
+
+    if (auto* m = list.findFirstPluginOfType<KngLoudnessPlugin>())
+        return m;
+
+    auto p = edit->getPluginCache().createNewPlugin (KngLoudnessPlugin::xmlTypeName, juce::PluginDescription());
+
+    if (p == nullptr)
+        return nullptr;
+
+    // Last in the chain, after your master effects
+    list.insertPlugin (p, list.size(), nullptr);
+    return dynamic_cast<KngLoudnessPlugin*> (p.get());
 }

@@ -9,6 +9,7 @@
 #include "KngDeEssPlugin.h"
 #include "KngLimiterPlugin.h"
 #include "KngDoublerPlugin.h"
+#include "KngLoudnessPlugin.h"
 
 MainComponent::MainComponent (tracktion::Engine& engineToUse)
     : engine (engineToUse)
@@ -23,6 +24,7 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
     engine.getPluginManager().createBuiltInType<KngDeEssPlugin>();
     engine.getPluginManager().createBuiltInType<KngLimiterPlugin>();
     engine.getPluginManager().createBuiltInType<KngDoublerPlugin>();
+    engine.getPluginManager().createBuiltInType<KngLoudnessPlugin>();
 
     setWantsKeyboardFocus (true);
 
@@ -40,6 +42,10 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
     deviceLabel.setJustificationType (juce::Justification::centredRight);
 
     kitBrowser = std::make_unique<KitBrowser> (engine.getDeviceManager().deviceManager);
+    kitBrowser->getProjectBpm = [this]
+    {
+        return session != nullptr ? session->getBpmAt (session->getTransport().getPosition().inSeconds()) : 0.0;
+    };
     pluginBrowser = std::make_unique<PluginBrowser> (engine);
 
     const juce::Colour tabColour (0xff24282c);

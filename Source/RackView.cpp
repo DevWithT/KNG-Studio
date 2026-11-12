@@ -1,5 +1,6 @@
 #include "RackView.h"
 #include "PluginBrowser.h"
+#include "KitBrowser.h"
 
 namespace te = tracktion;
 
@@ -201,13 +202,26 @@ void RackView::syncToolbar()
 bool RackView::isInterestedInDragSource (const SourceDetails& details)
 {
     PluginBrowser::Entry e;
+    juce::File f;
 
     return dynamic_cast<juce::FileTreeComponent*> (details.sourceComponent.get()) != nullptr
-        || PluginBrowser::parseDrag (details.description, e);
+        || PluginBrowser::parseDrag (details.description, e)
+        || KitBrowser::getDraggedFile (details.description, f);
 }
 
 void RackView::itemDropped (const SourceDetails& details)
 {
+    // A sound from Sounds search or favorites
+    juce::File draggedFile;
+
+    if (KitBrowser::getDraggedFile (details.description, draggedFile))
+    {
+        hovering = false;
+        addSamples ({ draggedFile });
+        repaint();
+        return;
+    }
+
     // A plugin from the Plugins browser
     PluginBrowser::Entry plugin;
 

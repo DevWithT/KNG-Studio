@@ -95,7 +95,9 @@ target_sources(KNGStudio PRIVATE
     Source/KngPresets.cpp
     Source/EditSessionFolders.cpp
     Source/FolderHeader.cpp
-    Source/EditSessionTempo.cpp)
+    Source/EditSessionTempo.cpp
+    Source/KngLoudnessPlugin.cpp
+    Source/LoudnessDisplay.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0

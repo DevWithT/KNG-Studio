@@ -3,6 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "EditSession.h"
 #include "LevelMeter.h"
+#include "LoudnessDisplay.h"
 
 class MasterStrip : public juce::Component
 {
@@ -19,6 +20,7 @@ private:
     juce::Slider volumeSlider;
     juce::TextButton fxButton { "FX" };
     LevelMeter meter;
+    LoudnessDisplay loudness { session };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MasterStrip)
 };

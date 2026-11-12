@@ -3,6 +3,7 @@
 #include <tracktion_engine/tracktion_engine.h>
 
 class KngSamplerPlugin;
+class KngLoudnessPlugin;
 
 class EditSession : private juce::Timer
 {
@@ -287,6 +288,8 @@ public:
     void setSendDb (int trackIndex, float db);
     bool isReverbBus (int trackIndex);
     tracktion::Plugin* getMasterMeterPlugin();
+    /** The loudness meter at the end of the master chain (added the first time it's asked for). */
+    KngLoudnessPlugin* getLoudnessMeter();
 
     // Lets the UI open an FX chain window (MainComponent sets this)
     std::function<void (tracktion::PluginList&, const juce::String&)> onShowFxChain;
@@ -306,6 +309,10 @@ public:
                                                                 bool asMp3, std::function<void (const juce::String&)> onDone);
     std::shared_ptr<tracktion::EditRenderer::Handle> exportStem (int trackIndex, const juce::File& dest, bool loopOnly,
                                                                  std::function<void (const juce::String&)> onDone);
+
+    /** Render several tracks together into one file (a folder stem). */
+    std::shared_ptr<tracktion::EditRenderer::Handle> exportTracks (const juce::Array<int>& trackIndices, const juce::File& dest,
+                                                                   bool loopOnly, std::function<void (const juce::String&)> onDone);
 
     // Undo
     void undo();

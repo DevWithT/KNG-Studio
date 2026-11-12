@@ -1,6 +1,7 @@
 #include "KngSamplerView.h"
 #include "KngSamplerPlugin.h"
 #include "TheoryHelper.h"
+#include "KitBrowser.h"
 
 namespace te = tracktion;
 
@@ -423,14 +424,20 @@ void KngSamplerView::mouseUp (const juce::MouseEvent&)
 //==============================================================================
 bool KngSamplerView::isInterestedInDragSource (const SourceDetails& details)
 {
-    return dynamic_cast<juce::FileTreeComponent*> (details.sourceComponent.get()) != nullptr;
+    juce::File f;
+
+    return dynamic_cast<juce::FileTreeComponent*> (details.sourceComponent.get()) != nullptr
+        || KitBrowser::getDraggedFile (details.description, f);
 }
 
 void KngSamplerView::itemDropped (const SourceDetails& details)
 {
     hovering = false;
+    juce::File f;
 
-    if (auto* tree = dynamic_cast<juce::FileTreeComponent*> (details.sourceComponent.get()))
+    if (KitBrowser::getDraggedFile (details.description, f))
+        loadFile (f);
+    else if (auto* tree = dynamic_cast<juce::FileTreeComponent*> (details.sourceComponent.get()))
         loadFile (tree->getSelectedFile());
 
     repaint();
