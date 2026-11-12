@@ -1,5 +1,6 @@
 #include "KngSynthPlugin.h"
 #include "KngSynthPresets.h"
+#include "KngSynthView.h"
 
 namespace te = tracktion;
 
@@ -70,6 +71,11 @@ void KngSynthPlugin::restorePluginStateFromValueTree (const juce::ValueTree& v)
 
     for (auto* p : getAutomatableParameters())
         p->updateFromAttachedValue();
+}
+
+std::unique_ptr<te::Plugin::EditorComponent> KngSynthPlugin::createEditor()
+{
+    return std::make_unique<KngSynthView> (*this);
 }
 
 void KngSynthPlugin::applyPreset (int presetIndex)

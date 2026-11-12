@@ -40,7 +40,9 @@ class KngFaceKnob : public juce::Component,
                     private juce::Timer
 {
 public:
-    KngFaceKnob (KngFxBase& pluginToUse, int paramIndex, const KngFaceStyle& styleToUse, const juce::String& labelText = {});
+    KngFaceKnob (KngFxBase& plugin, int paramIndex, const KngFaceStyle& styleToUse, const juce::String& labelText = {});
+    KngFaceKnob (tracktion::Plugin& plugin, tracktion::AutomatableParameter& parameter, const KngParamDef& defToUse,
+                 const KngFaceStyle& styleToUse, const juce::String& labelText = {});
     ~KngFaceKnob() override;
 
     void setArcColour (juce::Colour c)   { knob.setColour (juce::Slider::rotarySliderFillColourId, c); }
@@ -54,9 +56,9 @@ public:
 private:
     void timerCallback() override;
 
-    KngFxBase& plugin;
     tracktion::Plugin::Ptr pluginRef;
-    const int index;
+    tracktion::AutomatableParameter::Ptr param;
+    const KngParamDef def;
     const KngFaceStyle style;
     juce::String label;
     juce::Slider knob;
@@ -70,7 +72,9 @@ class KngFaceToggle : public juce::Component,
                       private juce::Timer
 {
 public:
-    KngFaceToggle (KngFxBase& pluginToUse, int paramIndex, const KngFaceStyle& styleToUse, const juce::String& labelText);
+    KngFaceToggle (KngFxBase& plugin, int paramIndex, const KngFaceStyle& styleToUse, const juce::String& labelText);
+    KngFaceToggle (tracktion::Plugin& plugin, tracktion::AutomatableParameter& parameter,
+                   const KngFaceStyle& styleToUse, const juce::String& labelText);
     ~KngFaceToggle() override;
 
     void paint (juce::Graphics&) override;
@@ -79,13 +83,40 @@ public:
 private:
     void timerCallback() override   { repaint(); }
 
-    KngFxBase& plugin;
     tracktion::Plugin::Ptr pluginRef;
-    const int index;
+    tracktion::AutomatableParameter::Ptr param;
     const KngFaceStyle style;
     juce::String label;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (KngFaceToggle)
+};
+
+/** A row of pills for a parameter with named choices (Saw | Square | ...). Click one to pick it. */
+class KngFaceChoice : public juce::Component,
+                      public juce::SettableTooltipClient,
+                      private juce::Timer
+{
+public:
+    KngFaceChoice (tracktion::Plugin& plugin, tracktion::AutomatableParameter& parameter, const KngParamDef& defToUse,
+                   const KngFaceStyle& styleToUse, const juce::String& shortNames = {});
+    ~KngFaceChoice() override;
+
+    void paint (juce::Graphics&) override;
+    void mouseDown (const juce::MouseEvent&) override;
+
+    juce::Colour onColour, onTextColour { 0xff081018 };
+
+private:
+    void timerCallback() override   { repaint(); }
+    int getSelected() const;
+
+    tracktion::Plugin::Ptr pluginRef;
+    tracktion::AutomatableParameter::Ptr param;
+    const KngParamDef def;
+    const KngFaceStyle style;
+    juce::StringArray names;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (KngFaceChoice)
 };
 
 /** The small arrow button that pops a panel out into its own window. */

@@ -42,6 +42,9 @@ public:
     /** Message thread: load a factory preset. */
     void applyPreset (int presetIndex);
 
+    /** The KNG Synth's own panel (used by the pop-out window). */
+    std::unique_ptr<EditorComponent> createEditor() override;
+
 private:
     struct Block
     {

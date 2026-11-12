@@ -153,7 +153,7 @@ void DockPanel::showInstrument (te::Track& track, bool isDrumTrack)
     if (isDrumTrack)
         slots[instrumentTab]->setContent (createDrumRackPanel (*session, track));
     else if (isSynth)
-        slots[instrumentTab]->setContent (std::make_unique<KngSynthView> (*session, track));
+        slots[instrumentTab]->setContent (std::make_unique<KngSynthView> (*track.pluginList.findFirstPluginOfType<KngSynthPlugin>()));
     else
         slots[instrumentTab]->setContent (std::make_unique<KngSamplerView> (*session, track));
 

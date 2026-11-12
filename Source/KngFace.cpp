@@ -12,8 +12,14 @@ juce::String kngFormat (const KngParamDef& d, float v)
     if (unit == "Hz")
         return v >= 1000.0f ? juce::String (v / 1000.0f, 1) + " kHz" : juce::String (juce::roundToInt (v)) + " Hz";
 
+    if (unit == "lfo")
+        return juce::String (v, 2) + " Hz";
+
     if (unit == "ms")
         return v >= 1000.0f ? juce::String (v / 1000.0f, 2) + " s" : juce::String (juce::roundToInt (v)) + " ms";
+
+    if (unit == "sec")
+        return v < 1.0f ? juce::String (juce::roundToInt (v * 1000.0f)) + " ms" : juce::String (v, 2) + " s";
 
     if (unit == "dB")
         return (v > 0.0f ? "+" : "") + juce::String (v, 1) + " dB";
@@ -25,6 +31,13 @@ juce::String kngFormat (const KngParamDef& d, float v)
         return juce::String (juce::roundToInt (v)) + " ct";
 
     return juce::String (v, d.step >= 1.0f ? 0 : 2);
+}
+
+static void beginUndoStep (te::Plugin* plugin)
+{
+    if (plugin != nullptr)
+        if (auto* um = plugin->getUndoManager())
+            um->beginNewTransaction();
 }
 
 //==============================================================================
@@ -59,6 +72,9 @@ void KngFaceLook::drawRotarySlider (juce::Graphics& g, int x, int y, int width, 
     const auto arcColour = slider.findColour (juce::Slider::rotarySliderFillColourId);
     const juce::PathStrokeType stroke (ring, juce::PathStrokeType::curved, juce::PathStrokeType::rounded);
 
+    if (r <= 2.0f)
+        return;
+
     // The ring: a dim track with the value glowing over it
     juce::Path track;
     track.addCentredArc (c.x, c.y, r, r, 0.0f, startAngle, endAngle, true);
@@ -74,6 +90,10 @@ void KngFaceLook::drawRotarySlider (juce::Graphics& g, int x, int y, int width, 
 
     // The body: a shaded cap with a soft shadow under it
     const float body = r - ring * 1.6f;
+
+    if (body <= 1.0f)
+        return;
+
     g.setColour (juce::Colours::black.withAlpha (0.55f));
     g.fillEllipse (c.x - body, c.y - body + body * 0.08f, body * 2.0f, body * 2.0f);
 
@@ -149,35 +169,36 @@ juce::Font KngFaceLook::getTextButtonFont (juce::TextButton&, int buttonHeight)
 }
 
 //==============================================================================
-KngFaceKnob::KngFaceKnob (KngFxBase& pluginToUse, int paramIndex, const KngFaceStyle& styleToUse, const juce::String& labelText)
-    : plugin (pluginToUse), pluginRef (&pluginToUse), index (paramIndex), style (styleToUse)
+KngFaceKnob::KngFaceKnob (KngFxBase& p, int paramIndex, const KngFaceStyle& styleToUse, const juce::String& labelText)
+    : KngFaceKnob (p, *p.getParam (paramIndex), p.getDef (paramIndex), styleToUse, labelText)
 {
-    const auto& d = plugin.getDef (index);
-    label = labelText.isNotEmpty() ? labelText : juce::String (d.name);
+}
+
+KngFaceKnob::KngFaceKnob (te::Plugin& p, te::AutomatableParameter& parameter, const KngParamDef& defToUse,
+                          const KngFaceStyle& styleToUse, const juce::String& labelText)
+    : pluginRef (&p), param (&parameter), def (defToUse), style (styleToUse),
+      label (labelText.isNotEmpty() ? labelText : juce::String (defToUse.name))
+{
     labelColour = style.label;
 
     addAndMakeVisible (knob);
     knob.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
     knob.setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
     knob.setRotaryParameters (juce::MathConstants<float>::pi * 1.25f, juce::MathConstants<float>::pi * 2.75f, true);
-    knob.setRange (d.min, d.max, d.step);
+    knob.setRange (def.min, def.max, def.step);
 
-    if (d.mid > d.min && d.mid < d.max)
-        knob.setSkewFactorFromMidPoint (d.mid);
+    if (def.mid > def.min && def.mid < def.max)
+        knob.setSkewFactorFromMidPoint (def.mid);
 
-    knob.setDoubleClickReturnValue (true, d.def);
-    knob.setValue (plugin.getParam (index)->getCurrentValue(), juce::dontSendNotification);
+    knob.setDoubleClickReturnValue (true, def.def);
+    knob.setValue (param->getCurrentValue(), juce::dontSendNotification);
     knob.setTooltip (label + " (double-click to reset)");
 
-    knob.onDragStart = [this]
-    {
-        if (auto* um = plugin.getUndoManager())
-            um->beginNewTransaction();
-    };
+    knob.onDragStart = [this] { beginUndoStep (pluginRef.get()); };
 
     knob.onValueChange = [this]
     {
-        plugin.getParam (index)->setParameter ((float) knob.getValue(), juce::sendNotification);
+        param->setParameter ((float) knob.getValue(), juce::sendNotification);
         repaint();
     };
 
@@ -192,7 +213,7 @@ KngFaceKnob::~KngFaceKnob()
 void KngFaceKnob::timerCallback()
 {
     // Follow automation, presets and undo
-    const float v = plugin.getParam (index)->getCurrentValue();
+    const float v = param->getCurrentValue();
 
     if (! knob.isMouseButtonDown() && std::abs (v - (float) knob.getValue()) > 1.0e-6f)
     {
@@ -221,12 +242,18 @@ void KngFaceKnob::paint (juce::Graphics& g)
 
     g.setFont (KngFonts::font (style.valueFace, valueSize));
     g.setColour (style.value);
-    g.drawText (kngFormat (plugin.getDef (index), (float) knob.getValue()), valueArea, juce::Justification::centred, false);
+    g.drawText (kngFormat (def, (float) knob.getValue()), valueArea, juce::Justification::centred, false);
 }
 
 //==============================================================================
-KngFaceToggle::KngFaceToggle (KngFxBase& pluginToUse, int paramIndex, const KngFaceStyle& styleToUse, const juce::String& labelText)
-    : plugin (pluginToUse), pluginRef (&pluginToUse), index (paramIndex), style (styleToUse), label (labelText)
+KngFaceToggle::KngFaceToggle (KngFxBase& p, int paramIndex, const KngFaceStyle& styleToUse, const juce::String& labelText)
+    : KngFaceToggle (p, *p.getParam (paramIndex), styleToUse, labelText)
+{
+}
+
+KngFaceToggle::KngFaceToggle (te::Plugin& p, te::AutomatableParameter& parameter,
+                              const KngFaceStyle& styleToUse, const juce::String& labelText)
+    : pluginRef (&p), param (&parameter), style (styleToUse), label (labelText)
 {
     setMouseCursor (juce::MouseCursor::PointingHandCursor);
     startTimerHz (10);
@@ -242,7 +269,7 @@ void KngFaceToggle::paint (juce::Graphics& g)
     auto r = getLocalBounds().toFloat();
     auto labelArea = r.removeFromBottom (18.0f);
     const auto box = r.withSizeKeepingCentre (juce::jmin (64.0f, r.getWidth()), juce::jmin (34.0f, r.getHeight()));
-    const bool on = plugin.getParam (index)->getCurrentValue() > 0.5f;
+    const bool on = param->getCurrentValue() > 0.5f;
 
     g.setColour (juce::Colours::black.withAlpha (0.5f));
     g.fillRoundedRectangle (box.translated (0.0f, 2.0f), 6.0f);
@@ -275,11 +302,67 @@ void KngFaceToggle::paint (juce::Graphics& g)
 
 void KngFaceToggle::mouseDown (const juce::MouseEvent&)
 {
-    if (auto* um = plugin.getUndoManager())
-        um->beginNewTransaction();
-
-    auto* param = plugin.getParam (index);
+    beginUndoStep (pluginRef.get());
     param->setParameter (param->getCurrentValue() > 0.5f ? 0.0f : 1.0f, juce::sendNotification);
+    repaint();
+}
+
+//==============================================================================
+KngFaceChoice::KngFaceChoice (te::Plugin& p, te::AutomatableParameter& parameter, const KngParamDef& defToUse,
+                              const KngFaceStyle& styleToUse, const juce::String& shortNames)
+    : pluginRef (&p), param (&parameter), def (defToUse), style (styleToUse)
+{
+    onColour = style.accent;
+    names = juce::StringArray::fromTokens (shortNames.isNotEmpty() ? shortNames
+                                                                   : juce::String (def.choices != nullptr ? def.choices : ""),
+                                           "|", "");
+    setMouseCursor (juce::MouseCursor::PointingHandCursor);
+    startTimerHz (8);
+}
+
+KngFaceChoice::~KngFaceChoice()
+{
+    stopTimer();
+}
+
+int KngFaceChoice::getSelected() const
+{
+    return juce::roundToInt (param->getCurrentValue() - def.min);
+}
+
+void KngFaceChoice::paint (juce::Graphics& g)
+{
+    const int n = names.size();
+
+    if (n == 0)
+        return;
+
+    const float w = (float) getWidth() / (float) n;
+    const int selected = getSelected();
+    g.setFont (KngFonts::font (KngFonts::mono, juce::jmin (11.0f, (float) getHeight() * 0.6f)));
+
+    for (int i = 0; i < n; ++i)
+    {
+        const auto cell = juce::Rectangle<float> (i * w, 0.0f, w, (float) getHeight()).reduced (2.0f, 0.0f);
+        const bool on = i == selected;
+
+        g.setColour (on ? onColour : style.panel);
+        g.fillRoundedRectangle (cell, cell.getHeight() * 0.5f);
+        g.setColour (on ? onTextColour : style.label);
+        g.drawText (names[i], cell, juce::Justification::centred, false);
+    }
+}
+
+void KngFaceChoice::mouseDown (const juce::MouseEvent& e)
+{
+    const int n = names.size();
+
+    if (n == 0 || getWidth() <= 0)
+        return;
+
+    const int i = juce::jlimit (0, n - 1, e.x * n / getWidth());
+    beginUndoStep (pluginRef.get());
+    param->setParameter (def.min + (float) i, juce::sendNotification);
     repaint();
 }
 
