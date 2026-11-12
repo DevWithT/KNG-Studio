@@ -282,27 +282,32 @@ void PianoRoll::paintRuler (juce::Graphics& g)
     juce::Graphics::ScopedSaveState saveState (g);
     g.reduceClipRegion (r);
 
-    auto& tempo = session.getEdit().tempoSequence;
     const double endBeat = xToBeat (r.getRight());
     g.setFont (juce::Font (juce::FontOptions (11.0f)));
 
-    // Beat ticks
-    for (int b = (int) std::floor (viewBeat); b <= endBeat; ++b)
-    {
-        g.setColour (juce::Colours::white.withAlpha (0.2f));
-        g.drawVerticalLine (beatToX (b), (float) r.getBottom() - 5.0f, (float) r.getBottom());
-    }
-
     // A pattern in the bank counts its own bars from 1; a copy in the song shows song bars
     const bool inBank = clip->getPosition().getStart().inSeconds() >= session.getBankStart() - 0.001;
-    const double clipStartBeat = getClipStartBeat();
+    const int firstBar = session.barNumberAt (clip->getPosition().getStart().inSeconds());
 
-    for (int b = (int) std::floor (viewBeat / 4.0) * 4; b <= endBeat; b += 4)
+    // Half-beat steps: beat ticks on whole beats, and a numbered line wherever the tempo map
+    // starts a bar, so 3/4, 6/8, 7/8 and time signature changes all line up with the grid
+    for (int i = (int) std::floor (viewBeat * 2.0); i * 0.5 <= endBeat; ++i)
     {
+        const double b = i * 0.5;
         const int x = beatToX (b);
-        const double songBeat = tempo.toBeats (clip->getTimeOfContentBeat (te::BeatPosition::fromBeats (b))).inBeats();
-        const int bar = inBank ? (int) std::round ((b - clipStartBeat) / 4.0) + 1
-                               : (int) std::round (songBeat / 4.0) + 1;
+
+        if ((i % 2) == 0)
+        {
+            g.setColour (juce::Colours::white.withAlpha (0.2f));
+            g.drawVerticalLine (x, (float) r.getBottom() - 5.0f, (float) r.getBottom());
+        }
+
+        const double t = clip->getTimeOfContentBeat (te::BeatPosition::fromBeats (b)).inSeconds();
+
+        if (std::abs (t - session.barStartAt (t)) >= 0.0005)
+            continue;
+
+        const int bar = inBank ? session.barNumberAt (t) - firstBar + 1 : session.barNumberAt (t);
 
         g.setColour (juce::Colours::white.withAlpha (0.35f));
         g.drawVerticalLine (x, (float) r.getY() + 6.0f, (float) r.getBottom());

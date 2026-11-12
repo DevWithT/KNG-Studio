@@ -13,6 +13,10 @@ TracksView::TracksView (EditSession& sessionToUse)
 
     addAndMakeVisible (addTrackButton);
     addTrackButton.setTooltip ("Add a lane for audio, recording and pattern blocks");
+
+    // Lane height is saved with the song
+    rowHeight = juce::jlimit (minRowHeight, maxRowHeight,
+                              (int) session.getEdit().state.getProperty ("kngLaneHeight", 64));
     addTrackButton.onClick = [this]
     {
         session.addTrack();
@@ -207,6 +211,33 @@ void TracksView::updateLayout()
 void TracksView::resized()
 {
     layout (true);
+}
+
+void TracksView::mouseWheelMove (const juce::MouseEvent& e, const juce::MouseWheelDetails& wheel)
+{
+    // Ctrl+scroll over the lane headers makes every lane taller or shorter
+    if (e.mods.isCommandDown() && e.getEventRelativeTo (this).x < headerWidth)
+    {
+        if (wheel.deltaY != 0.0f)
+            setLaneHeight (rowHeight + (wheel.deltaY > 0.0f ? 8 : -8));
+
+        return;
+    }
+
+    juce::Component::mouseWheelMove (e, wheel);
+}
+
+void TracksView::setLaneHeight (int newHeight)
+{
+    newHeight = juce::jlimit (minRowHeight, maxRowHeight, newHeight);
+
+    if (newHeight == rowHeight)
+        return;
+
+    rowHeight = newHeight;
+    session.getEdit().state.setProperty ("kngLaneHeight", rowHeight, nullptr);
+    updateLayout();
+    repaint();
 }
 
 //==============================================================================

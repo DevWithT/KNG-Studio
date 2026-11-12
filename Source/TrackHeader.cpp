@@ -1,20 +1,62 @@
 #include "TrackHeader.h"
-#include <map>
-#include "VolumeHelpers.h"
-#include "KngSamplerPlugin.h"
-#include "KngSynthPlugin.h"
 #include "SendPopup.h"
 
 namespace te = tracktion;
 
+// The lane color choices, used by the color strip and the right-click menu
+static void addColourItems (juce::PopupMenu& menu, EditSession& session, int idx)
+{
+    struct Swatch { const char* name; juce::uint32 argb; };
+    static const Swatch swatches[] = {
+        { "Blue",   0xff3a6ea5 }, { "Red",    0xffc0392b }, { "Orange", 0xffd35400 },
+        { "Yellow", 0xffc9a227 }, { "Green",  0xff2e8b57 }, { "Teal",   0xff16a085 },
+        { "Purple", 0xff8e44ad }, { "Pink",   0xffc2185b }, { "Grey",   0xff607d8b }
+    };
+
+    auto* s = &session;
+
+    for (auto& sw : swatches)
+    {
+        const juce::Colour c (sw.argb);
+        juce::PopupMenu::Item item (sw.name);
+        item.colour = c;
+        item.action = [s, idx, c]
+        {
+            if (auto* t = s->getTrack (idx))
+            {
+                s->beginEdit();
+                t->setColour (c);
+                s->save();
+            }
+        };
+        menu.addItem (std::move (item));
+    }
+}
+
+// Moves a lane past any hidden instrument tracks so it visibly moves one lane
+static void moveLane (EditSession* s, int idx, int direction)
+{
+    int target = idx + direction;
+
+    while (target >= 0 && target < s->getNumTracks() && ! s->isLaneTrack (target))
+        target += direction;
+
+    if (target < 0 || target >= s->getNumTracks())
+        return;
+
+    for (int at = idx; at != target; at += direction)
+        s->moveTrack (at, direction);
+}
+
+//==============================================================================
 TrackHeader::TrackHeader (EditSession& sessionToUse, int trackIndexToUse)
     : session (sessionToUse),
       trackIndex (trackIndexToUse),
-      isBus (sessionToUse.isReverbBus (trackIndexToUse)),
-      isMidi (sessionToUse.isMidiTrack (trackIndexToUse))
+      isBus (sessionToUse.isReverbBus (trackIndexToUse))
 {
     addAndMakeVisible (nameLabel);
-    nameLabel.setFont (juce::Font (juce::FontOptions (15.0f)));
+    nameLabel.setFont (juce::Font (juce::FontOptions (14.0f)));
+    nameLabel.setMinimumHorizontalScale (0.8f);
     nameLabel.setInterceptsMouseClicks (false, false);
     nameLabel.onTextChange = [this]
     {
@@ -31,7 +73,7 @@ TrackHeader::TrackHeader (EditSession& sessionToUse, int trackIndexToUse)
         }
     };
 
-    for (auto* b : { &armButton, &muteButton, &soloButton, &fxButton, &autoButton })
+    for (auto* b : { &armButton, &muteButton, &soloButton })
     {
         addAndMakeVisible (b);
         b->setClickingTogglesState (false);
@@ -41,10 +83,7 @@ TrackHeader::TrackHeader (EditSession& sessionToUse, int trackIndexToUse)
     muteButton.setColour (juce::TextButton::buttonOnColourId, juce::Colours::orange);
     soloButton.setColour (juce::TextButton::buttonOnColourId, juce::Colours::gold);
 
-    armButton.onClick = [this]
-    {
-        session.setArmed (trackIndex, ! session.isArmed (trackIndex));
-    };
+    armButton.onClick = [this] { session.setArmed (trackIndex, ! session.isArmed (trackIndex)); };
 
     muteButton.onClick = [this]
     {
@@ -58,31 +97,8 @@ TrackHeader::TrackHeader (EditSession& sessionToUse, int trackIndexToUse)
             t->setSolo (! t->isSolo (false));
     };
 
-    fxButton.onClick = [this] { session.selectTrack (trackIndex); };
-
-    autoButton.setColour (juce::TextButton::buttonOnColourId, juce::Colour (0xffe6a23a));
-    autoButton.onClick = [this]
-    {
-        session.setAutomationShown (trackIndex, ! session.isAutomationShown (trackIndex));
-    };
-    addAndMakeVisible (instrumentButton);
-    instrumentButton.setVisible (isMidi);
-    instrumentButton.onClick = [this]
-    {
-        // Drum tracks open their Drum Rack, other MIDI tracks pick an instrument
-        session.selectTrack (trackIndex);
-        if (session.isDrumTrack (trackIndex) && session.onShowDrumRack)
-            session.onShowDrumRack (trackIndex);
-        else
-            showInstrumentMenu();
-    };
-
-    addAndMakeVisible (rollButton);
-    rollButton.setVisible (isMidi);
-    rollButton.onClick = [this] { session.openPianoRollForTrack (trackIndex); };
-
-    addAndMakeVisible (inputBox);
-    inputBox.setTextWhenNoChoicesAvailable (isMidi ? "No MIDI inputs" : "No inputs");
+    addChildComponent (inputBox);
+    inputBox.setTextWhenNoChoicesAvailable ("No inputs");
     inputBox.onChange = [this]
     {
         const int id = inputBox.getSelectedId();
@@ -92,81 +108,23 @@ TrackHeader::TrackHeader (EditSession& sessionToUse, int trackIndexToUse)
     };
     refreshInputList();
 
-    addAndMakeVisible (volumeSlider);
-    volumeSlider.setSliderStyle (juce::Slider::LinearHorizontal);
-    volumeSlider.setTextBoxStyle (juce::Slider::TextBoxRight, false, 56, 20);
-    KngVolume::setupSlider (volumeSlider);
-
-    addAndMakeVisible (panSlider);
-    panSlider.setSliderStyle (juce::Slider::LinearHorizontal);
-    panSlider.setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
-    panSlider.setRange (-1.0, 1.0, 0.01);
-    panSlider.setDoubleClickReturnValue (true, 0.0);
-
-    addAndMakeVisible (sendLabel);
-    sendLabel.setText ("Reverb", juce::dontSendNotification);
-    sendLabel.setFont (juce::Font (juce::FontOptions (12.0f)));
-    sendLabel.setInterceptsMouseClicks (false, false);
-
-    addAndMakeVisible (sendSlider);
-    sendSlider.setSliderStyle (juce::Slider::LinearHorizontal);
-    sendSlider.setTextBoxStyle (juce::Slider::TextBoxRight, false, 56, 20);
-    sendSlider.setRange (-60.0, 0.0, 0.1);
-    sendSlider.setDoubleClickReturnValue (true, -60.0);
-    sendSlider.textFromValueFunction = [] (double v)
-    {
-        return v <= -60.0 ? juce::String ("Off") : juce::String (v, 1) + " dB";
-    };
-    sendSlider.setValue (session.getSendDb (trackIndex), juce::dontSendNotification);
-    sendSlider.onValueChange = [this] { session.setSendDb (trackIndex, (float) sendSlider.getValue()); };
-
     addAndMakeVisible (meter);
 
     if (auto* t = session.getTrack (trackIndex))
     {
         nameLabel.setText (t->getName(), juce::dontSendNotification);
         meter.attachTo (t->getLevelMeterPlugin());
-
-        if (auto* vp = t->getVolumePlugin())
-        {
-            volumeSlider.setValue (session.getTrackVolumeDb (trackIndex), juce::dontSendNotification);
-            panSlider.setValue (vp->getPan(), juce::dontSendNotification);
-        }
     }
-
-    volumeSlider.onValueChange = [this]
-    {
-        if (auto* t = session.getTrack (trackIndex))
-            session.setTrackVolumeDb (trackIndex, (float) volumeSlider.getValue());
-    };
-
-    panSlider.onValueChange = [this]
-    {
-        if (auto* t = session.getTrack (trackIndex))
-            if (auto* vp = t->getVolumePlugin())
-                vp->setPan ((float) panSlider.getValue());
-    };
 
     // Tooltips
-    armButton.setTooltip ("Arm this track for recording");
-    muteButton.setTooltip ("Mute");
-    soloButton.setTooltip ("Solo: hear only this track");
-    autoButton.setTooltip ("Show or hide this track's automation lane");
-    fxButton.setTooltip ("Show this track's effects in the inspector on the right");
-    inputBox.setTooltip ("Which input this track records from");
-    instrumentButton.setTooltip ("Choose or open this track's instrument");
-    rollButton.setTooltip ("Open this track's notes in the Piano Roll");
-    volumeSlider.setTooltip ("Volume (double-click for 0 dB)");
-    panSlider.setTooltip ("Pan left or right (double-click to center)");
+    armButton.setTooltip ("Arm this lane for recording");
+    muteButton.setTooltip ("Mute this lane, its audio and its pattern blocks");
+    soloButton.setTooltip ("Solo: hear only this lane");
+    inputBox.setTooltip ("Which input this lane records from");
 
-    // The reverb bus doesn't record and can't send to itself
+    // Buses don't record
     if (isBus)
-    {
         armButton.setVisible (false);
-        inputBox.setVisible (false);
-        sendLabel.setVisible (false);
-        sendSlider.setVisible (false);
-    }
 
     startTimerHz (10);
 }
@@ -193,95 +151,22 @@ void TrackHeader::refreshInputList()
         inputBox.setSelectedId (session.getTrackInput (trackIndex) + 1, juce::dontSendNotification);
 }
 
-void TrackHeader::showInstrumentMenu()
-{
-    auto* s = &session;
-    const int idx = trackIndex;
-
-    juce::PopupMenu menu;
-    auto* inst = session.getInstrument (trackIndex);
-
-    if (dynamic_cast<KngSamplerPlugin*> (inst) != nullptr || dynamic_cast<KngSynthPlugin*> (inst) != nullptr)
-    {
-        menu.addItem ("Open " + inst->getName(), [s, idx] { if (s->onShowSampler) s->onShowSampler (idx); });
-    }
-    else if (inst != nullptr)
-    {
-        te::Plugin::Ptr ptr (inst);
-        menu.addItem ("Open " + inst->getName(), [ptr] { ptr->showWindowExplicitly(); });
-    }
-
-    if (inst != nullptr)
-    {
-        menu.addItem ("Remove Instrument", [s, idx] { s->removeInstrument (idx); });
-        menu.addSeparator();
-    }
-
-    menu.addItem ("KNG Sampler (built-in)", [s, idx] { s->setBuiltInSampler (idx); });
-    menu.addItem ("KNG Synth (built-in)", [s, idx] { s->setBuiltInSynth (idx); });
-    menu.addSeparator();
-
-    std::map<juce::String, juce::PopupMenu> byMaker;
-
-    for (auto& d : session.getEdit().engine.getPluginManager().knownPluginList.getTypes())
-    {
-        if (! d.isInstrument)
-            continue;
-
-        const auto maker = d.manufacturerName.isNotEmpty() ? d.manufacturerName : juce::String ("Other");
-        byMaker[maker].addItem (d.name, [s, idx, d] { s->setInstrument (idx, d); });
-    }
-
-    if (byMaker.empty())
-        menu.addItem ("No VST instruments yet. Use File > Scan Plugins.", false, false, nullptr);
-
-    for (auto& [maker, sub] : byMaker)
-        menu.addSubMenu (maker, sub);
-
-    menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&instrumentButton));
-}
-
 void TrackHeader::timerCallback()
 {
     refreshInputList();
 
     armButton.setToggleState (session.isArmed (trackIndex), juce::dontSendNotification);
-    autoButton.setToggleState (session.isAutomationShown (trackIndex), juce::dontSendNotification);
 
     if (auto* t = session.getTrack (trackIndex))
     {
-        muteButton.setToggleState (t->isMuted (false), juce::dontSendNotification);
+        const bool muted = t->isMuted (false);
+        muteButton.setToggleState (muted, juce::dontSendNotification);
         soloButton.setToggleState (t->isSolo (false), juce::dontSendNotification);
-
-        // Follow automation during playback
-        if (auto* vp = t->getVolumePlugin())
-        {
-            if (! volumeSlider.isMouseButtonDown())
-                volumeSlider.setValue (session.getTrackVolumeDb (trackIndex), juce::dontSendNotification);
-
-            if (! panSlider.isMouseButtonDown())
-                panSlider.setValue (vp->getPan(), juce::dontSendNotification);
-        }
-
-        if (! sendSlider.isMouseButtonDown())
-            sendSlider.setValue (session.getSendDb (trackIndex), juce::dontSendNotification);
+        nameLabel.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (muted ? 0.45f : 0.92f));
 
         // Picks up undo/redo of a rename
         if (! nameLabel.isBeingEdited() && nameLabel.getText() != t->getName())
             nameLabel.setText (t->getName(), juce::dontSendNotification);
-    }
-
-    if (isMidi)
-    {
-        auto* inst = session.getInstrument (trackIndex);
-        const auto text = session.isDrumTrack (trackIndex)                ? juce::String ("Drum Rack")
-                        : dynamic_cast<KngSamplerPlugin*> (inst) != nullptr ? juce::String ("KNG Sampler")
-                        : dynamic_cast<KngSynthPlugin*> (inst) != nullptr   ? juce::String ("KNG Synth")
-                        : inst != nullptr                                 ? inst->getName()
-                                                                          : juce::String ("No instrument");
-
-        if (instrumentButton.getButtonText() != text)
-            instrumentButton.setButtonText (text);
     }
 
     if (! inputBox.isPopupActive() && inputBox.getNumItems() > 0)
@@ -294,21 +179,15 @@ void TrackHeader::paint (juce::Graphics& g)
 {
     auto r = getLocalBounds().toFloat();
 
-    g.setColour (isBus  ? juce::Colour (0xff3b3548)
-               : isMidi ? juce::Colour (0xff34403a)
-                        : juce::Colour (0xff3a3f44));
+    g.setColour (isBus ? juce::Colour (0xff3b3548) : juce::Colour (0xff3a3f44));
     g.fillRoundedRectangle (r, 4.0f);
 
-    // Track colour strip down the left edge
+    // Color strip down the left edge (click it to pick a color)
     if (auto* t = session.getTrack (trackIndex))
     {
         const auto c = t->getColour();
-
-        if (c.getAlpha() > 0)
-        {
-            g.setColour (c.withAlpha (1.0f));
-            g.fillRoundedRectangle (r.withWidth (5.0f), 2.0f);
-        }
+        g.setColour (c.getAlpha() > 0 ? c.withAlpha (1.0f) : juce::Colour (0xff5a6066));
+        g.fillRoundedRectangle (r.withWidth ((float) stripWidth), 2.0f);
     }
 
     if (session.isArmed (trackIndex))
@@ -325,51 +204,32 @@ void TrackHeader::paint (juce::Graphics& g)
 
 void TrackHeader::resized()
 {
-    auto r = getLocalBounds().reduced (6);
-    r.removeFromLeft (4);   // room for the colour strip
+    auto r = getLocalBounds().reduced (5, 4);
+    r.removeFromLeft (stripWidth + 3);
 
-    meter.setBounds (r.removeFromRight (8));
+    meter.setBounds (r.removeFromRight (6));
     r.removeFromRight (4);
 
-    auto row1 = r.removeFromTop (22);
-    fxButton.setBounds (row1.removeFromRight (32));
-    row1.removeFromRight (3);
-    autoButton.setBounds (row1.removeFromRight (24));
-    row1.removeFromRight (3);
-    soloButton.setBounds (row1.removeFromRight (26));
-    row1.removeFromRight (3);
-    muteButton.setBounds (row1.removeFromRight (26));
-    row1.removeFromRight (3);
-    armButton.setBounds (row1.removeFromRight (26));
+    // Short lanes: one centered row. Taller lanes: the input goes underneath.
+    const bool roomForInput = ! isBus && r.getHeight() >= 48;
+    auto row1 = roomForInput ? r.removeFromTop (22)
+                             : r.withSizeKeepingCentre (r.getWidth(), juce::jmin (22, r.getHeight()));
+
+    soloButton.setBounds (row1.removeFromRight (24));
+    row1.removeFromRight (2);
+    muteButton.setBounds (row1.removeFromRight (24));
+    row1.removeFromRight (2);
+    armButton.setBounds (row1.removeFromRight (24));
     row1.removeFromRight (6);
     nameLabel.setBounds (row1);
 
-    r.removeFromTop (4);
-    auto row2 = r.removeFromTop (22);
+    inputBox.setVisible (roomForInput);
 
-    if (isMidi)
+    if (roomForInput)
     {
-        rollButton.setBounds (row2.removeFromRight (40));
-        row2.removeFromRight (4);
-        inputBox.setBounds (row2.removeFromLeft (row2.getWidth() / 2));
-        row2.removeFromLeft (4);
-        instrumentButton.setBounds (row2);
+        r.removeFromTop (4);
+        inputBox.setBounds (r.removeFromTop (22));
     }
-    else
-    {
-        inputBox.setBounds (row2);
-    }
-
-    r.removeFromTop (4);
-    auto row3 = r.removeFromTop (22);
-    panSlider.setBounds (row3.removeFromRight (60));
-    row3.removeFromRight (6);
-    volumeSlider.setBounds (row3);
-
-    r.removeFromTop (4);
-    auto row4 = r.removeFromTop (22);
-    sendLabel.setBounds (row4.removeFromLeft (50));
-    sendSlider.setBounds (row4);
 }
 
 void TrackHeader::mouseDoubleClick (const juce::MouseEvent& e)
@@ -380,11 +240,21 @@ void TrackHeader::mouseDoubleClick (const juce::MouseEvent& e)
 
 void TrackHeader::mouseDown (const juce::MouseEvent& e)
 {
-    // Clicking a track shows it in the inspector on the right
+    // Clicking a lane shows it in the inspector on the right
     session.selectTrack (trackIndex);
 
     if (! e.mods.isPopupMenu())
+    {
+        // The color strip picks a color
+        if (e.x <= stripWidth + 6)
+        {
+            juce::PopupMenu colours;
+            addColourItems (colours, session, trackIndex);
+            colours.showMenuAsync ({});
+        }
+
         return;
+    }
 
     auto* s = &session;
     const int idx = trackIndex;
@@ -394,35 +264,34 @@ void TrackHeader::mouseDown (const juce::MouseEvent& e)
 
     menu.addItem ("Rename", [safe] { if (safe != nullptr) safe->nameLabel.showEditor(); });
 
-    menu.addItem ("Move Up", idx > 0, false,
-                  [s, idx] { juce::MessageManager::callAsync ([s, idx] { s->moveTrack (idx, -1); }); });
+    menu.addItem ("Move Up", true, false,
+                  [s, idx] { juce::MessageManager::callAsync ([s, idx] { moveLane (s, idx, -1); }); });
 
-    menu.addItem ("Move Down", idx < session.getNumTracks() - 1, false,
-                  [s, idx] { juce::MessageManager::callAsync ([s, idx] { s->moveTrack (idx, 1); }); });
-
-    // Colour palette
-    struct Swatch { const char* name; juce::uint32 argb; };
-    const Swatch swatches[] = {
-        { "Blue",   0xff3a6ea5 }, { "Red",    0xffc0392b }, { "Orange", 0xffd35400 },
-        { "Yellow", 0xffc9a227 }, { "Green",  0xff2e8b57 }, { "Teal",   0xff16a085 },
-        { "Purple", 0xff8e44ad }, { "Pink",   0xffc2185b }, { "Grey",   0xff607d8b }
-    };
+    menu.addItem ("Move Down", true, false,
+                  [s, idx] { juce::MessageManager::callAsync ([s, idx] { moveLane (s, idx, 1); }); });
 
     juce::PopupMenu colours;
+    addColourItems (colours, session, idx);
+    menu.addSubMenu ("Color", colours);
 
-    for (auto& sw : swatches)
+    // Input (handy when the lane is too short to show the input box)
+    if (! isBus)
     {
-        const juce::Colour c (sw.argb);
-        colours.addItem (sw.name, [s, idx, c]
-        {
-            if (auto* t = s->getTrack (idx))
-            {
-                s->beginEdit();
-                t->setColour (c);
-                s->save();
-            }
-        });
+        juce::PopupMenu inputs;
+        const auto names = session.getInputNames (idx);
+        const int current = session.getTrackInput (idx);
+
+        for (int i = 0; i < names.size(); ++i)
+            inputs.addItem (names[i], true, i == current, [s, idx, i] { s->setTrackInput (idx, i); });
+
+        if (names.size() > 0)
+            menu.addSubMenu ("Input", inputs);
     }
+
+    menu.addItem (session.isAutomationShown (idx) ? "Hide Automation" : "Show Automation",
+                  [s, idx] { s->setAutomationShown (idx, ! s->isAutomationShown (idx)); });
+
+    menu.addSeparator();
 
     // KngTune
     menu.addItem ("Add KngTune", [s, idx]
@@ -432,7 +301,7 @@ void TrackHeader::mouseDown (const juce::MouseEvent& e)
                                                     "Put KngTune in your VST3 folder, then use File > Scan Plugins.");
     });
 
-    // Bounce the track (with its effects) to audio on a new track
+    // Bounce the lane (with its effects) to audio on a new lane
     menu.addItem ("Bounce in Place", [s, idx] { s->bounceTrackInPlace (idx); });
 
     // Sends to buses
@@ -477,7 +346,7 @@ void TrackHeader::mouseDown (const juce::MouseEvent& e)
         menu.addSubMenu ("Sends", sends);
     }
 
-    // Sidechain ducking: this track gets quieter when the picked track plays
+    // Sidechain ducking: this lane gets quieter when the picked track plays
     juce::PopupMenu duck;
     const int duckSource = session.getDuckSource (idx);
 
@@ -552,12 +421,10 @@ void TrackHeader::mouseDown (const juce::MouseEvent& e)
         templates.addItem (name, [s, idx, name] { s->loadChainTemplate (idx, name); });
 
     menu.addSubMenu ("Templates", templates);
-
-    menu.addSubMenu ("Color", colours);
     menu.addSeparator();
 
-    // Deleting rebuilds the track list, so do it after this header's click finishes
-    menu.addItem ("Delete Track", [s, idx]
+    // Deleting rebuilds the lane list, so do it after this header's click finishes
+    menu.addItem ("Delete Lane", [s, idx]
     {
         juce::MessageManager::callAsync ([s, idx] { s->deleteTrack (idx); });
     });

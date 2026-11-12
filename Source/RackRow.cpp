@@ -604,8 +604,19 @@ void RackRow::mouseDown (const juce::MouseEvent& e)
 
 void RackRow::mouseDrag (const juce::MouseEvent& e)
 {
+    // Dragging a row by its name drops the current pattern into the Playlist
     if (! painting)
+    {
+        if (! e.mods.isPopupMenu() && e.getDistanceFromDragStart() > 8
+            && e.getMouseDownX() < getLaneArea().getX() && e.getMouseDownY() < rowHeight)
+        {
+            if (auto* dnd = juce::DragAndDropContainer::findParentDragContainerFor (this))
+                if (! dnd->isDragAndDropActive())
+                    dnd->startDragging ("kngpattern|" + juce::String (session.getCurrentPattern()), this);
+        }
+
         return;
+    }
 
     int note = 0, step = 0;
 

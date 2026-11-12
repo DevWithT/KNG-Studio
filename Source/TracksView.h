@@ -18,6 +18,8 @@ public:
     ~TracksView() override;
 
     void resized() override;
+    void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails&) override;
+    void setLaneHeight (int newHeight);
     int getIdealHeight();
 
     // Plugins from the Plugins browser and patterns from the Patterns list
@@ -51,7 +53,9 @@ private:
     juce::String lastSignature;
     int hoverY = -1;
 
-    static constexpr int rowHeight    = 112;
+    int rowHeight = 64;   // Ctrl+scroll over the lane headers changes it; saved with the song
+    static constexpr int minRowHeight = 40;
+    static constexpr int maxRowHeight = 160;
     static constexpr int autoHeight   = 80;
     static constexpr int headerWidth  = 240;
     static constexpr int gap          = 4;

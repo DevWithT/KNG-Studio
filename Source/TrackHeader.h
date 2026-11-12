@@ -4,6 +4,8 @@
 #include "EditSession.h"
 #include "LevelMeter.h"
 
+/** A lane's header in the Playlist: color strip, name, R M S, a meter, and the input when there's room.
+    Volume, pan and sends live in the inspector and the Mixer. */
 class TrackHeader : public juce::Component,
                     private juce::Timer
 {
@@ -16,22 +18,19 @@ public:
     void mouseDown (const juce::MouseEvent&) override;
     void mouseDoubleClick (const juce::MouseEvent&) override;
 
+    static constexpr int stripWidth = 6;
+
 private:
     void timerCallback() override;
     void refreshInputList();
-    void showInstrumentMenu();
 
     EditSession& session;
     const int trackIndex;
     const bool isBus;
-    const bool isMidi;
 
-    juce::Label nameLabel, sendLabel;
-    juce::TextButton armButton { "R" }, muteButton { "M" }, soloButton { "S" }, fxButton { "FX" }, autoButton { "A" };
-    juce::TextButton instrumentButton { "No instrument" };
-    juce::TextButton rollButton { "Roll" };
+    juce::Label nameLabel;
+    juce::TextButton armButton { "R" }, muteButton { "M" }, soloButton { "S" };
     juce::ComboBox inputBox;
-    juce::Slider volumeSlider, panSlider, sendSlider;
     LevelMeter meter;
 
     juce::StringArray lastInputNames;
