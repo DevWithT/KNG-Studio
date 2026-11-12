@@ -22,6 +22,7 @@
 #include "StartScreen.h"
 #include "SettingsComponent.h"
 #include "PluginBrowser.h"
+#include "TrackInspector.h"
 
 class MainComponent : public juce::Component,
                       public juce::MenuBarModel,
@@ -77,6 +78,7 @@ private:
     void setUpNewSong();
     void showShortcuts();
     void toggleMixer();
+    void toggleRack();
     void togglePlayStop();
     void zoomToFit();
     void updateDeviceLabel();
@@ -101,6 +103,8 @@ private:
 
     std::unique_ptr<EditSession> session;
     std::unique_ptr<TransportBar> transportBar;
+    std::unique_ptr<TrackInspector> inspector;
+    bool inspectorVisible = true;
     std::unique_ptr<TimelineRuler> ruler;
     std::unique_ptr<MarkerBar> markerBar;
     std::unique_ptr<PatternLane> patternLane;

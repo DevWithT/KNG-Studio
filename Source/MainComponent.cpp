@@ -195,6 +195,7 @@ void MainComponent::closeProject()
     markerBar = nullptr;
     patternLane = nullptr;
     transportBar = nullptr;
+    inspector = nullptr;
     session = nullptr;   // saves on the way out
 }
 
@@ -217,6 +218,11 @@ void MainComponent::loadProject (const juce::File& editFile)
 
     transportBar = std::make_unique<TransportBar> (*session);
     addAndMakeVisible (*transportBar);
+    transportBar->onShowRack  = [this] { toggleRack(); };
+    transportBar->onShowMixer = [this] { toggleMixer(); };
+
+    inspector = std::make_unique<TrackInspector> (*session);
+    addAndMakeVisible (*inspector);
 
     ruler = std::make_unique<TimelineRuler> (*session);
     addAndMakeVisible (*ruler);
@@ -532,6 +538,8 @@ void MainComponent::showShortcuts()
         "Space\tPlay / Stop\n"
         "Home\tGo to start\n"
         "M\tMixer\n"
+        "R\tRack\n"
+        "I\tTrack inspector\n"
         "S\tSplit selected clip at playhead\n"
         "Del\tDelete selected clip\n"
         "Ctrl+Z / Ctrl+Y\tUndo / Redo\n"
@@ -683,6 +691,18 @@ void MainComponent::resized()
 
     area.removeFromTop (8);
 
+    // Track inspector down the right side, full height
+    if (inspector != nullptr)
+    {
+        inspector->setVisible (inspectorVisible);
+
+        if (inspectorVisible)
+        {
+            inspector->setBounds (area.removeFromRight (300));
+            area.removeFromRight (8);
+        }
+    }
+
     // Dock along the bottom
     dock.setVisible (dockVisible);
     dockDivider.setVisible (dockVisible);
@@ -833,6 +853,21 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
     if (code == 'M' || code == 'm')
     {
         toggleMixer();
+        return true;
+    }
+
+    // R opens and closes the Rack
+    if (code == 'R' || code == 'r')
+    {
+        toggleRack();
+        return true;
+    }
+
+    // I shows and hides the track inspector
+    if (code == 'I' || code == 'i')
+    {
+        inspectorVisible = ! inspectorVisible;
+        resized();
         return true;
     }
 
@@ -1064,4 +1099,21 @@ void MainComponent::showMidiMappings()
     options.useNativeTitleBar = true;
     options.resizable = true;
     midiMapWindow = options.launchAsync();
+}
+
+void MainComponent::toggleRack()
+{
+    if (session == nullptr)
+        return;
+
+    // R again while the Rack is showing hides the bottom panel
+    if (dockVisible && dock.getCurrentTab() == DockPanel::rackTab)
+    {
+        dockVisible = false;
+        resized();
+        return;
+    }
+
+    dock.showTab (DockPanel::rackTab);
+    openDock();
 }

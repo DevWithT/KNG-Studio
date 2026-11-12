@@ -514,6 +514,9 @@ void RackRow::mouseDown (const juce::MouseEvent& e)
     auto lane = getLaneArea();
     const bool rightButton = e.mods.isRightButtonDown() || e.mods.isPopupMenu();
 
+    // Clicking a row shows its track in the inspector on the right
+    session.selectTrack (idx);
+
     // Left side: right-click for the menu, left-click to hear the sound
     if (p.x < lane.getX())
     {

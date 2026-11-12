@@ -59,11 +59,11 @@ void DockPanel::Slot::resized()
 DockPanel::DockPanel()
 {
     const juce::StringArray messages {
-        "The Rack is coming next: every instrument in one place.",
-        "Double-click a MIDI clip, or hit Roll on a MIDI track.",
-        "Click the instrument button on a MIDI or drum track.",
-        "Click FX on a track or on the master strip.",
-        "Add a KNG effect from an FX chain (KNG Built-in), or click one that's already there.",
+        "Open a project to see the Rack.",
+        "Double-click a MIDI clip, or click a melody row in the Rack.",
+        "Click Open on the instrument in the inspector on the right.",
+        "Click FX on the master strip.",
+        "Click an effect in the inspector on the right.",
         "Right-click a clip with takes > Comp Takes.",
         "Open a project to see the mixer."
     };
@@ -76,7 +76,12 @@ DockPanel::DockPanel()
         tabs.addTab (baseTabNames()[i], juce::Colour (0xff24282c), slot, true);
     }
 
-    tabs.setTabBarDepth (28);
+    // No tab row: the Rack and Mixer buttons, the inspector and clicks on clips decide what shows here
+    tabs.setTabBarDepth (0);
+
+    addAndMakeVisible (titleLabel);
+    titleLabel.setFont (juce::Font (juce::FontOptions (14.0f, juce::Font::bold)));
+    titleLabel.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.85f));
     tabs.setOutline (0);
     addAndMakeVisible (tabs);
 
@@ -181,6 +186,15 @@ void DockPanel::showComp (te::WaveAudioClip& clip)
 void DockPanel::showTab (Tab tab)
 {
     tabs.setCurrentTabIndex ((int) tab);
+    updateTitle();
+}
+
+void DockPanel::updateTitle()
+{
+    const auto name = tabs.getTabNames()[tabs.getCurrentTabIndex()];
+
+    if (titleLabel.getText() != name)
+        titleLabel.setText (name, juce::dontSendNotification);
 }
 
 DockPanel::Tab DockPanel::getCurrentTab() const
@@ -191,6 +205,8 @@ DockPanel::Tab DockPanel::getCurrentTab() const
 //==============================================================================
 void DockPanel::timerCallback()
 {
+    updateTitle();
+
     if (session == nullptr)
         return;
 
@@ -240,7 +256,9 @@ void DockPanel::paint (juce::Graphics& g)
 
 void DockPanel::resized()
 {
-    tabs.setBounds (getLocalBounds());
+    auto r = getLocalBounds();
+    titleLabel.setBounds (r.removeFromTop (28).reduced (10, 0));
+    tabs.setBounds (r);
 }
 
 void DockPanel::showEffect (te::Plugin& plugin)

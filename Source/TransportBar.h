@@ -17,6 +17,9 @@ public:
     void importBeat();
     void showExportDialog();
 
+    // Set by the main window
+    std::function<void()> onShowRack, onShowMixer;
+
 private:
     void timerCallback() override;
     static juce::String formatTime (double seconds);
@@ -30,6 +33,7 @@ private:
     juce::ComboBox countInBox;
     juce::TextButton timeSigButton { "4/4" };
     juce::TextButton learnButton { "Learn" };
+    juce::TextButton rackButton { "Rack" }, mixerButton { "Mixer" };
     juce::ToggleButton clickButton { "Click" }, loopButton { "Loop" }, punchButton { "Punch" }, snapButton { "Snap" },
                        monitorButton { "Monitor" }, writeButton { "Auto Write" };
 

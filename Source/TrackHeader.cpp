@@ -58,12 +58,7 @@ TrackHeader::TrackHeader (EditSession& sessionToUse, int trackIndexToUse)
             t->setSolo (! t->isSolo (false));
     };
 
-    fxButton.onClick = [this]
-    {
-        if (auto* t = session.getTrack (trackIndex))
-            if (session.onShowFxChain)
-                session.onShowFxChain (t->pluginList, t->getName() + " FX");
-    };
+    fxButton.onClick = [this] { session.selectTrack (trackIndex); };
 
     autoButton.setColour (juce::TextButton::buttonOnColourId, juce::Colour (0xffe6a23a));
     autoButton.onClick = [this]
@@ -75,6 +70,7 @@ TrackHeader::TrackHeader (EditSession& sessionToUse, int trackIndexToUse)
     instrumentButton.onClick = [this]
     {
         // Drum tracks open their Drum Rack, other MIDI tracks pick an instrument
+        session.selectTrack (trackIndex);
         if (session.isDrumTrack (trackIndex) && session.onShowDrumRack)
             session.onShowDrumRack (trackIndex);
         else
@@ -156,7 +152,7 @@ TrackHeader::TrackHeader (EditSession& sessionToUse, int trackIndexToUse)
     muteButton.setTooltip ("Mute");
     soloButton.setTooltip ("Solo: hear only this track");
     autoButton.setTooltip ("Show or hide this track's automation lane");
-    fxButton.setTooltip ("Open this track's effects in the dock");
+    fxButton.setTooltip ("Show this track's effects in the inspector on the right");
     inputBox.setTooltip ("Which input this track records from");
     instrumentButton.setTooltip ("Choose or open this track's instrument");
     rollButton.setTooltip ("Open this track's notes in the Piano Roll");
@@ -320,6 +316,11 @@ void TrackHeader::paint (juce::Graphics& g)
         g.setColour (juce::Colours::red.withAlpha (0.7f));
         g.drawRoundedRectangle (r.reduced (1.0f), 4.0f, 2.0f);
     }
+    else if (session.getSelectedTrackIndex() == trackIndex)
+    {
+        g.setColour (juce::Colour (0xff3a8ee6));
+        g.drawRoundedRectangle (r.reduced (1.0f), 4.0f, 2.0f);
+    }
 }
 
 void TrackHeader::resized()
@@ -379,6 +380,9 @@ void TrackHeader::mouseDoubleClick (const juce::MouseEvent& e)
 
 void TrackHeader::mouseDown (const juce::MouseEvent& e)
 {
+    // Clicking a track shows it in the inspector on the right
+    session.selectTrack (trackIndex);
+
     if (! e.mods.isPopupMenu())
         return;
 

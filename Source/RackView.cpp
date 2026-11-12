@@ -13,17 +13,21 @@ static bool isAudioFile (const juce::File& f)
 RackView::RackView (EditSession& sessionToUse)
     : session (sessionToUse)
 {
-    for (auto* c : std::initializer_list<juce::Component*> { &patternLabel, &patternBox, &barsLabel, &barsBox,
-                                                             &placeButton, &loopButton, &addSampleButton,
-                                                             &addInstrumentButton, &hintLabel, &viewport })
+    for (auto* c : std::initializer_list<juce::Component*> { &patternBox, &barsBox, &swingLabel, &swingSlider, &viewport })
         addAndMakeVisible (c);
 
+    // The pattern menu also holds Place at Playhead and Loop Pattern
     patternBox.onChange = [this]
     {
         const int id = patternBox.getSelectedId();
+        const int current = session.getCurrentPattern();
 
         if (id == 1000)
             session.newPattern();
+        else if (id == 1001)
+            session.placePattern (current, session.getTransport().getPosition().inSeconds());
+        else if (id == 1002)
+            session.loopPattern (current);
         else if (id > 0)
             session.setCurrentPattern (id);
 
@@ -31,20 +35,11 @@ RackView::RackView (EditSession& sessionToUse)
         syncToolbar();
     };
 
-    barsBox.addItem ("1", 1);
-    barsBox.addItem ("2", 2);
-    barsBox.addItem ("4", 4);
+    barsBox.addItem ("1 bar", 1);
+    barsBox.addItem ("2 bars", 2);
+    barsBox.addItem ("4 bars", 4);
     barsBox.onChange = [this] { session.setPatternBars (session.getCurrentPattern(), barsBox.getSelectedId()); };
 
-    placeButton.onClick = [this]
-    {
-        session.placePattern (session.getCurrentPattern(), session.getTransport().getPosition().inSeconds());
-    };
-
-    loopButton.onClick = [this] { session.loopPattern (session.getCurrentPattern()); };
-
-    addAndMakeVisible (swingLabel);
-    addAndMakeVisible (swingSlider);
     swingSlider.setSliderStyle (juce::Slider::LinearHorizontal);
     swingSlider.setTextBoxStyle (juce::Slider::TextBoxRight, false, 44, 20);
     swingSlider.setRange (0.0, 100.0, 1.0);
@@ -54,34 +49,14 @@ RackView::RackView (EditSession& sessionToUse)
     swingSlider.onValueChange = [this] { session.setPatternSwing (session.getCurrentPattern(), (float) swingSlider.getValue()); };
     swingSlider.onDragEnd     = [this] { session.save(); };
 
-    addSampleButton.onClick = [this]
-    {
-        chooser = std::make_unique<juce::FileChooser> ("Add Samples", EditSession::getKitsFolder(),
-                                                       "*.wav;*.aif;*.aiff;*.flac;*.mp3;*.ogg");
-        chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles
-                                  | juce::FileBrowserComponent::canSelectMultipleItems,
-                              [this] (const juce::FileChooser& fc) { addSamples (fc.getResults()); });
-    };
-
-    addInstrumentButton.onClick = [this]
-    {
-        PluginBrowser::showInstrumentMenu (session.getEdit().engine, addInstrumentButton,
-                                           [this] (const PluginBrowser::Entry& e) { session.addInstrumentTrack (e.id, e.name); });
-    };
+    content.addAndMakeVisible (addRowButton);
+    addRowButton.onClick = [this] { showAddMenu(); };
 
     // Tooltips
-    patternBox.setTooltip ("Which pattern the Rack is editing. Pick New pattern to start another.");
+    patternBox.setTooltip ("Which pattern the Rack is editing. Also: New pattern, Place at Playhead, Loop Pattern.");
     barsBox.setTooltip ("How many bars long this pattern is");
-    placeButton.setTooltip ("Put a copy of this pattern on the timeline at the playhead");
-    loopButton.setTooltip ("Loop this pattern and play it");
     swingSlider.setTooltip ("Push every other 16th late for groove (drum and sound rows only)");
-    addSampleButton.setTooltip ("Add sounds to the Rack, one row each. You can also drag samples in from the Browser.");
-    addInstrumentButton.setTooltip ("Add a row for a synth or the KNG Sampler");
-
-    hintLabel.setFont (juce::Font (juce::FontOptions (12.0f)));
-    hintLabel.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.5f));
-    hintLabel.setText ("Drag samples in from the Browser. Right-click a row for options. Timeline copies stay linked.",
-                       juce::dontSendNotification);
+    addRowButton.setTooltip ("Add a sample or an instrument as a new row. You can also drag samples in from the Browser.");
 
     viewport.setViewedComponent (&content, false);
     viewport.setScrollBarsShown (true, false);
@@ -114,6 +89,53 @@ void RackView::addSamples (const juce::Array<juce::File>& files)
     for (auto& f : files)
         if (f.existsAsFile() && isAudioFile (f))
             session.addSampleChannel (f);
+}
+
+void RackView::showAddMenu()
+{
+    juce::Component::SafePointer<RackView> safe (this);
+    juce::PopupMenu menu;
+
+    menu.addItem ("Sample from a file...", [safe]
+    {
+        if (safe == nullptr)
+            return;
+
+        safe->chooser = std::make_unique<juce::FileChooser> ("Add Samples", EditSession::getKitsFolder(),
+                                                             "*.wav;*.aif;*.aiff;*.flac;*.mp3;*.ogg");
+        safe->chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles
+                                        | juce::FileBrowserComponent::canSelectMultipleItems,
+                                    [safe] (const juce::FileChooser& fc)
+                                    {
+                                        if (safe != nullptr)
+                                            safe->addSamples (fc.getResults());
+                                    });
+    });
+
+    menu.addSeparator();
+    menu.addSectionHeader ("Instruments");
+
+    juce::PopupMenu yours;
+
+    for (auto& e : PluginBrowser::buildEntries (session.getEdit().engine))
+    {
+        if (e.header || ! e.instrument)
+            continue;
+
+        const auto id = e.id;
+        const auto name = e.name;
+        auto add = [safe, id, name] { if (safe != nullptr) safe->session.addInstrumentTrack (id, name); };
+
+        if (id.startsWith ("kng"))
+            menu.addItem (name, add);
+        else
+            yours.addItem (name, add);
+    }
+
+    if (yours.getNumItems() > 0)
+        menu.addSubMenu ("Your instruments", yours);
+
+    menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&addRowButton));
 }
 
 //==============================================================================
@@ -167,6 +189,10 @@ void RackView::layoutRows()
         sig << h << ",";
     }
 
+    // The add row always sits at the bottom of the list
+    addRowButton.setBounds (0, y, width, addRowHeight);
+    y += addRowHeight;
+
     lastLayoutSignature = sig;
     content.setSize (width, juce::jmax (y, 1));
 }
@@ -186,6 +212,8 @@ void RackView::syncToolbar()
 
         patternBox.addSeparator();
         patternBox.addItem ("New pattern", 1000);
+        patternBox.addItem ("Place at Playhead", 1001);
+        patternBox.addItem ("Loop Pattern", 1002);
     }
 
     if (! patternBox.isPopupActive() && patternBox.getSelectedId() != current)
@@ -303,8 +331,8 @@ void RackView::paint (juce::Graphics& g)
     {
         g.setColour (juce::Colours::white.withAlpha (0.4f));
         g.setFont (juce::Font (juce::FontOptions (15.0f)));
-        g.drawText ("Drag samples here from the Browser (B), or click + Sample.",
-                    getLocalBounds().withTrimmedTop (toolbarHeight), juce::Justification::centred);
+        g.drawText ("Drag samples here from the Browser, or click + Add a sound or instrument.",
+                    getLocalBounds().withTrimmedTop (toolbarHeight + addRowHeight + 12), juce::Justification::centred);
     }
 }
 
@@ -323,24 +351,12 @@ void RackView::resized()
 {
     auto tb = getLocalBounds().removeFromTop (toolbarHeight).reduced (6);
 
-    patternLabel.setBounds (tb.removeFromLeft (56));
-    patternBox.setBounds (tb.removeFromLeft (130));
-    tb.removeFromLeft (10);
-    barsLabel.setBounds (tb.removeFromLeft (36));
-    barsBox.setBounds (tb.removeFromLeft (60));
-    tb.removeFromLeft (10);
-    placeButton.setBounds (tb.removeFromLeft (130));
-    tb.removeFromLeft (4);
-    loopButton.setBounds (tb.removeFromLeft (110));
-    tb.removeFromLeft (10);
-    swingLabel.setBounds (tb.removeFromLeft (44));
-    swingSlider.setBounds (tb.removeFromLeft (140));
+    patternBox.setBounds (tb.removeFromLeft (150));
+    tb.removeFromLeft (6);
+    barsBox.setBounds (tb.removeFromLeft (90));
     tb.removeFromLeft (16);
-    addSampleButton.setBounds (tb.removeFromLeft (90));
-    tb.removeFromLeft (4);
-    addInstrumentButton.setBounds (tb.removeFromLeft (110));
-    tb.removeFromLeft (12);
-    hintLabel.setBounds (tb);
+    swingLabel.setBounds (tb.removeFromLeft (46));
+    swingSlider.setBounds (tb.removeFromLeft (180));
 
     viewport.setBounds (getLocalBounds().withTrimmedTop (toolbarHeight).reduced (6));
     layoutRows();

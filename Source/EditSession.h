@@ -30,6 +30,20 @@ public:
     void setMidiLearn (bool shouldLearn);
     bool isMidiLearn();
 
+    /** The track the inspector on the right is showing (-1 if none). */
+    void selectTrack (int trackIndex)          { selectedTrackPtr = getTrack (trackIndex); }
+
+    int getSelectedTrackIndex()
+    {
+        for (int i = 0; i < getNumTracks(); ++i)
+            if (selectedTrackPtr != nullptr && getTrack (i) == selectedTrackPtr.get())
+                return i;
+
+        return -1;
+    }
+
+    tracktion::Track::Ptr selectedTrackPtr;
+
     // Tracks
     int getNumTracks();
     tracktion::AudioTrack* getTrack (int index);

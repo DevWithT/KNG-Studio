@@ -77,6 +77,13 @@ TransportBar::TransportBar (EditSession& sessionToUse)
     learnButton.setTooltip ("MIDI Learn (Ctrl+L): move a knob here, then twist one on your controller to link them");
     learnButton.onClick = [this] { session.setMidiLearn (! session.isMidiLearn()); };
 
+    addAndMakeVisible (rackButton);
+    addAndMakeVisible (mixerButton);
+    rackButton.setTooltip ("Show or hide the Rack (R)");
+    mixerButton.setTooltip ("Show or hide the Mixer (M)");
+    rackButton.onClick  = [this] { if (onShowRack) onShowRack(); };
+    mixerButton.onClick = [this] { if (onShowMixer) onShowMixer(); };
+
     // Tooltips
     playButton.setTooltip ("Play / Pause (Space)");
     stopButton.setTooltip ("Stop and return to where you started (Space)");
@@ -207,6 +214,12 @@ void TransportBar::resized()
 {
     auto r = getLocalBounds().reduced (6, 4);
     dividers.clear();
+
+    // Rack and Mixer sit at the right end
+    mixerButton.setBounds (r.removeFromRight (80));
+    r.removeFromRight (4);
+    rackButton.setBounds (r.removeFromRight (80));
+    r.removeFromRight (8);
 
     auto place = [&r] (juce::Component& c, int w)
     {

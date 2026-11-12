@@ -18,7 +18,7 @@ public:
     void paintOverChildren (juce::Graphics&) override;
     void resized() override;
 
-    // Samples dropped on the Rack become new channels
+    // Samples dropped on the Rack become new rows
     bool isInterestedInDragSource (const SourceDetails&) override;
     void itemDragEnter (const SourceDetails&) override   { hovering = true;  repaint(); }
     void itemDragExit (const SourceDetails&) override    { hovering = false; repaint(); }
@@ -35,16 +35,15 @@ private:
     void layoutRows();
     void syncToolbar();
     void addSamples (const juce::Array<juce::File>& files);
+    void showAddMenu();
     juce::Array<tracktion::Track*> getRackTracks();
 
     EditSession& session;
 
-    juce::Label patternLabel { {}, "Pattern" }, barsLabel { {}, "Bars" }, hintLabel;
     juce::ComboBox patternBox, barsBox;
-    juce::TextButton placeButton { "Place at Playhead" }, loopButton { "Loop Pattern" };
-    juce::TextButton addSampleButton { "+ Sample" }, addInstrumentButton { "+ Instrument" };
     juce::Label swingLabel { {}, "Swing" };
     juce::Slider swingSlider;
+    juce::TextButton addRowButton { "+ Add a sound or instrument" };
 
     juce::Viewport viewport;
     juce::Component content;
@@ -57,6 +56,7 @@ private:
     bool hovering = false;
 
     static constexpr int toolbarHeight = 40;
+    static constexpr int addRowHeight = 34;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (RackView)
 };

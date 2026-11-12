@@ -43,10 +43,12 @@ private:
 
     void timerCallback() override;
     void resetTabName (Tab tab);
+    void updateTitle();
     static juce::String getTrackName (tracktion::Track* track);
 
     EditSession* session = nullptr;
     juce::TabbedComponent tabs { juce::TabbedButtonBar::TabsAtTop };
+    juce::Label titleLabel;
     Slot* slots[numTabs] {};   // owned by the tabs
 
     // What each tab is showing, so it can clear itself if that gets deleted
