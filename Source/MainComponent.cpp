@@ -173,6 +173,10 @@ void MainComponent::closeProject()
     if (session != nullptr)
         session->setMidiLearn (false);
 
+    // The MIDI Mappings window reads the song, so it closes with it
+    if (midiMapWindow != nullptr)
+        delete midiMapWindow.getComponent();
+
     KngUIBehaviour::setCurrentEdit (nullptr);
     dock.setSession (nullptr);
     if (pluginBrowser != nullptr)
@@ -1045,5 +1049,5 @@ void MainComponent::showMidiMappings()
     options.escapeKeyTriggersCloseButton = true;
     options.useNativeTitleBar = true;
     options.resizable = true;
-    options.launchAsync();
+    midiMapWindow = options.launchAsync();
 }
