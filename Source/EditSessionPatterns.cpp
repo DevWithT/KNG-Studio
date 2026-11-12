@@ -47,6 +47,19 @@ int EditSession::getPatternBars (int pattern)
     return juce::jlimit (1, 4, (int) edit->state.getProperty ("kngPatternBars" + juce::String (pattern), 1));
 }
 
+int EditSession::getPatternSteps (int pattern)
+{
+    // Count the beats the pattern really covers on the tempo map, then 4 steps per beat
+    auto& ts = edit->tempoSequence;
+    const double home = getPatternHome (pattern);
+    const double end = barsAfter (home, getPatternBars (pattern));
+
+    const double beats = ts.toBeats (te::TimePosition::fromSeconds (end)).inBeats()
+                       - ts.toBeats (te::TimePosition::fromSeconds (home)).inBeats();
+
+    return juce::jlimit (1, 128, juce::roundToInt (beats / 0.25));
+}
+
 void EditSession::setPatternBars (int pattern, int bars)
 {
     bars = juce::jlimit (1, 4, bars);

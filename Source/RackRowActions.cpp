@@ -67,7 +67,7 @@ void RackRow::paintChannelSteps (juce::Graphics& g, te::MidiClip* clip)
     auto lane = getLaneArea().withHeight (rowHeight).reduced (0, 6);
 
     // Velocity of every hit on this channel
-    int velocity[64] = {};
+    int velocity[128] = {};
 
     if (clip != nullptr)
     {

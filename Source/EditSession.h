@@ -217,6 +217,8 @@ public:
     int getNumPatterns();
     int newPattern();
     int getPatternBars (int pattern);
+    /** 16th-note steps in a pattern, counted from its real bars (12 per bar in 3/4, 14 in 7/8). */
+    int getPatternSteps (int pattern);
     void setPatternBars (int pattern, int bars);
     double getPatternHome (int pattern);
     tracktion::MidiClip* getPatternClip (int trackIndex, int pattern, bool createIfMissing);

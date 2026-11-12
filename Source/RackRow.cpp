@@ -115,7 +115,7 @@ juce::Array<int> RackRow::getVisiblePads()
 
 int RackRow::getNumSteps()
 {
-    return session.getPatternBars (session.getCurrentPattern()) * 16;
+    return session.getPatternSteps (session.getCurrentPattern());
 }
 
 te::MidiClip* RackRow::getClip (bool createIfMissing)
@@ -328,7 +328,7 @@ void RackRow::paintDrumSummary (juce::Graphics& g, te::MidiClip* clip)
     const int playStep = getPlayStep (clip);
 
     // Which steps have any hit at all
-    bool hit[64] = {};
+    bool hit[128] = {};
 
     if (clip != nullptr)
     {
@@ -380,7 +380,7 @@ void RackRow::paintDrumRows (juce::Graphics& g, te::MidiClip* clip)
     }
 
     // Velocity of every hit, by pad and step
-    int velocity[16][64] = {};
+    int velocity[16][128] = {};
 
     if (clip != nullptr)
     {
