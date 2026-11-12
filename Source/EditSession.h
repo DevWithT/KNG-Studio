@@ -165,6 +165,8 @@ public:
     void setBuiltInSampler (int trackIndex);
     KngSamplerPlugin* getKngSampler (int trackIndex);
     void setBuiltInSynth (int trackIndex);
+    /** Any other KNG instrument by type (for example "kng808"). Replaces the track's instrument. */
+    void setBuiltInInstrument (int trackIndex, const juce::String& type);
     bool setSamplerSample (int trackIndex, const juce::File& file, int rootNote);
     juce::String getSamplerSampleName (int trackIndex);
     int getSamplerRoot (int trackIndex);

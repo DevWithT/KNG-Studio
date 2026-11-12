@@ -305,6 +305,14 @@ void KngSamplerPlugin::applyToBuffer (const te::PluginRenderContext& fc)
     for (int ch = 0; ch < out.getNumChannels(); ++ch)
         out.clear (ch, fc.bufferStartSample, fc.bufferNumSamples);
 
+    // Stop pressed: every sound fades out in about 5 ms instead of ringing on
+    if (wasPlaying && ! fc.isPlaying)
+        for (auto& v : voices)
+            if (v.active)
+                v.fast = true;
+
+    wasPlaying = fc.isPlaying;
+
     int cursor = 0;
 
     auto renderUpTo = [&] (int end)

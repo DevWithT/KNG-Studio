@@ -178,8 +178,12 @@ void EditSession::placePattern (int pattern, double atSeconds)
         if (master == nullptr)
         {
             if (auto* restored = restorePatternStash (i, pattern, start))
+            {
                 if (restored->getLinkGroupID().isEmpty())
                     restored->setLinkGroupID (linkIdFor (pattern, *track));
+
+                restored->setEnd (te::TimePosition::fromSeconds (barsAfter (start, getPatternBars (pattern))), true);
+            }
 
             continue;
         }

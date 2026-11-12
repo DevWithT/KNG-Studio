@@ -63,5 +63,9 @@ private:
     juce::uint32 voiceCounter = 0;
     double lfoPhase = 0.0;
 
+    // Stop pressed: a 5 ms fade, then silence
+    bool wasPlaying = false;
+    int stopFadeLeft = 0, stopFadeTotal = 1;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (KngSynthPlugin)
 };

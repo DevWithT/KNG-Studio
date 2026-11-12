@@ -85,6 +85,7 @@ private:
     juce::File loadedFile;
 
     std::array<Voice, 16> voices;
+    bool wasPlaying = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (KngSamplerPlugin)
 };

@@ -398,6 +398,14 @@ void KngSynthPlugin::applyToBuffer (const te::PluginRenderContext& fc)
     for (int ch = 0; ch < out.getNumChannels(); ++ch)
         out.clear (ch, fc.bufferStartSample, fc.bufferNumSamples);
 
+    if (wasPlaying && ! fc.isPlaying)
+    {
+        stopFadeTotal = juce::jmax (1, (int) (0.005 * sampleRate));
+        stopFadeLeft = stopFadeTotal;
+    }
+
+    wasPlaying = fc.isPlaying;
+
     int cursor = 0;
 
     auto renderUpTo = [&] (int end)
@@ -440,4 +448,22 @@ void KngSynthPlugin::applyToBuffer (const te::PluginRenderContext& fc)
     }
 
     renderUpTo (fc.bufferNumSamples);
+
+    // Fading out after Stop
+    if (stopFadeLeft > 0)
+    {
+        for (int i = 0; i < fc.bufferNumSamples; ++i)
+        {
+            const float g = (float) stopFadeLeft / (float) stopFadeTotal;
+
+            for (int ch = 0; ch < out.getNumChannels(); ++ch)
+                out.getWritePointer (ch, fc.bufferStartSample)[i] *= g;
+
+            if (stopFadeLeft > 0)
+                --stopFadeLeft;
+        }
+
+        if (stopFadeLeft == 0)
+            reset();
+    }
 }

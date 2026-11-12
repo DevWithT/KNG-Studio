@@ -250,6 +250,10 @@ void TrackInspector::openInstrument()
         if (session.onShowSampler)
             session.onShowSampler (trackIndex);
     }
+    else if (inst != nullptr && inst->getPluginType().startsWith ("kng") && session.onShowPluginEditor)
+    {
+        session.onShowPluginEditor (*inst);
+    }
     else if (inst != nullptr)
     {
         inst->showWindowExplicitly();
@@ -264,6 +268,7 @@ void TrackInspector::showInstrumentMenu()
 
     menu.addItem ("KNG Sampler (built-in)", [s, idx] { s->setBuiltInSampler (idx); });
     menu.addItem ("KNG Synth (built-in)", [s, idx] { s->setBuiltInSynth (idx); });
+    menu.addItem ("KNG 808 (built-in)", [s, idx] { s->setInstrumentById (idx, "kng808"); });
     menu.addSeparator();
 
     std::map<juce::String, juce::PopupMenu> byMaker;

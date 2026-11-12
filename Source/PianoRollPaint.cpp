@@ -8,6 +8,11 @@ static bool slidesEnabled (tracktion::MidiClip& clip)
 {
     if (auto* t = dynamic_cast<tracktion::AudioTrack*> (clip.getClipTrack()))
     {
+        // KNG 808 always plays one note at a time, so it always slides
+        for (int i = 0; i < t->pluginList.size(); ++i)
+            if (t->pluginList[i]->getPluginType() == "kng808")
+                return true;
+
         if (auto* s = t->pluginList.findFirstPluginOfType<KngSamplerPlugin>())
             return (bool) s->state.getProperty (KngSamplerPlugin::monoProp, false);
 

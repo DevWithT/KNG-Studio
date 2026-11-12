@@ -10,6 +10,8 @@
 #include "KngLimiterPlugin.h"
 #include "KngDoublerPlugin.h"
 #include "KngLoudnessPlugin.h"
+#include "KngFattenerPlugin.h"
+#include "Kng808Plugin.h"
 #include "PluginWindow.h"
 #include "MidiMapDialog.h"
 
@@ -27,6 +29,8 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
     engine.getPluginManager().createBuiltInType<KngLimiterPlugin>();
     engine.getPluginManager().createBuiltInType<KngDoublerPlugin>();
     engine.getPluginManager().createBuiltInType<KngLoudnessPlugin>();
+    engine.getPluginManager().createBuiltInType<KngFattenerPlugin>();
+    engine.getPluginManager().createBuiltInType<Kng808Plugin>();
 
     setWantsKeyboardFocus (true);
 

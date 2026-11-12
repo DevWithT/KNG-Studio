@@ -20,6 +20,7 @@ std::vector<PluginBrowser::Entry> PluginBrowser::buildEntries (te::Engine& engin
     e.push_back ({ "KNG Instruments", {}, {}, true, true });
     e.push_back ({ "KNG Synth",   "Built-in synth",              KngSynthPlugin::xmlTypeName,   true, false });
     e.push_back ({ "KNG Sampler", "Play any sample on the keys", KngSamplerPlugin::xmlTypeName, true, false });
+    e.push_back ({ "KNG 808",     "Synth 808 with slides",       "kng808",                      true, false });
 
     // Your VST instruments
     bool anyInstruments = false;

@@ -32,6 +32,12 @@ void EditSession::setInstrumentById (int trackIndex, const juce::String& pluginI
         return;
     }
 
+    if (pluginId == "kng808")
+    {
+        setBuiltInInstrument (trackIndex, pluginId);
+        return;
+    }
+
     juce::PluginDescription d;
 
     if (findDescription (engine, pluginId, d))

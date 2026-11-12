@@ -7,6 +7,7 @@
 #include "KngDeEssPlugin.h"
 #include "KngLimiterPlugin.h"
 #include "KngDoublerPlugin.h"
+#include "KngFattenerPlugin.h"
 
 namespace te = tracktion;
 
@@ -24,6 +25,7 @@ std::vector<std::pair<juce::String, juce::String>> EditSession::getBuiltInEffect
         { "KNG De-Esser",         KngDeEssPlugin::xmlTypeName },
         { "KNG Limiter",          KngLimiterPlugin::xmlTypeName },
         { "KNG Doubler",          KngDoublerPlugin::xmlTypeName },
+        { "KNG Fattener",         KngFattenerPlugin::xmlTypeName },
     };
 }
 

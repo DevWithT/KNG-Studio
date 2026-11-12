@@ -258,6 +258,13 @@ void RackRow::openInstrument()
         return;
     }
 
+    // Other KNG instruments (KNG 808) open their panel at the bottom
+    if (inst != nullptr && inst->getPluginType().startsWith ("kng") && session.onShowPluginEditor)
+    {
+        session.onShowPluginEditor (*inst);
+        return;
+    }
+
     if (inst != nullptr)
     {
         inst->showWindowExplicitly();
@@ -275,6 +282,7 @@ void RackRow::showInstrumentMenu()
     juce::PopupMenu menu;
     menu.addItem ("KNG Sampler (built-in)", [s, idx] { s->setBuiltInSampler (idx); });
     menu.addItem ("KNG Synth (built-in)", [s, idx] { s->setBuiltInSynth (idx); });
+    menu.addItem ("KNG 808 (built-in)", [s, idx] { s->setInstrumentById (idx, "kng808"); });
     menu.addSeparator();
 
     std::map<juce::String, juce::PopupMenu> byMaker;
