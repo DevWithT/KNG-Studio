@@ -2,6 +2,7 @@
 
 #include "KngFx.h"
 #include <array>
+#include <atomic>
 
 /** KNG 808: a synthesized 808. Pitch drop, length, punch, drive, and glide for slides. One note at a time. */
 class Kng808Plugin : public KngFxBase
@@ -35,6 +36,12 @@ public:
     void reset() override;
     void applyToBuffer (const tracktion::PluginRenderContext&) override;
     void drawDisplay (juce::Graphics&, juce::Rectangle<float>, const KngHistory&) override;
+
+    /** The KNG 808's own panel. */
+    std::unique_ptr<EditorComponent> createEditor() override;
+
+    /** The note sounding now, or -1. For the panel's screen and keys. */
+    std::atomic<int> displayNote { -1 };
 
 private:
     struct Voice

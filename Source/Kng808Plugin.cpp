@@ -1,4 +1,5 @@
 #include "Kng808Plugin.h"
+#include "Kng808View.h"
 
 namespace te = tracktion;
 
@@ -7,8 +8,8 @@ const char* Kng808Plugin::xmlTypeName = "kng808";
 static std::vector<KngParamDef> params808()
 {
     return {
-        { "tune",     "Tune",        -12.0f,   12.0f,    0.0f,   0.0f, 1.0f, "",   nullptr },
-        { "drop",     "Pitch Drop",    0.0f,   24.0f,    7.0f,   0.0f, 1.0f, "",   nullptr },
+        { "tune",     "Tune",        -12.0f,   12.0f,    0.0f,   0.0f, 1.0f, "st", nullptr },
+        { "drop",     "Pitch Drop",    0.0f,   24.0f,    7.0f,   0.0f, 1.0f, "st", nullptr },
         { "dropTime", "Drop Time",     5.0f,  300.0f,   40.0f,  60.0f, 0.0f, "ms", nullptr },
         { "length",   "Length",       50.0f, 4000.0f, 1200.0f, 700.0f, 0.0f, "ms", nullptr },
         { "hold",     "Hold Notes",    0.0f,    1.0f,    1.0f,   0.0f, 1.0f, "",   "toggle" },
@@ -230,6 +231,8 @@ void Kng808Plugin::applyToBuffer (const te::PluginRenderContext& fc)
 
     renderUpTo (fc.bufferNumSamples);
 
+    displayNote = voices[0].active ? voices[0].note : -1;
+
     // Level for the panel's meter
     float peak = 0.0f;
 
@@ -237,6 +240,11 @@ void Kng808Plugin::applyToBuffer (const te::PluginRenderContext& fc)
         peak = juce::jmax (peak, out.getMagnitude (ch, fc.bufferStartSample, fc.bufferNumSamples));
 
     reportMeters (0.0f, peak, 0.0f);
+}
+
+std::unique_ptr<te::Plugin::EditorComponent> Kng808Plugin::createEditor()
+{
+    return std::make_unique<Kng808View> (*this);
 }
 
 void Kng808Plugin::drawDisplay (juce::Graphics& g, juce::Rectangle<float> area, const KngHistory&)

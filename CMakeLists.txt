@@ -107,7 +107,11 @@ target_sources(KNGStudio PRIVATE
     Source/EditSessionPlaylistEdit.cpp
     Source/KngFattenerPlugin.cpp
     Source/Kng808Plugin.cpp
-    Source/EditSessionInstruments.cpp)
+    Source/EditSessionInstruments.cpp
+    Source/KngFonts.cpp
+    Source/KngFace.cpp
+    Source/KngPopOut.cpp
+    Source/Kng808View.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0
@@ -120,7 +124,20 @@ target_compile_definitions(KNGStudio PRIVATE
     JUCE_STRICT_REFCOUNTEDPOINTER=1
     TRACKTION_ENABLE_TIMESTRETCH_SOUNDTOUCH=1)
 
+# Fonts for the KNG plugin faces, built into the app
+juce_add_binary_data(KNGStudioAssets
+    HEADER_NAME BinaryData.h
+    NAMESPACE BinaryData
+    SOURCES
+        ${CMAKE_CURRENT_SOURCE_DIR}/Assets/Fonts/BarlowCondensed-SemiBold.ttf
+        ${CMAKE_CURRENT_SOURCE_DIR}/Assets/Fonts/BarlowCondensed-ExtraBold.ttf
+        ${CMAKE_CURRENT_SOURCE_DIR}/Assets/Fonts/Anton-Regular.ttf
+        ${CMAKE_CURRENT_SOURCE_DIR}/Assets/Fonts/SpaceGrotesk-Bold.ttf
+        ${CMAKE_CURRENT_SOURCE_DIR}/Assets/Fonts/Sora-ExtraBold.ttf
+        ${CMAKE_CURRENT_SOURCE_DIR}/Assets/Fonts/JetBrainsMono-Bold.ttf)
+
 target_link_libraries(KNGStudio PRIVATE
+    KNGStudioAssets
     tracktion::tracktion_core
     tracktion::tracktion_graph
     tracktion::tracktion_engine

@@ -14,6 +14,7 @@
 #include "Kng808Plugin.h"
 #include "PluginWindow.h"
 #include "MidiMapDialog.h"
+#include "KngPopOut.h"
 
 MainComponent::MainComponent (tracktion::Engine& engineToUse)
     : engine (engineToUse)
@@ -188,6 +189,9 @@ void MainComponent::closeProject()
 
     songWindows.clear();
 
+    // Pop-out plugin windows read the song too
+    KngPopOut::closeAll();
+
     KngUIBehaviour::setCurrentEdit (nullptr);
     dock.setSession (nullptr);
     if (pluginBrowser != nullptr)
@@ -218,6 +222,7 @@ void MainComponent::loadProject (const juce::File& editFile)
     session->onShowDrumRack  = [this] (int trackIndex) { showDrumRack (trackIndex); };
     session->onShowSampler   = [this] (int trackIndex) { showSampler (trackIndex); };
     session->onShowPluginEditor = [this] (tracktion::Plugin& p) { dock.showEffect (p); openDock(); };
+    KngPopOut::setDockHandler ([this] (tracktion::Plugin& p) { dock.showEffect (p); openDock(); });
     session->onShowRack = [this] { dock.showTab (DockPanel::rackTab); openDock(); };
     dock.setSession (session.get());
     pluginBrowser->setSession (session.get());
