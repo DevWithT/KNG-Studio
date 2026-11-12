@@ -510,8 +510,12 @@ void KngEqView::mouseWheelMove (const juce::MouseEvent& e, const juce::MouseWhee
     if (b < 0)
         b = selected;
 
+    // Nothing to resize: let the scroll through
     if (b < 0 || wheel.deltaY == 0.0f)
+    {
+        juce::Component::mouseWheelMove (e, wheel);
         return;
+    }
 
     // Scroll up for narrower, down for wider
     const float q = value (b, KngEq::bandQ) * (wheel.deltaY > 0.0f ? 1.15f : 1.0f / 1.15f);
