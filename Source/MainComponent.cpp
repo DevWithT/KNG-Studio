@@ -10,6 +10,8 @@
 #include "KngLimiterPlugin.h"
 #include "KngDoublerPlugin.h"
 #include "KngLoudnessPlugin.h"
+#include "KngUIBehaviour.h"
+#include "MidiMapDialog.h"
 
 MainComponent::MainComponent (tracktion::Engine& engineToUse)
     : engine (engineToUse)
@@ -167,6 +169,11 @@ bool MainComponent::isBusyRecording() const
 //==============================================================================
 void MainComponent::closeProject()
 {
+    // Stop learning and keep any controller links before the song closes
+    if (session != nullptr)
+        session->setMidiLearn (false);
+
+    KngUIBehaviour::setCurrentEdit (nullptr);
     dock.setSession (nullptr);
     if (pluginBrowser != nullptr)
         pluginBrowser->setSession (nullptr);
@@ -185,6 +192,8 @@ void MainComponent::loadProject (const juce::File& editFile)
     closeProject();
 
     session = std::make_unique<EditSession> (engine, editFile);
+    KngUIBehaviour::setCurrentEdit (&session->getEdit());
+    session->getEdit().getParameterControlMappings().loadFromEdit();
     session->onShowFxChain   = [this] (tracktion::PluginList& list, const juce::String& title) { showFxChain (list, title); };
     session->onShowPianoRoll = [this] (tracktion::MidiClip& clip) { showPianoRoll (clip); };
     session->onShowComp      = [this] (tracktion::WaveAudioClip& clip) { showComp (clip); };
@@ -370,6 +379,9 @@ juce::PopupMenu MainComponent::getMenuForIndex (int menuIndex, const juce::Strin
             add (cmdSplit, "Split at Playhead", "S", hasClip);
             add (cmdDelete, "Delete Clip", "Del", hasClip);
             add (cmdSelectAll, "Select All Clips", "Ctrl+A", hasSession);
+            m.addSeparator();
+            add (cmdMidiLearn, "MIDI Learn", "Ctrl+L", hasSession, hasSession && session->isMidiLearn());
+            add (cmdMidiMappings, "MIDI Mappings...", {}, hasSession);
             break;
 
         case 2: // Track
@@ -453,6 +465,8 @@ void MainComponent::menuItemSelected (int id, int)
         case cmdSplit:         session->splitSelectedClipAtPlayhead(); break;
         case cmdDelete:        session->deleteSelectedClip(); break;
         case cmdSelectAll:     session->selectAllClips(); break;
+        case cmdMidiLearn:     session->setMidiLearn (! session->isMidiLearn()); break;
+        case cmdMidiMappings:  showMidiMappings(); break;
 
         case cmdAddAudioTrack: session->addTrack(); break;
         case cmdAddMidiTrack:  session->addMidiTrack(); break;
@@ -513,6 +527,7 @@ void MainComponent::showShortcuts()
         "Ctrl+C / Ctrl+V\tCopy / Paste clip\n"
         "Ctrl+D\tDuplicate clip\n"
         "Ctrl+R\tRe-take (while recording)\n"
+        "Ctrl+L\tMIDI Learn on / off\n"
         "Ctrl+N / O / S\tNew / Open / Save\n"
         "Ctrl+Scroll\tZoom\n"
         "Shift+Scroll\tScroll sideways\n"
@@ -769,6 +784,7 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
         if (code == 'V' || code == 'v')  { session->pasteClip();             return true; }
         if (code == 'A' || code == 'a')  { session->selectAllClips();        return true; }
         if (code == 'R' || code == 'r')  { session->retake();                return true; }
+        if (code == 'L' || code == 'l')  { session->setMidiLearn (! session->isMidiLearn()); return true; }
         if (code == ',')                 { showSettings();                   return true; }
 
         if (code == '=' || code == '+')
@@ -1015,4 +1031,19 @@ void MainComponent::setUpNewSong()
 
     session->save();
     resized();
+}
+
+void MainComponent::showMidiMappings()
+{
+    if (session == nullptr)
+        return;
+
+    juce::DialogWindow::LaunchOptions options;
+    options.content.setOwned (new MidiMapDialog (*session));
+    options.dialogTitle = "MIDI Mappings";
+    options.dialogBackgroundColour = juce::Colour (0xff2b2f33);
+    options.escapeKeyTriggersCloseButton = true;
+    options.useNativeTitleBar = true;
+    options.resizable = true;
+    options.launchAsync();
 }

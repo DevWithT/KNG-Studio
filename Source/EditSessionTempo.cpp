@@ -115,3 +115,22 @@ void EditSession::removeTempoMark (const TempoMark& mark)
 
     save();
 }
+
+//==============================================================================
+void EditSession::setMidiLearn (bool shouldLearn)
+{
+    engine.getMidiLearnState().setActive (shouldLearn);
+    edit->getParameterChangeHandler().setParameterLearnActive (shouldLearn);
+
+    // Learning finished: keep the new links with the song
+    if (! shouldLearn)
+    {
+        edit->getParameterControlMappings().saveToEdit();
+        save();
+    }
+}
+
+bool EditSession::isMidiLearn()
+{
+    return engine.getMidiLearnState().isActive();
+}

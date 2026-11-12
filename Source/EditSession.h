@@ -26,6 +26,10 @@ public:
     /** While recording: throw away this take, go back to where it started, and record again. */
     void retake();
 
+    /** MIDI learn: while on, move a knob in KNG Studio, then a knob on your controller, to link them. */
+    void setMidiLearn (bool shouldLearn);
+    bool isMidiLearn();
+
     // Tracks
     int getNumTracks();
     tracktion::AudioTrack* getTrack (int index);

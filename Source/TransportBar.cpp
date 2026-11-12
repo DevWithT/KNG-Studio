@@ -71,6 +71,12 @@ TransportBar::TransportBar (EditSession& sessionToUse)
     monitorButton.onClick = [this] { session.setMonitoring (monitorButton.getToggleState()); };
     writeButton.onClick   = [this] { session.setAutomationWrite (writeButton.getToggleState()); };
 
+    addAndMakeVisible (learnButton);
+    learnButton.setClickingTogglesState (false);
+    learnButton.setColour (juce::TextButton::buttonOnColourId, juce::Colour (0xffc0392b));
+    learnButton.setTooltip ("MIDI Learn (Ctrl+L): move a knob here, then twist one on your controller to link them");
+    learnButton.onClick = [this] { session.setMidiLearn (! session.isMidiLearn()); };
+
     // Tooltips
     playButton.setTooltip ("Play / Pause (Space)");
     stopButton.setTooltip ("Stop and return to where you started (Space)");
@@ -141,6 +147,7 @@ void TransportBar::timerCallback()
     snapButton.setToggleState (session.isSnapEnabled(), juce::dontSendNotification);
     monitorButton.setToggleState (session.isMonitoring(), juce::dontSendNotification);
     writeButton.setToggleState (session.isAutomationWrite(), juce::dontSendNotification);
+    learnButton.setToggleState (session.isMidiLearn(), juce::dontSendNotification);
 
     if (! countInBox.isPopupActive())
         countInBox.setSelectedId (session.getCountInBars() + 1, juce::dontSendNotification);
@@ -225,4 +232,5 @@ void TransportBar::resized()
 
     place (monitorButton, 90);
     place (writeButton, 100);
+    place (learnButton, 64);
 }

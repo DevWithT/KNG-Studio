@@ -29,6 +29,7 @@ private:
     juce::Slider tempoSlider;
     juce::ComboBox countInBox;
     juce::TextButton timeSigButton { "4/4" };
+    juce::TextButton learnButton { "Learn" };
     juce::ToggleButton clickButton { "Click" }, loopButton { "Loop" }, punchButton { "Punch" }, snapButton { "Snap" },
                        monitorButton { "Monitor" }, writeButton { "Auto Write" };
 

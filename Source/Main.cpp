@@ -1,6 +1,7 @@
 #include "MainComponent.h"
 #include "PluginWindow.h"
 #include "KngLookAndFeel.h"
+#include "KngUIBehaviour.h"
 
 // Any crash writes a stack trace to Documents\KNG Studio\crash_log.txt
 static void kngCrashHandler (void*)

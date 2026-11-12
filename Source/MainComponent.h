@@ -49,7 +49,7 @@ private:
         cmdBackupNow, cmdRestoreBackup, cmdStartScreen,
         cmdUndo = 100, cmdRedo, cmdCopy, cmdPaste, cmdDuplicate, cmdSplit, cmdDelete, cmdSelectAll,
         cmdAddAudioTrack = 200, cmdAddMidiTrack,
-        cmdPlayStop = 300, cmdRecord, cmdRetake, cmdGoToStart, cmdLoop, cmdClick, cmdSnap, cmdMonitor, cmdAutoWrite, cmdPunch,
+        cmdPlayStop = 300, cmdRecord, cmdRetake, cmdMidiLearn, cmdMidiMappings, cmdGoToStart, cmdLoop, cmdClick, cmdSnap, cmdMonitor, cmdAutoWrite, cmdPunch,
         cmdAddMarker, cmdPrevMarker, cmdNextMarker,
         cmdMixer = 400, cmdZoomIn, cmdZoomOut, cmdZoomFit, cmdBrowser, cmdDock,
         cmdShortcuts = 500
@@ -59,6 +59,7 @@ private:
 
     void showAudioSettings();
     void showSettings();
+    void showMidiMappings();
     void showPluginScanner();
     void showLatencyDialog();
     void showFxChain (tracktion::PluginList& list, const juce::String& title);
