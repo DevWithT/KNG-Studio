@@ -341,6 +341,9 @@ public:
     bool isSnapEnabled() const                  { return snapEnabled; }
     void setSnapEnabled (bool shouldSnap)       { snapEnabled = shouldSnap; }
     double snapTime (double seconds) const;
+    /** Snap grid: divisions per beat (1 = beats, 2 = 8ths, 4 = 16ths, 8 = 32nds), 0 = whole bars. Saved with the song. */
+    int getSnapGrid() const;
+    void setSnapGrid (int perBeat);
 
     // Mixer and plugins
     juce::Array<tracktion::Plugin*> getFxPlugins (tracktion::PluginList& list);

@@ -26,7 +26,8 @@ TransportBar::TransportBar (EditSession& sessionToUse)
     barLabel.setJustificationType (juce::Justification::centred);
     barLabel.setFont (juce::Font (juce::FontOptions (15.0f)));
     barLabel.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.7f));
-    barLabel.setTooltip ("Bar and beat at the playhead");
+    barLabel.setTooltip ("Time at the playhead (minutes:seconds)");
+    timeLabel.setTooltip ("Bar . beat . 16th at the playhead");
 
     addAndMakeVisible (timeSigButton);
     timeSigButton.setTooltip ("Time signature at the playhead. Click to change it from this bar on.");
@@ -96,6 +97,23 @@ TransportBar::TransportBar (EditSession& sessionToUse)
     patternModeButton.onClick = [this] { session.setPatternMode (true); };
     songModeButton.onClick    = [this] { session.setPatternMode (false); };
 
+    // Snap grid size
+    addAndMakeVisible (gridBox);
+    gridBox.addItem ("Bar", 1);
+    gridBox.addItem ("Beat", 2);
+    gridBox.addItem ("1/8", 3);
+    gridBox.addItem ("1/16", 4);
+    gridBox.addItem ("1/32", 5);
+    gridBox.setTooltip ("Snap grid size");
+    gridBox.onChange = [this]
+    {
+        static const int grids[] = { 0, 1, 2, 4, 8 };
+        const int id = gridBox.getSelectedId();
+
+        if (id >= 1 && id <= 5)
+            session.setSnapGrid (grids[id - 1]);
+    };
+
     // Tooltips
     playButton.setTooltip ("Play / Pause (Space)");
     stopButton.setTooltip ("Stop and return to where you started (Space)");
@@ -105,7 +123,7 @@ TransportBar::TransportBar (EditSession& sessionToUse)
     clickButton.setTooltip ("Metronome on or off");
     loopButton.setTooltip ("Loop the region marked on the ruler");
     punchButton.setTooltip ("Only record between the loop markers");
-    snapButton.setTooltip ("Snap clips and markers to the beat grid (hold Alt to ignore)");
+    snapButton.setTooltip ("Snap blocks and loop markers to the grid size next to it (hold Alt to ignore)");
     monitorButton.setTooltip ("Hear your inputs live while armed");
     writeButton.setTooltip ("Record fader and knob moves as automation while playing");
 
@@ -167,7 +185,6 @@ void TransportBar::timerCallback()
 {
     auto& transport = session.getTransport();
 
-    timeLabel.setText (formatTime (transport.getPosition().inSeconds()), juce::dontSendNotification);
     recordButton.setToggleState (transport.isRecording(), juce::dontSendNotification);
     playButton.setToggleState (transport.isPlaying() && ! transport.isRecording(), juce::dontSendNotification);
 
@@ -205,12 +222,25 @@ void TransportBar::timerCallback()
     if (timeSigButton.getButtonText() != sig)
         timeSigButton.setButtonText (sig);
 
-    // Bar.beat, counted on the tempo map
+    // Bar.beat.16th, counted on the tempo map (big), and minutes:seconds (small)
     auto& ts = session.getEdit().tempoSequence;
     const double barStart = session.barStartAt (now);
-    const int beatInBar = (int) std::floor (ts.toBeats (tracktion::TimePosition::fromSeconds (now)).inBeats()
-                                            - ts.toBeats (tracktion::TimePosition::fromSeconds (barStart)).inBeats() + 1.0e-6) + 1;
-    barLabel.setText (juce::String (session.barNumberAt (now)) + "." + juce::String (beatInBar), juce::dontSendNotification);
+    const double into = ts.toBeats (tracktion::TimePosition::fromSeconds (now)).inBeats()
+                      - ts.toBeats (tracktion::TimePosition::fromSeconds (barStart)).inBeats() + 1.0e-6;
+    const int beatInBar = (int) std::floor (into) + 1;
+    const int sixteenth = juce::jlimit (1, 4, (int) std::floor ((into - std::floor (into)) * 4.0) + 1);
+
+    timeLabel.setText (juce::String (session.barNumberAt (now)) + "." + juce::String (beatInBar) + "." + juce::String (sixteenth),
+                       juce::dontSendNotification);
+    barLabel.setText (formatTime (now), juce::dontSendNotification);
+
+    // Grid size follows the song (it changes when you open another one)
+    if (! gridBox.isPopupActive())
+    {
+        const int grid = session.getSnapGrid();
+        const int id = grid == 0 ? 1 : grid == 1 ? 2 : grid == 2 ? 3 : grid == 4 ? 4 : 5;
+        gridBox.setSelectedId (id, juce::dontSendNotification);
+    }
 }
 
 juce::String TransportBar::formatTime (double seconds)
@@ -267,7 +297,7 @@ void TransportBar::resized()
     divider();
 
     place (timeLabel, 130);
-    place (barLabel, 64);
+    place (barLabel, 92);
     divider();
 
     place (tempoSlider, 150);
@@ -279,6 +309,7 @@ void TransportBar::resized()
     place (loopButton, 64);
     place (punchButton, 70);
     place (snapButton, 64);
+    place (gridBox, 72);
     divider();
 
     place (monitorButton, 90);

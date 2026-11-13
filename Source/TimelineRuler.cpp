@@ -26,7 +26,8 @@ int TimelineRuler::timeToX (double seconds) const
 
 double TimelineRuler::snapToBeat (double seconds) const
 {
-    return session.snapToBeat (seconds);
+    // Follows the Snap button and the grid size
+    return session.snapTime (seconds);
 }
 
 void TimelineRuler::paint (juce::Graphics& g)
@@ -65,8 +66,14 @@ void TimelineRuler::paint (juce::Graphics& g)
     while (pxPerBar * labelStep < 40.0 && labelStep < 1024)
         labelStep *= 2;
 
-    const bool showBeats = pxPerBar / 4.0 >= 10.0;
-    g.setFont (juce::Font (juce::FontOptions (11.0f)));
+    // The closer you zoom, the more you see: beat ticks, then beat labels, then 16ths
+    const double pxPerBeat = pxPerBar / 4.0;
+    const bool showBeats  = pxPerBeat >= 10.0;
+    const bool labelBeats = pxPerBeat >= 34.0;
+    const bool showSteps  = pxPerBeat >= 48.0;
+    const auto barFont  = juce::Font (juce::FontOptions (11.0f, juce::Font::bold));
+    const auto beatFont = juce::Font (juce::FontOptions (10.0f));
+    const float h = (float) getHeight();
 
     for (int guard = 0; bar <= viewEnd && guard < 4000; ++guard)
     {
@@ -78,21 +85,47 @@ void TimelineRuler::paint (juce::Graphics& g)
         const int x = timeToX (bar);
         const bool labelled = ((barNumber - 1) % labelStep) == 0;
 
-        g.setColour (juce::Colours::white.withAlpha (labelled ? 0.6f : 0.35f));
-        g.drawVerticalLine (x, (float) (getHeight() / 2), (float) getHeight());
+        g.setColour (juce::Colours::white.withAlpha (labelled ? 0.7f : 0.35f));
+        g.drawVerticalLine (x, labelled ? 0.0f : h * 0.5f, h);
 
         if (labelled)
+        {
+            g.setFont (barFont);
             g.drawText (juce::String (barNumber), x + 3, 1, 40, 12, juce::Justification::left);
+        }
 
         if (showBeats)
         {
             const double b1 = ts.toBeats (te::TimePosition::fromSeconds (bar)).inBeats();
             const double b2 = ts.toBeats (te::TimePosition::fromSeconds (next)).inBeats();
-            g.setColour (juce::Colours::white.withAlpha (0.25f));
 
-            for (double b = std::floor (b1) + 1.0; b < b2 - 1.0e-6; b += 1.0)
-                g.drawVerticalLine (timeToX (ts.toTime (te::BeatPosition::fromBeats (b)).inSeconds()),
-                                    (float) (getHeight() * 3 / 4), (float) getHeight());
+            // 16th ticks
+            if (showSteps)
+            {
+                g.setColour (juce::Colours::white.withAlpha (0.14f));
+
+                for (double b = std::ceil (b1 * 4.0) / 4.0; b < b2 - 1.0e-6; b += 0.25)
+                    if (std::abs (b - std::round (b)) > 1.0e-6)
+                        g.drawVerticalLine (timeToX (ts.toTime (te::BeatPosition::fromBeats (b)).inSeconds()), h * 0.82f, h);
+            }
+
+            // Beat ticks, labelled bar.beat when there's room
+            int beatInBar = 2;
+
+            for (double b = std::floor (b1) + 1.0; b < b2 - 1.0e-6; b += 1.0, ++beatInBar)
+            {
+                const int bx = timeToX (ts.toTime (te::BeatPosition::fromBeats (b)).inSeconds());
+                g.setColour (juce::Colours::white.withAlpha (0.3f));
+                g.drawVerticalLine (bx, h * 0.62f, h);
+
+                if (labelBeats)
+                {
+                    g.setFont (beatFont);
+                    g.setColour (juce::Colours::white.withAlpha (0.45f));
+                    g.drawText (juce::String (barNumber) + "." + juce::String (beatInBar), bx + 3, 1, 40, 12,
+                                juce::Justification::left);
+                }
+            }
         }
 
         bar = next;

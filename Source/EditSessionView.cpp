@@ -41,10 +41,34 @@ double EditSession::snapTime (double seconds) const
     if (! snapEnabled)
         return seconds;
 
-    // Snap to the nearest beat on the tempo map, so it stays right across tempo changes
     auto& ts = edit->tempoSequence;
-    const double beat = std::round (ts.toBeats (te::TimePosition::fromSeconds (juce::jmax (0.0, seconds))).inBeats());
+    const auto t = te::TimePosition::fromSeconds (juce::jmax (0.0, seconds));
+    const int grid = getSnapGrid();
+
+    // Whole bars: the nearest bar line
+    if (grid <= 0)
+    {
+        const auto bb = ts.toBarsAndBeats (t);
+        const double a = ts.toTime (te::tempo::BarsAndBeats { bb.bars, {} }).inSeconds();
+        const double b = ts.toTime (te::tempo::BarsAndBeats { bb.bars + 1, {} }).inSeconds();
+        return seconds - a < b - seconds ? a : b;
+    }
+
+    // Nearest grid line on the tempo map, so it stays right across tempo changes
+    const double beat = std::round (ts.toBeats (t).inBeats() * grid) / grid;
     return ts.toTime (te::BeatPosition::fromBeats (beat)).inSeconds();
+}
+
+int EditSession::getSnapGrid() const
+{
+    const int grid = (int) edit->state.getProperty ("kngSnapGrid", 1);
+    return (grid == 0 || grid == 1 || grid == 2 || grid == 4 || grid == 8) ? grid : 1;
+}
+
+void EditSession::setSnapGrid (int perBeat)
+{
+    edit->state.setProperty ("kngSnapGrid", perBeat, nullptr);
+    save();
 }
 
 //==============================================================================
