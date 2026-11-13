@@ -13,6 +13,18 @@ void EditSession::record()
     if (! isAnyTrackArmed())
         setArmed (0, true);
 
+    // Rec always records into the song. Pattern mode keeps the playhead in the pattern bank (bar 2000+),
+    // where a take would land out of sight, so go back to Song mode first.
+    if (isPatternMode())
+        setPatternMode (false);
+    else if (getTransport().getPosition().inSeconds() >= getBankStart() - 1.0)
+        getTransport().setPosition (te::TimePosition());
+
+    // Send every arm to the engine again, in case a device or track change dropped one
+    for (int i = 0; i < (int) trackArmed.size(); ++i)
+        if (trackArmed[(size_t) i])
+            applyArm (i, true);
+
     // Punching in: start 2 bars early so you hear the lead-in
     if (isPunchEnabled() && getLoopEnd() > getLoopStart() && ! getTransport().isPlaying())
     {
