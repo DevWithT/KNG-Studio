@@ -118,7 +118,17 @@ target_sources(KNGStudio PRIVATE
     Source/KngDeEssView.cpp
     Source/KngLimiterView.cpp
     Source/KngDoublerView.cpp
-    Source/EditSessionPatternDelete.cpp)
+    Source/EditSessionPatternDelete.cpp
+    Source/KngAirPlugin.cpp
+    Source/KngAirView.cpp
+    Source/KngGatePlugin.cpp
+    Source/KngGateView.cpp
+    Source/KngWidthPlugin.cpp
+    Source/KngWidthView.cpp
+    Source/KngRadioPlugin.cpp
+    Source/KngRadioView.cpp
+    Source/KngThrowPlugin.cpp
+    Source/KngThrowView.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0

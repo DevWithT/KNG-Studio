@@ -58,7 +58,9 @@ KngIdentity kngIdentityFor (te::Plugin& p)
     static const Effect effects[] = {
         { "KNG EQ", 0xff2fbf71, "EQ" },        { "KNG Comp", 0xffffb020, "C" },     { "KNG Verb", 0xff5b8cff, "V" },
         { "KNG Delay", 0xff22c3b5, "D" },      { "KNG Saturator", 0xffff7a45, "SA" }, { "KNG De-Esser", 0xffe879f9, "DS" },
-        { "KNG Limiter", 0xfff43f5e, "L" },    { "KNG Doubler", 0xff38bdf8, "2x" }
+        { "KNG Limiter", 0xfff43f5e, "L" },    { "KNG Doubler", 0xff38bdf8, "2x" },
+        { "KNG Air", 0xffbdf4ff, "A" },        { "KNG Gate", 0xffa3e635, "G" },     { "KNG Width", 0xff818cf8, "W" },
+        { "KNG Radio", 0xffd6a35c, "R" },      { "KNG Throw", 0xfffde047, "T" }
     };
 
     for (auto& e : effects)
