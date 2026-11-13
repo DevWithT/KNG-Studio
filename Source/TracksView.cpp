@@ -285,8 +285,11 @@ void TracksView::itemDropped (const SourceDetails& details)
         }
 
         const int laneWidth = juce::jmax (1, getWidth() - headerWidth - gap);
-        const double t = session.xToTime (details.localPosition.x - (headerWidth + gap), laneWidth);
-        session.placePatternInLane (pattern, juce::jmax (0.0, t), session.getLaneId (lane));
+        const double t = juce::jmax (0.0, session.xToTime (details.localPosition.x - (headerWidth + gap), laneWidth));
+
+        // Lands on the nearest grid line (Snap off or Alt held: right where you let go)
+        const double at = juce::ModifierKeys::currentModifiers.isAltDown() ? t : session.snapTime (t);
+        session.placePatternInLane (pattern, at, session.getLaneId (lane));
         return;
     }
 
