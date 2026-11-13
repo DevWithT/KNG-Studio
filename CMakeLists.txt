@@ -17,6 +17,10 @@ juce_add_gui_app(KNGStudio
 target_sources(KNGStudio PRIVATE
     Source/Main.cpp
     Source/MainComponent.cpp
+    Source/MainComponentProject.cpp
+    Source/MainComponentMenus.cpp
+    Source/MainComponentKeys.cpp
+    Source/MainComponentWindows.cpp
     Source/EditSession.cpp
     Source/EditSessionTransport.cpp
     Source/EditSessionProject.cpp
@@ -25,6 +29,7 @@ target_sources(KNGStudio PRIVATE
     Source/TransportBar.cpp
     Source/TrackLane.cpp
     Source/TrackLaneMouse.cpp
+    Source/TrackLaneMouseActions.cpp
     Source/TrackHeader.cpp
     Source/TracksView.cpp
     Source/TimelineRuler.cpp
@@ -40,9 +45,12 @@ target_sources(KNGStudio PRIVATE
     Source/LatencyDialog.cpp
     Source/EditSessionMidi.cpp
     Source/PianoRoll.cpp
+    Source/PianoRollNotes.cpp
+    Source/PianoRollInput.cpp
     Source/EditSessionAutomation.cpp
     Source/AutomationLane.cpp
     Source/MixerView.cpp
+    Source/MixerViewInserts.cpp
     Source/CompView.cpp
     Source/EditSessionExtras.cpp
     Source/EditSessionSelection.cpp
@@ -59,6 +67,8 @@ target_sources(KNGStudio PRIVATE
     Source/DockPanel.cpp
     Source/EditSessionPatterns.cpp
     Source/RackRow.cpp
+    Source/RackRowPaint.cpp
+    Source/RackRowMouse.cpp
     Source/RackView.cpp
     Source/RackRowActions.cpp
     Source/EditSessionChannels.cpp
@@ -66,16 +76,22 @@ target_sources(KNGStudio PRIVATE
     Source/EditSessionPatternLane.cpp
     Source/KngSamplerPlugin.cpp
     Source/KngSamplerView.cpp
+    Source/KngSamplerViewPaint.cpp
+    Source/KngSamplerViewActions.cpp
     Source/StartScreen.cpp
     Source/EditSessionTools.cpp
     Source/GenericPluginPanel.cpp
     Source/EditSessionRouting.cpp
     Source/SettingsComponent.cpp
     Source/KngSynthPlugin.cpp
+    Source/KngSynthPluginAudio.cpp
     Source/KngSynthView.cpp
+    Source/KngSynthViewPaint.cpp
     Source/EditSessionSynth.cpp
     Source/KngEqPlugin.cpp
     Source/KngEqView.cpp
+    Source/KngEqViewPaint.cpp
+    Source/KngEqViewMouse.cpp
     Source/EditSessionPlugins.cpp
     Source/PluginBrowser.cpp
     Source/KngCompPlugin.cpp
