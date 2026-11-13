@@ -206,6 +206,27 @@ void PatternListPanel::showMenu (int pattern)
             safe->onPatternPicked();
     });
     menu.addItem ("Loop It", [s, pattern] { s->loopPattern (pattern); });
+    menu.addSeparator();
+
+    menu.addItem ("Delete Pattern...", [s, safe, pattern]
+    {
+        auto* w = new juce::AlertWindow ("Delete Pattern",
+                                         "Delete \"" + s->getPatternName (pattern) + "\" and every block of it in the Playlist?\n"
+                                         "Ctrl+Z brings it back.",
+                                         juce::MessageBoxIconType::WarningIcon);
+        w->addButton ("Delete", 1, juce::KeyPress (juce::KeyPress::returnKey));
+        w->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
+
+        w->enterModalState (true, juce::ModalCallbackFunction::create ([s, safe, pattern] (int result)
+        {
+            if (result == 1 && s->deletePattern (pattern) && safe != nullptr)
+            {
+                safe->resized();
+                safe->repaint();
+            }
+        }), true);
+    });
+
     menu.showMenuAsync ({});
 }
 

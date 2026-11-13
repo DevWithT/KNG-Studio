@@ -256,6 +256,8 @@ public:
     juce::Colour getPatternColour (int pattern);
     void setPatternColour (int pattern, juce::Colour colour);
     int duplicatePattern (int pattern);
+    /** Removes a pattern everywhere (its notes, every block, its stash). Later patterns move down one number. */
+    bool deletePattern (int pattern);
 
     /** Each pattern keeps a copy in the "bank", far past the song, so new patterns never land on each other. */
     double getBankStart();

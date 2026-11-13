@@ -207,7 +207,6 @@ KngSamplerKeys::KngSamplerKeys (juce::MidiKeyboardState& state, KngSamplerPlugin
     : juce::MidiKeyboardComponent (state, juce::MidiKeyboardComponent::horizontalKeyboard),
       plugin (owner), onRoot (std::move (onRootPicked))
 {
-    setTooltip ("Play the sample. Right-click a key to make it the root.");
 }
 
 void KngSamplerKeys::drawWhiteNote (int note, juce::Graphics& g, juce::Rectangle<float> area, bool isDown, bool isOver,
@@ -228,7 +227,7 @@ void KngSamplerKeys::drawWhiteNote (int note, juce::Graphics& g, juce::Rectangle
     {
         g.setFont (KngFonts::font (KngFonts::mono, juce::jmin (10.0f, key.getWidth() * 0.45f)));
         g.setColour (ink);
-        g.drawText (Theory::noteName (root), key.removeFromBottom (16.0f), juce::Justification::centred, false);
+        g.drawText (Theory::noteName (root), key.withTrimmedTop (key.getHeight() - 16.0f), juce::Justification::centred, false);
     }
 }
 

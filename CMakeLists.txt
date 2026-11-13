@@ -117,7 +117,8 @@ target_sources(KNGStudio PRIVATE
     Source/KngFaceView.cpp
     Source/KngDeEssView.cpp
     Source/KngLimiterView.cpp
-    Source/KngDoublerView.cpp)
+    Source/KngDoublerView.cpp
+    Source/EditSessionPatternDelete.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0
