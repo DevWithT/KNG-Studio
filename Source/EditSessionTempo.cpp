@@ -16,21 +16,15 @@ double EditSession::barStartAt (double seconds)
 
 double EditSession::barsAfter (double barStart, int bars)
 {
+    // Keeps the spot inside the bar, so a block that starts mid-bar is still a full number of bars long
     auto& ts = edit->tempoSequence;
     const auto bb = ts.toBarsAndBeats (tp (barStart));
-    return ts.toTime (te::tempo::BarsAndBeats { bb.bars + bars, {} }).inSeconds();
+    return ts.toTime (te::tempo::BarsAndBeats { bb.bars + bars, bb.beats }).inSeconds();
 }
 
 int EditSession::barNumberAt (double seconds)
 {
     return edit->tempoSequence.toBarsAndBeats (tp (seconds)).bars + 1;
-}
-
-double EditSession::snapToBeat (double seconds)
-{
-    auto& ts = edit->tempoSequence;
-    const double beat = std::round (ts.toBeats (tp (seconds)).inBeats());
-    return ts.toTime (te::BeatPosition::fromBeats (beat)).inSeconds();
 }
 
 double EditSession::getBpmAt (double seconds)

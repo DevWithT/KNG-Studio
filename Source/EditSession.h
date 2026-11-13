@@ -319,7 +319,6 @@ public:
     double barStartAt (double seconds);              // where the bar this time falls in begins
     double barsAfter (double barStart, int bars);    // the time that many bars later
     int barNumberAt (double seconds);                // counting from 1
-    double snapToBeat (double seconds);
 
     // Loop
     void setLooping (bool shouldLoop);

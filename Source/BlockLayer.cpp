@@ -2,6 +2,24 @@
 
 namespace te = tracktion;
 
+// The grid line at or before this time. Snap off or Alt held: the time itself.
+static double gridFloor (EditSession& session, double seconds)
+{
+    seconds = juce::jmax (0.0, seconds);
+
+    if (! session.isSnapEnabled() || juce::ModifierKeys::currentModifiers.isAltDown())
+        return seconds;
+
+    const int grid = session.getSnapGrid();
+
+    if (grid <= 0)
+        return session.barStartAt (seconds);
+
+    auto& ts = session.getEdit().tempoSequence;
+    const double beat = std::floor (ts.toBeats (te::TimePosition::fromSeconds (seconds)).inBeats() * grid + 1.0e-6) / grid;
+    return ts.toTime (te::BeatPosition::fromBeats (beat)).inSeconds();
+}
+
 // A block's real notes, from every sound in it (stretched blocks show each repeat). False if it has none.
 static bool drawBlockNotes (juce::Graphics& g, EditSession& session, const EditSession::PatternBlock& b,
                             juce::Rectangle<float> area, int width, float alpha)
@@ -212,7 +230,7 @@ void BlockLayer::paint (juce::Graphics& g)
 //==============================================================================
 void BlockLayer::paintAt (int x)
 {
-    const double start = session.barStartAt (juce::jmax (0.0, session.xToTime (x, getWidth())));
+    const double start = gridFloor (session, session.xToTime (x, getWidth()));
 
     if (std::abs (start - lastPaintBar) < 0.001)
         return;
@@ -365,11 +383,9 @@ void BlockLayer::mouseDrag (const juce::MouseEvent& e)
     }
     else if (moving)
     {
-        // Land on the nearest bar line
+        // Land on the nearest grid line (Snap off or Alt held: anywhere)
         const double t = juce::jmax (0.0, session.xToTime (e.x, getWidth()) - grab);
-        const double before = session.barStartAt (t);
-        const double after = session.barsAfter (before, 1);
-        dropTime = (t - before) < (after - t) ? before : after;
+        dropTime = e.mods.isAltDown() ? t : session.snapTime (t);
         repaint();
     }
 }
