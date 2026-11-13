@@ -211,6 +211,68 @@ void RackRow::showRowMenu()
         });
     }
 
+    // Fill a line every Nth step: the sound channel's row, or the drum pad line under the mouse
+    int fillNote = -1;
+
+    if (isChannel())
+    {
+        fillNote = getChannelNote();
+    }
+    else if (isDrum())
+    {
+        int pad = 0, step = 0;
+
+        if (stepAt (getMouseXYRelative(), pad, step))
+            fillNote = EditSession::getPadNote (pad);
+    }
+
+    if (fillNote >= 0)
+    {
+        juce::PopupMenu fill;
+        const std::pair<int, const char*> choices[] = {
+            { 1, "Every Step" }, { 2, "Every 2nd Step" }, { 4, "Every 4th Step" },
+            { 8, "Every 8th Step" }, { 16, "Every 16th Step" }
+        };
+
+        for (auto& choice : choices)
+        {
+            const int every = choice.first;
+            fill.addItem (choice.second, [safe, fillNote, every] { if (safe != nullptr) safe->fillLine (fillNote, every); });
+        }
+
+        fill.addSeparator();
+        fill.addItem ("Clear Line", [safe, fillNote] { if (safe != nullptr) safe->fillLine (fillNote, 0); });
+
+        menu.addSeparator();
+        menu.addSubMenu ("Fill Steps", fill);
+    }
+
+    // Deleting rebuilds the Rack, so it happens after this click finishes
+    menu.addSeparator();
+    menu.addItem ("Delete Sound...", [safe, s]
+    {
+        if (safe == nullptr)
+            return;
+
+        auto* w = new juce::AlertWindow ("Delete Sound",
+                                         "Delete \"" + safe->track->getName() + "\"?\n"
+                                         "Its notes in every pattern and its Mixer channel go too.",
+                                         juce::MessageBoxIconType::WarningIcon);
+        w->addButton ("Delete", 1, juce::KeyPress (juce::KeyPress::returnKey));
+        w->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
+
+        w->enterModalState (true, juce::ModalCallbackFunction::create ([safe, s] (int result)
+        {
+            if (result != 1 || safe == nullptr)
+                return;
+
+            const int trackIndex = safe->getTrackIndex();
+
+            if (trackIndex >= 0)
+                juce::MessageManager::callAsync ([s, trackIndex] { s->deleteTrack (trackIndex); });
+        }), true);
+    });
+
     menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (this));
 }
 
@@ -290,5 +352,29 @@ void RackRow::filesDropped (const juce::StringArray& files, int, int)
     if (! files.isEmpty())
         dropFile (juce::File (files[0]));
 
+    repaint();
+}
+
+//==============================================================================
+void RackRow::fillLine (int note, int every)
+{
+    auto* clip = getClip (true);
+
+    if (clip == nullptr)
+        return;
+
+    auto* um = &session.getEdit().getUndoManager();
+    const int steps = getNumSteps();
+
+    session.beginEdit();
+
+    // every = 0 clears the line
+    for (int step = 0; step < steps; ++step)
+        PatternGrid::setStep (*clip, note, step, every > 0 && step % every == 0, um);
+
+    if (clip->isLinked())
+        clip->updateLinkedClips();
+
+    session.save();
     repaint();
 }

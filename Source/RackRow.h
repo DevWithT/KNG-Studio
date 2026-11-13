@@ -64,6 +64,7 @@ private:
     void showRowMenu();
     void chooseSample();
     void dropFile (const juce::File& file);
+    void fillLine (int note, int every);
 
     void paintDrumSummary (juce::Graphics&, tracktion::MidiClip*);
     void paintDrumRows (juce::Graphics&, tracktion::MidiClip*);
