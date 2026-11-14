@@ -22,6 +22,7 @@
 #include "KngLoFiPlugin.h"
 #include "KngPumpPlugin.h"
 #include "KngTransientPlugin.h"
+#include "KngKeysPlugin.h"
 #include "PluginWindow.h"
 #include "MidiMapDialog.h"
 #include "KngPopOut.h"
@@ -52,6 +53,7 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
     engine.getPluginManager().createBuiltInType<KngLoFiPlugin>();
     engine.getPluginManager().createBuiltInType<KngPumpPlugin>();
     engine.getPluginManager().createBuiltInType<KngTransientPlugin>();
+    engine.getPluginManager().createBuiltInType<KngKeysPlugin>();
 
     setWantsKeyboardFocus (true);
 

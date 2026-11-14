@@ -50,6 +50,9 @@ KngIdentity kngIdentityFor (te::Plugin& p)
     if (name == "KNG Sampler")
         return make (0xff9b7bff, 0xff1c1924, 0xff121018, "SP", KngFonts::sora, 0xff34303f, 0xff14121a, 0xff9a93b0, KngFonts::sora, false);
 
+    if (name == "KNG Keys")
+        return make (0xffe8b04a, 0xff2a1f16, 0xff17110c, "K", KngFonts::sora, 0xff4a3826, 0xff1a130d, 0xffc7a985, KngFonts::sora, false);
+
     if (name == "KNG Fattener")
         return make (0xffff3b30, 0xff3a1416, 0xff1c0a0b, "F", KngFonts::anton, 0xff4a2426, 0xff1a0d0e, 0xffc08a85, KngFonts::spaceGrotesk, true);
 

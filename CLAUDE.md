@@ -119,6 +119,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 ### Built-in instruments
 - `Kng808Plugin.cpp/.h`: synthesized 808: pitch drop, length, punch, drive, glide.
 - `Kng808View.cpp/.h`: KNG 808's face.
+- `KngKeysPlugin.cpp/.h`, `KngKeysView.cpp/.h`: KNG Keys, synthesized piano, Rhodes and organ (KngFxBase instrument).
 - `KngSynthPlugin.cpp/.h`: two-oscillator synth with sub, noise, filter, envelopes, LFO.
 - `KngSynthPluginAudio.cpp`: KNG Synth voice rendering and the audio/MIDI process callback.
 - `KngSynthView.cpp/.h`: KNG Synth's face.
