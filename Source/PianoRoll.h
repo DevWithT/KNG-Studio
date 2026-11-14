@@ -67,6 +67,7 @@ private:
     void deleteSelected();
     void toggleSlideOnSelected();
     void eraseAt (juce::Point<int> p);
+    void showToolsMenu();   // in PianoRollInput.cpp
 
     // Theory
     int getKeyRoot() const;
@@ -95,6 +96,7 @@ private:
     juce::TextButton quantiseButton { "Quantize (Q)" };
     juce::TextButton theoryButton { "Theory" };
     juce::TextButton slideButton { "Slide" };
+    juce::TextButton toolsButton { "Tools" };
     juce::Label hintLabel;
 
     // Row 2: theory, only while Theory is on

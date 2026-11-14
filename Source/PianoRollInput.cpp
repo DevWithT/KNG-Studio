@@ -360,3 +360,64 @@ bool PianoRoll::keyPressed (const juce::KeyPress& key)
 
     return false;
 }
+
+//==============================================================================
+void PianoRoll::showToolsMenu()
+{
+    juce::Component::SafePointer<PianoRoll> safe (this);
+
+    // Each tool runs on this clip, clears the selection (arpeggiate replaces notes) and redraws
+    auto run = [safe] (std::function<void (EditSession&, te::MidiClip&)> tool)
+    {
+        return [safe, tool]
+        {
+            if (safe == nullptr || safe->clip->getParent() == nullptr)
+                return;
+
+            safe->selected.clear();
+            tool (safe->session, *safe->clip);
+            safe->repaint();
+        };
+    };
+
+    juce::PopupMenu menu, humanize, arp, length;
+
+    humanize.addItem ("Light",  run ([] (EditSession& s, te::MidiClip& c) { s.humanizeClip (c, 0.02, 6); }));
+    humanize.addItem ("Medium (H)", run ([] (EditSession& s, te::MidiClip& c) { s.humanizeClip (c, 0.04, 12); }));
+    humanize.addItem ("Heavy",  run ([] (EditSession& s, te::MidiClip& c) { s.humanizeClip (c, 0.08, 20); }));
+    menu.addSubMenu ("Humanize", humanize);
+
+    const char* dirNames[] = { "Up", "Down", "Up-Down" };
+    const double rates[] = { 0.25, 0.5, 0.125 };
+    const char* rateNames[] = { "1/16", "1/8", "1/32" };
+
+    for (int r = 0; r < 3; ++r)
+    {
+        for (int d = 0; d < 3; ++d)
+        {
+            const double rate = rates[r];
+            const auto label = juce::String (dirNames[d]) + " " + rateNames[r] + (r == 0 && d == 0 ? "  (A)" : "");
+            arp.addItem (label, run ([d, rate] (EditSession& s, te::MidiClip& c) { s.arpeggiateClip (c, d, rate); }));
+        }
+
+        if (r < 2)
+            arp.addSeparator();
+    }
+
+    menu.addSubMenu ("Arpeggiate Chords", arp);
+
+    const double lengths[] = { 0.25, 0.5, 1.0, 2.0 };
+    const char* lengthNames[] = { "1/16", "1/8", "1/4", "1/2" };
+
+    for (int k = 0; k < 4; ++k)
+    {
+        const double beats = lengths[k];
+        length.addItem (lengthNames[k], run ([beats] (EditSession& s, te::MidiClip& c) { s.setClipNoteLength (c, beats); }));
+    }
+
+    length.addSeparator();
+    length.addItem ("Legato (L)", run ([] (EditSession& s, te::MidiClip& c) { s.setClipNoteLength (c, 0.0); }));
+    menu.addSubMenu ("Note Length", length);
+
+    menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&toolsButton));
+}

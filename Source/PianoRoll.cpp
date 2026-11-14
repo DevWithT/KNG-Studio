@@ -35,9 +35,13 @@ PianoRoll::PianoRoll (EditSession& sessionToUse, te::MidiClip& clipToEdit)
     slideButton.setTooltip ("Slide (G): the note before glides into the selected note. Again to remove.");
     slideButton.onClick = [this] { toggleSlideOnSelected(); };
 
+    addAndMakeVisible (toolsButton);
+    toolsButton.setTooltip ("Humanize, arpeggiate chords, set note lengths");
+    toolsButton.onClick = [this] { showToolsMenu(); };
+
     hintLabel.setFont (juce::Font (juce::FontOptions (12.0f)));
     hintLabel.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.55f));
-    hintLabel.setText ("Click to add, drag to move, drag the right edge to resize. Hold right-click and drag to erase.",
+    hintLabel.setText ("Click to add, drag to move or resize, right-drag to erase. A arpeggiate, L legato, H humanize.",
                        juce::dontSendNotification);
 
     // Theory controls
@@ -306,6 +310,8 @@ void PianoRoll::resized()
     theoryButton.setBounds (row1.removeFromLeft (80));
     row1.removeFromLeft (6);
     slideButton.setBounds (row1.removeFromLeft (70));
+    row1.removeFromLeft (6);
+    toolsButton.setBounds (row1.removeFromLeft (70));
     row1.removeFromLeft (12);
     hintLabel.setBounds (row1);
 
