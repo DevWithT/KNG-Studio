@@ -304,6 +304,14 @@ void TrackHeader::mouseDown (const juce::MouseEvent& e)
     // Bounce the lane (with its effects) to audio on a new lane
     menu.addItem ("Bounce in Place", [s, idx] { s->bounceTrackInPlace (idx); });
 
+    // Overlap two clips, then this blends them so there's no click or jump at the join
+    menu.addItem ("Crossfade Overlapping Clips", [s, idx]
+    {
+        if (s->crossfadeOverlaps (idx) == 0)
+            juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::InfoIcon, "No overlaps",
+                                                    "Drag one clip so its start overlaps the end of the one before it, then try again.");
+    });
+
     // Sends to buses
     if (! isBus)
     {

@@ -11,20 +11,21 @@ static void finish (te::MidiClip& clip)
         clip.updateLinkedClips();
 }
 
-void EditSession::humanizePattern (int trackIndex, double maxShiftBeats, int velocityRange)
-{
-    auto* clip = getPatternClip (trackIndex, currentPattern, false);
+//==============================================================================
+// Any clip (the Piano Roll uses these directly)
 
-    if (clip == nullptr || getTransport().isRecording())
+void EditSession::humanizeClip (te::MidiClip& clip, double maxShiftBeats, int velocityRange)
+{
+    if (getTransport().isRecording() || clip.getSequence().getNumNotes() == 0)
         return;
 
     auto* um = &edit->getUndoManager();
-    const double start = PatternGrid::clipStartBeat (*clip);
+    const double start = PatternGrid::clipStartBeat (clip);
     juce::Random random;
 
     beginEdit();
 
-    for (auto* n : clip->getSequence().getNotes())
+    for (auto* n : clip.getSequence().getNotes())
     {
         const double shift = (random.nextDouble() * 2.0 - 1.0) * maxShiftBeats;
         const double newStart = juce::jmax (start, n->getStartBeat().inBeats() + shift);
@@ -34,19 +35,17 @@ void EditSession::humanizePattern (int trackIndex, double maxShiftBeats, int vel
         n->setVelocity (juce::jlimit (1, 127, v), um);
     }
 
-    finish (*clip);
+    finish (clip);
     save();
 }
 
-void EditSession::arpeggiatePattern (int trackIndex, int direction, double stepBeats)
+void EditSession::arpeggiateClip (te::MidiClip& clip, int direction, double stepBeats)
 {
-    auto* clip = getPatternClip (trackIndex, currentPattern, false);
-
-    if (clip == nullptr || getTransport().isRecording() || stepBeats <= 0.0)
+    if (getTransport().isRecording() || stepBeats <= 0.0)
         return;
 
     auto* um = &edit->getUndoManager();
-    auto& seq = clip->getSequence();
+    auto& seq = clip.getSequence();
 
     // Notes that start together (within a 64th) make a chord
     std::map<long long, juce::Array<te::MidiNote*>> chords;
@@ -112,24 +111,23 @@ void EditSession::arpeggiatePattern (int trackIndex, int direction, double stepB
         seq.addNote (a.pitch, te::BeatPosition::fromBeats (a.start), te::BeatDuration::fromBeats (juce::jmax (0.02, a.length)),
                      a.velocity, 0, um);
 
-    finish (*clip);
+    finish (clip);
     save();
 }
 
-void EditSession::setPatternNoteLength (int trackIndex, double beats)
+void EditSession::setClipNoteLength (te::MidiClip& clip, double beats)
 {
-    auto* clip = getPatternClip (trackIndex, currentPattern, false);
-
-    if (clip == nullptr || getTransport().isRecording())
+    if (getTransport().isRecording())
         return;
 
     auto* um = &edit->getUndoManager();
-    const auto notes = clip->getSequence().getNotes();
+    const auto notes = clip.getSequence().getNotes();
 
     if (notes.isEmpty())
         return;
 
-    const double patternEnd = PatternGrid::clipStartBeat (*clip) + getPatternSteps (currentPattern) * PatternGrid::stepBeats;
+    // Legato runs to the end of the clip at most
+    const double clipEnd = clip.getContentBeatAtTime (clip.getPosition().getEnd()).inBeats();
 
     // Every distinct start, so legato can find the next note of any pitch
     std::vector<double> starts;
@@ -149,12 +147,33 @@ void EditSession::setPatternNoteLength (int trackIndex, double beats)
         if (beats <= 0.0)
         {
             auto next = std::upper_bound (starts.begin(), starts.end(), s + 1.0e-4);
-            length = (next != starts.end() ? *next : patternEnd) - s;
+            length = (next != starts.end() ? *next : clipEnd) - s;
         }
 
         n->setStartAndLength (n->getStartBeat(), te::BeatDuration::fromBeats (juce::jmax (0.02, length)), um);
     }
 
-    finish (*clip);
+    finish (clip);
     save();
+}
+
+//==============================================================================
+// One sound's notes in the current pattern (the Rack row menu)
+
+void EditSession::humanizePattern (int trackIndex, double maxShiftBeats, int velocityRange)
+{
+    if (auto* clip = getPatternClip (trackIndex, currentPattern, false))
+        humanizeClip (*clip, maxShiftBeats, velocityRange);
+}
+
+void EditSession::arpeggiatePattern (int trackIndex, int direction, double stepBeats)
+{
+    if (auto* clip = getPatternClip (trackIndex, currentPattern, false))
+        arpeggiateClip (*clip, direction, stepBeats);
+}
+
+void EditSession::setPatternNoteLength (int trackIndex, double beats)
+{
+    if (auto* clip = getPatternClip (trackIndex, currentPattern, false))
+        setClipNoteLength (*clip, beats);
 }

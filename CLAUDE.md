@@ -38,6 +38,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `EditSessionBackup.cpp`: lock file, timed backups and pruning old ones.
 - `EditSessionChannels.cpp`: adds a sample channel to the Rack.
 - `EditSessionClips.cpp`: audio clip tempo-follow, pitch and gain; song markers.
+- `EditSessionCrossfade.cpp`: crossfades overlapping audio clips on a lane.
 - `EditSessionDrums.cpp`: drum tracks, pads, kit folders, creating pattern clips.
 - `EditSessionExport.cpp`: mix, stem and multi-track export; render settings.
 - `EditSessionExtras.cpp`: punch recording, effect chain templates, KNG Tune.
@@ -197,6 +198,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `EditSessionBackup.cpp`: getLockFile, getBackupsFolder, timerCallback, makeBackup, pruneBackups
 - `EditSessionChannels.cpp`: addSampleChannel
 - `EditSessionClips.cpp`: getClipSourceBpm, setClipFollowTempo, setClipPitch, setClipGain, getMarkers, addMarkerAt, jumpToMarker
+- `EditSessionCrossfade.cpp`: crossfadeOverlaps
 - `EditSessionDrums.cpp`: getKitsFolder, isDrumTrack, getDrumSampler, getPadName, setPadName, setPadSample, clearPad, getPadGain, getPadPan, setPadGainAndPan, getPadPitch, setPadPitch, playPad, loadKitFolder, createPatternClip
 - `EditSessionExport.cpp`: getLameExecutable, getExportsFolder, trackHasContent, getExportRange, makeRenderParams, exportMix, exportStem, exportTracks
 - `EditSessionExtras.cpp`: setPunchEnabled, isPunchEnabled, getFirstFxIndex, getTemplatesFolder, getTemplateNames, saveChainTemplate, loadChainTemplate, addKngTune
@@ -205,7 +207,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `EditSessionLatency.cpp`: getLatencyOffsetMs, setLatencyOffsetMs
 - `EditSessionMidi.cpp`: addMidiTrack, isMidiTrack, createMidiClip, setInstrument, getInstrument, removeInstrument
 - `EditSessionMixer.cpp`: getFxPlugins, addPlugin, movePlugin, removePlugin, findSend, isReverbBus, getSendDb, setSendDb, ensureReverbBus, getMasterMeterPlugin, getLoudnessMeter
-- `EditSessionNoteTools.cpp`: humanizePattern, arpeggiatePattern, setPatternNoteLength
+- `EditSessionNoteTools.cpp`: humanizePattern, arpeggiatePattern, setPatternNoteLength, humanizeClip, arpeggiateClip, setClipNoteLength
 - `EditSessionPatternDelete.cpp`: deletePattern
 - `EditSessionPatternInfo.cpp`: getBankStart, getPatternHome, getSongEnd, getPatternName, setPatternName, getPatternColour, setPatternColour, duplicatePattern
 - `EditSessionPatternLane.cpp`: getPatternBlocks, removePatternAt, restorePatternStash

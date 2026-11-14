@@ -2,6 +2,7 @@
 #include "VolumeHelpers.h"
 #include "PluginBrowser.h"
 #include "GenericPluginPanel.h"
+#include "InspectorCards.h"
 #include <map>
 
 namespace te = tracktion;
@@ -39,8 +40,11 @@ void MixerStrip::rebuildInserts()
     for (auto* p : fx)
     {
         auto* b = insertButtons.add (new InsertButton());
-        b->setButtonText (p->getName());
-        b->setColour (juce::TextButton::buttonColourId, p->isEnabled() ? juce::Colour (0xff2b4a6b) : juce::Colour (0xff2b2f33));
+        // Each effect wears its own color (VSTs stay grey), dimmed when bypassed. "KNG " is dropped to save room.
+        const auto identity = kngIdentityFor (*p);
+        b->setButtonText (p->getName().startsWith ("KNG ") ? p->getName().substring (4) : p->getName());
+        b->setColour (juce::TextButton::buttonColourId, p->isEnabled() ? identity.accent.interpolatedWith (juce::Colour (0xff1e2124), 0.55f)
+                                                                        : juce::Colour (0xff2b2f33));
         b->setColour (juce::TextButton::textColourOffId, juce::Colours::white.withAlpha (p->isEnabled() ? 0.95f : 0.4f));
         b->setTooltip ("Click to open. Right-click to bypass or remove.");
 

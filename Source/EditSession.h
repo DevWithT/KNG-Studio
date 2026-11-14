@@ -130,6 +130,8 @@ public:
     void setClipFollowTempo (tracktion::AudioClipBase& clip, bool follow, double sourceBpm);
     void setClipPitch (tracktion::AudioClipBase& clip, float semitones);
     void setClipGain (tracktion::AudioClipBase& clip, float db);
+    /** Crossfades every pair of overlapping audio clips on a lane. Returns how many it did. */
+    int crossfadeOverlaps (int trackIndex);
     std::function<void (tracktion::AudioClipBase&)> onShowClipProps;
 
     // Markers
@@ -185,6 +187,10 @@ public:
     void arpeggiatePattern (int trackIndex, int direction, double stepBeats);
     /** Sets every note's length in beats. 0 = legato (each note lasts until the next one starts). */
     void setPatternNoteLength (int trackIndex, double beats);
+    // The same tools on any clip (the Piano Roll uses these)
+    void humanizeClip (tracktion::MidiClip& clip, double maxShiftBeats, int velocityRange);
+    void arpeggiateClip (tracktion::MidiClip& clip, int direction, double stepBeats);
+    void setClipNoteLength (tracktion::MidiClip& clip, double beats);
     std::function<void (int)> onShowSampler;
 
     /** One sound in the Rack: a new track with a one-shot KNG Sampler. Returns the track index, or -1. */

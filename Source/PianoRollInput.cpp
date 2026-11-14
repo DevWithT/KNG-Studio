@@ -317,6 +317,31 @@ bool PianoRoll::keyPressed (const juce::KeyPress& key)
         return true;
     }
 
+    // Note tools: H humanizes, L makes every note legato, A turns chords into a rising 1/16 arpeggio
+    if (code == 'H' || code == 'h')
+    {
+        selected.clear();
+        session.humanizeClip (*clip, 0.04, 12);
+        repaint();
+        return true;
+    }
+
+    if (code == 'L' || code == 'l')
+    {
+        selected.clear();
+        session.setClipNoteLength (*clip, 0.0);
+        repaint();
+        return true;
+    }
+
+    if (code == 'A' || code == 'a')
+    {
+        selected.clear();
+        session.arpeggiateClip (*clip, 0, 0.25);
+        repaint();
+        return true;
+    }
+
     if (code == 'Q' || code == 'q')
     {
         quantise();

@@ -158,7 +158,8 @@ target_sources(KNGStudio PRIVATE
     Source/KngTransientPlugin.cpp
     Source/KngTransientView.cpp
     Source/EditSessionPatternRecord.cpp
-    Source/EditSessionNoteTools.cpp)
+    Source/EditSessionNoteTools.cpp
+    Source/EditSessionCrossfade.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0
