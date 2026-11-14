@@ -97,6 +97,12 @@ TransportBar::TransportBar (EditSession& sessionToUse)
     patternModeButton.onClick = [this] { session.setPatternMode (true); };
     songModeButton.onClick    = [this] { session.setPatternMode (false); };
 
+    // CPU readout
+    addAndMakeVisible (cpuLabel);
+    cpuLabel.setJustificationType (juce::Justification::centred);
+    cpuLabel.setFont (juce::Font (juce::FontOptions (13.0f, juce::Font::bold)));
+    cpuLabel.setTooltip ("How hard your computer is working on the audio. Above 80% you may hear crackles.");
+
     // Snap grid size
     addAndMakeVisible (gridBox);
     gridBox.addItem ("Bar", 1);
@@ -234,6 +240,15 @@ void TransportBar::timerCallback()
                        juce::dontSendNotification);
     barLabel.setText (formatTime (now), juce::dontSendNotification);
 
+    // CPU: smoothed so it doesn't flicker, green / amber / red
+    const float cpuNow = (float) session.getEdit().engine.getDeviceManager().getCpuUsage();
+    cpuSmooth += (cpuNow - cpuSmooth) * 0.1f;
+    const int cpuPercent = juce::jlimit (0, 100, juce::roundToInt (cpuSmooth * 100.0f));
+    cpuLabel.setText ("CPU " + juce::String (cpuPercent) + "%", juce::dontSendNotification);
+    cpuLabel.setColour (juce::Label::textColourId, cpuPercent >= 80 ? juce::Colour (0xffff5d5d)
+                                                 : cpuPercent >= 50 ? juce::Colour (0xffffb020)
+                                                                    : juce::Colour (0xff5ad45a));
+
     // Grid size follows the song (it changes when you open another one)
     if (! gridBox.isPopupActive())
     {
@@ -315,4 +330,5 @@ void TransportBar::resized()
     place (monitorButton, 90);
     place (writeButton, 100);
     place (learnButton, 64);
+    place (cpuLabel, 76);
 }

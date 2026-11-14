@@ -32,6 +32,8 @@ private:
     juce::Slider tempoSlider;
     juce::ComboBox countInBox;
     juce::ComboBox gridBox;
+    juce::Label cpuLabel;
+    float cpuSmooth = 0.0f;
     juce::TextButton timeSigButton { "4/4" };
     juce::TextButton learnButton { "Learn" };
     juce::TextButton rackButton { "Rack" }, mixerButton { "Mixer" };

@@ -12,7 +12,9 @@ juce_add_module(libs/tracktion_engine/modules/tracktion_engine ALIAS_NAMESPACE t
 
 juce_add_gui_app(KNGStudio
     PRODUCT_NAME "KNG Studio"
-    COMPANY_NAME "DevWithT")
+    COMPANY_NAME "DevWithT"
+    ICON_BIG "${CMAKE_CURRENT_SOURCE_DIR}/Assets/Icon/KngIcon.png"
+    ICON_SMALL "${CMAKE_CURRENT_SOURCE_DIR}/Assets/Icon/KngIcon.png")
 
 target_sources(KNGStudio PRIVATE
     Source/Main.cpp

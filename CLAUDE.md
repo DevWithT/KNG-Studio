@@ -5,6 +5,7 @@ KNG Studio, a DAW. C++20, JUCE 8, Tracktion Engine, Windows, CMake.
 Built with menu.bat (option 2 builds and runs, option 7 commits and pushes).
 Fonts are compiled in through juce_add_binary_data (KNGStudioAssets).
 All source files are in Source/.
+The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui_app).
 
 ## 2. Working rules
 - Change only what a prompt asks for. Do not refactor or tidy anything else.
