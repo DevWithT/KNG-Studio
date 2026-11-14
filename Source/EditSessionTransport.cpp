@@ -13,19 +13,32 @@ void EditSession::record()
     if (! isAnyTrackArmed())
         setArmed (0, true);
 
-    // Rec always records into the song. Pattern mode keeps the playhead in the pattern bank (bar 2000+),
-    // where a take would land out of sight, so go back to Song mode first.
-    if (isPatternMode())
+    // Pattern mode with only Rack instruments armed: record notes into the pattern itself, looping it.
+    // Anything else records into the song, so leave Pattern mode (its playhead sits in the bank, out of sight).
+    bool audioArmed = false;
+
+    for (int i = 0; i < (int) trackArmed.size(); ++i)
+        if (trackArmed[(size_t) i] && ! isMidiTrack (i))
+            audioArmed = true;
+
+    recordingPattern = (isPatternMode() && ! audioArmed) ? currentPattern : 0;
+
+    if (recordingPattern > 0)
+        cuePattern (recordingPattern, false);
+    else if (isPatternMode())
         setPatternMode (false);
 
     const double bank = getBankStart() - 1.0;
 
     // A loop left over from Pattern mode sits in the bank, and the engine would jump the take there: drop it
-    if (isLooping() && getLoopStart() >= bank)
-        setLooping (false);
+    if (recordingPattern == 0)
+    {
+        if (isLooping() && getLoopStart() >= bank)
+            setLooping (false);
 
-    if (getTransport().getPosition().inSeconds() >= bank)
-        getTransport().setPosition (te::TimePosition());
+        if (getTransport().getPosition().inSeconds() >= bank)
+            getTransport().setPosition (te::TimePosition());
+    }
 
     // The bank only holds pattern notes: clear out any audio takes that landed there by mistake
     {
@@ -80,6 +93,14 @@ void EditSession::stop()
 
     if (wasRecording)
         save();
+
+    // A pattern take: fold the recorded notes into the pattern once the engine has written them (next tick)
+    if (wasRecording && recordingPattern > 0)
+    {
+        const int pattern = recordingPattern;
+        recordingPattern = 0;
+        juce::MessageManager::callAsync ([this, pattern] { mergePatternTake (pattern); });
+    }
 }
 
 //==============================================================================

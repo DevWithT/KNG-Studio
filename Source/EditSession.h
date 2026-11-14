@@ -405,6 +405,7 @@ private:
     juce::File getLockFile() const;
     void pruneBackups();
     tracktion::MidiClip* restorePatternStash (int trackIndex, int pattern, double atSeconds);
+    void mergePatternTake (int pattern);
 
     tracktion::Engine& engine;
     juce::File editFile;
@@ -428,6 +429,7 @@ private:
     bool patternMode = false;
     int playlistTool = 0;
     double recordStartSeconds = 0.0;
+    int recordingPattern = 0;   // set while recording notes into a pattern (Pattern mode)
     std::vector<tracktion::EditItemID> clipsBeforeRecording;
     std::shared_ptr<tracktion::EditRenderer::Handle> bounceHandle;
 

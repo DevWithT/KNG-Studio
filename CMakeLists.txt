@@ -154,7 +154,8 @@ target_sources(KNGStudio PRIVATE
     Source/KngPumpPlugin.cpp
     Source/KngPumpView.cpp
     Source/KngTransientPlugin.cpp
-    Source/KngTransientView.cpp)
+    Source/KngTransientView.cpp
+    Source/EditSessionPatternRecord.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0

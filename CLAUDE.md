@@ -48,6 +48,7 @@ All source files are in Source/.
 - `EditSessionPatternDelete.cpp`: deletes a pattern and renumbers the ones after it.
 - `EditSessionPatternInfo.cpp`: pattern name, colour, home, bank start, song end, duplicate.
 - `EditSessionPatternLane.cpp`: lists pattern blocks, removes a block, restores stashed clips.
+- `EditSessionPatternRecord.cpp`: folds notes recorded in Pattern mode into the pattern.
 - `EditSessionPatterns.cpp`: pattern count, bars, steps, swing, clips, place and loop.
 - `EditSessionPlaylist.cpp`: lanes; placing, moving and deleting blocks; cue and pattern mode.
 - `EditSessionPlaylistEdit.cpp`: cut and resize blocks; tidy the Playlist; separate overlaps.
@@ -205,6 +206,7 @@ All source files are in Source/.
 - `EditSessionPatternDelete.cpp`: deletePattern
 - `EditSessionPatternInfo.cpp`: getBankStart, getPatternHome, getSongEnd, getPatternName, setPatternName, getPatternColour, setPatternColour, duplicatePattern
 - `EditSessionPatternLane.cpp`: getPatternBlocks, removePatternAt, restorePatternStash
+- `EditSessionPatternRecord.cpp`: mergePatternTake
 - `EditSessionPatterns.cpp`: getBarSeconds, getNumPatterns, newPattern, getPatternBars, getPatternSteps, setPatternBars, getPatternClip, placePattern, loopPattern, makePatternUnique, getPatternSwing, setPatternSwing
 - `EditSessionPlaylist.cpp`: isLaneTrack, getLaneId, getLaneTrackIndex, getDefaultLaneId, getBlockClips, placePatternInLane, moveBlock, deleteBlock, cuePattern, setPatternMode
 - `EditSessionPlaylistEdit.cpp`: cutBlock, resizeBlock, tidyPlaylist, separateOverlappingBlocks
