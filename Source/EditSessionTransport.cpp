@@ -17,8 +17,34 @@ void EditSession::record()
     // where a take would land out of sight, so go back to Song mode first.
     if (isPatternMode())
         setPatternMode (false);
-    else if (getTransport().getPosition().inSeconds() >= getBankStart() - 1.0)
+
+    const double bank = getBankStart() - 1.0;
+
+    // A loop left over from Pattern mode sits in the bank, and the engine would jump the take there: drop it
+    if (isLooping() && getLoopStart() >= bank)
+        setLooping (false);
+
+    if (getTransport().getPosition().inSeconds() >= bank)
         getTransport().setPosition (te::TimePosition());
+
+    // The bank only holds pattern notes: clear out any audio takes that landed there by mistake
+    {
+        juce::Array<te::Clip*> strays;
+
+        for (int i = 0; i < getNumTracks(); ++i)
+            if (auto* t = getTrack (i))
+                for (auto* c : t->getClips())
+                    if (dynamic_cast<te::WaveAudioClip*> (c) != nullptr && c->getPosition().getStart().inSeconds() >= bank)
+                        strays.add (c);
+
+        if (! strays.isEmpty())
+        {
+            beginEdit();
+
+            for (auto* c : strays)
+                c->removeFromParent();
+        }
+    }
 
     // Send every arm to the engine again, in case a device or track change dropped one
     for (int i = 0; i < (int) trackArmed.size(); ++i)
