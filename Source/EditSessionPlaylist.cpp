@@ -174,8 +174,8 @@ void EditSession::cuePattern (int pattern, bool startPlaying)
 
     const double home = getPatternHome (pattern);
     setLoopRange (home, barsAfter (home, getPatternBars (pattern)));
-    setLooping (true);
     patternMode = true;
+    setLooping (true);
 
     getTransport().setPosition (te::TimePosition::fromSeconds (home));
 

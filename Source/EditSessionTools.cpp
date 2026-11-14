@@ -13,6 +13,11 @@
 #include "KngWidthPlugin.h"
 #include "KngRadioPlugin.h"
 #include "KngThrowPlugin.h"
+#include "KngFilterPlugin.h"
+#include "KngModPlugin.h"
+#include "KngLoFiPlugin.h"
+#include "KngPumpPlugin.h"
+#include "KngTransientPlugin.h"
 
 namespace te = tracktion;
 
@@ -36,6 +41,11 @@ std::vector<std::pair<juce::String, juce::String>> EditSession::getBuiltInEffect
         { "KNG Width",            KngWidthPlugin::xmlTypeName },
         { "KNG Radio",            KngRadioPlugin::xmlTypeName },
         { "KNG Throw",            KngThrowPlugin::xmlTypeName },
+        { "KNG Filter",           KngFilterPlugin::xmlTypeName },
+        { "KNG Mod",              KngModPlugin::xmlTypeName },
+        { "KNG Lo-Fi",            KngLoFiPlugin::xmlTypeName },
+        { "KNG Pump",             KngPumpPlugin::xmlTypeName },
+        { "KNG Transient",        KngTransientPlugin::xmlTypeName },
     };
 }
 

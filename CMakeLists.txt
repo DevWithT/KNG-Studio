@@ -144,7 +144,17 @@ target_sources(KNGStudio PRIVATE
     Source/KngRadioPlugin.cpp
     Source/KngRadioView.cpp
     Source/KngThrowPlugin.cpp
-    Source/KngThrowView.cpp)
+    Source/KngThrowView.cpp
+    Source/KngFilterPlugin.cpp
+    Source/KngFilterView.cpp
+    Source/KngModPlugin.cpp
+    Source/KngModView.cpp
+    Source/KngLoFiPlugin.cpp
+    Source/KngLoFiView.cpp
+    Source/KngPumpPlugin.cpp
+    Source/KngPumpView.cpp
+    Source/KngTransientPlugin.cpp
+    Source/KngTransientView.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0

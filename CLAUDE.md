@@ -159,6 +159,16 @@ All source files are in Source/.
 - `KngRadioView.cpp/.h`: KNG Radio's face: tuning dial and speaker grille.
 - `KngThrowPlugin.cpp/.h`: tempo-locked echo that ducks while you sing (KngFxBase).
 - `KngThrowView.cpp/.h`: KNG Throw's face: trail of echoes that dims while ducking.
+- `KngFilterPlugin.cpp/.h`: resonant sweep filter with tempo-synced wobble (KngFxBase).
+- `KngFilterView.cpp/.h`: KNG Filter's face: filter curve riding the wobble.
+- `KngModPlugin.cpp/.h`: chorus, flanger and phaser (KngFxBase).
+- `KngModView.cpp/.h`: KNG Mod's face: left and right waves swaying with the sweep.
+- `KngLoFiPlugin.cpp/.h`: bits, rate, tape wobble, dust and tone (KngFxBase).
+- `KngLoFiView.cpp/.h`: KNG Lo-Fi's face: cassette with spinning reels.
+- `KngPumpPlugin.cpp/.h`: tempo-synced sidechain-style volume pumping (KngFxBase).
+- `KngPumpView.cpp/.h`: KNG Pump's face: volume curve with a dot riding it in time.
+- `KngTransientPlugin.cpp/.h`: attack and sustain shaper (KngFxBase).
+- `KngTransientView.cpp/.h`: KNG Transient's face: sample hit reshaped, over a live history.
 
 ### Shared UI (faces, look and feel, fonts, pop-outs)
 - `KngFaceView.cpp/.h`: shared frame every KNG effect face is built on; kngMakeStyle.

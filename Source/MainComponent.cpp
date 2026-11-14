@@ -17,6 +17,11 @@
 #include "KngWidthPlugin.h"
 #include "KngRadioPlugin.h"
 #include "KngThrowPlugin.h"
+#include "KngFilterPlugin.h"
+#include "KngModPlugin.h"
+#include "KngLoFiPlugin.h"
+#include "KngPumpPlugin.h"
+#include "KngTransientPlugin.h"
 #include "PluginWindow.h"
 #include "MidiMapDialog.h"
 #include "KngPopOut.h"
@@ -42,6 +47,11 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
     engine.getPluginManager().createBuiltInType<KngWidthPlugin>();
     engine.getPluginManager().createBuiltInType<KngRadioPlugin>();
     engine.getPluginManager().createBuiltInType<KngThrowPlugin>();
+    engine.getPluginManager().createBuiltInType<KngFilterPlugin>();
+    engine.getPluginManager().createBuiltInType<KngModPlugin>();
+    engine.getPluginManager().createBuiltInType<KngLoFiPlugin>();
+    engine.getPluginManager().createBuiltInType<KngPumpPlugin>();
+    engine.getPluginManager().createBuiltInType<KngTransientPlugin>();
 
     setWantsKeyboardFocus (true);
 

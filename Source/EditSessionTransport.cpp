@@ -124,11 +124,21 @@ int EditSession::getCountInBars() const
 //==============================================================================
 void EditSession::setLooping (bool shouldLoop)
 {
-    // No loop region yet, so default to 4 bars from the start
-    if (shouldLoop && getLoopEnd() <= getLoopStart())
+    const double bank = getBankStart() - 1.0;
+
+    // No loop yet, or one left in the pattern bank while in Song mode: 4 bars from the bar you're on
+    if (shouldLoop && (getLoopEnd() <= getLoopStart() || (! patternMode && getLoopStart() >= bank)))
     {
-        const double fourBars = 16.0 * 60.0 / juce::jmax (1.0, getBpm());
-        setLoopRange (0.0, fourBars);
+        double from = getTransport().getPosition().inSeconds();
+
+        if (from >= bank)
+        {
+            from = 0.0;
+            getTransport().setPosition (te::TimePosition());
+        }
+
+        const double start = barStartAt (from);
+        setLoopRange (start, barsAfter (start, 4));
     }
 
     getTransport().looping = shouldLoop;
