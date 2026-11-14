@@ -45,6 +45,7 @@ All source files are in Source/.
 - `EditSessionLatency.cpp`: recording latency offset.
 - `EditSessionMidi.cpp`: MIDI tracks, MIDI clips and VST instruments.
 - `EditSessionMixer.cpp`: effect list add/move/remove, reverb send and bus, master meters.
+- `EditSessionNoteTools.cpp`: humanize, arpeggiate chords and note length for a pattern.
 - `EditSessionPatternDelete.cpp`: deletes a pattern and renumbers the ones after it.
 - `EditSessionPatternInfo.cpp`: pattern name, colour, home, bank start, song end, duplicate.
 - `EditSessionPatternLane.cpp`: lists pattern blocks, removes a block, restores stashed clips.
@@ -203,6 +204,7 @@ All source files are in Source/.
 - `EditSessionLatency.cpp`: getLatencyOffsetMs, setLatencyOffsetMs
 - `EditSessionMidi.cpp`: addMidiTrack, isMidiTrack, createMidiClip, setInstrument, getInstrument, removeInstrument
 - `EditSessionMixer.cpp`: getFxPlugins, addPlugin, movePlugin, removePlugin, findSend, isReverbBus, getSendDb, setSendDb, ensureReverbBus, getMasterMeterPlugin, getLoudnessMeter
+- `EditSessionNoteTools.cpp`: humanizePattern, arpeggiatePattern, setPatternNoteLength
 - `EditSessionPatternDelete.cpp`: deletePattern
 - `EditSessionPatternInfo.cpp`: getBankStart, getPatternHome, getSongEnd, getPatternName, setPatternName, getPatternColour, setPatternColour, duplicatePattern
 - `EditSessionPatternLane.cpp`: getPatternBlocks, removePatternAt, restorePatternStash

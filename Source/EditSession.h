@@ -177,6 +177,14 @@ public:
     void setSamplerOneShot (int trackIndex, bool oneShot);
     int chopClipToPads (tracktion::AudioClipBase& clip, int slices, bool atMarkers);
     void openPianoRollForTrack (int trackIndex);
+
+    // Note tools for one sound's notes in the current pattern (Rack row menu)
+    /** Nudges timing (up to maxShiftBeats either way) and velocity (up to velocityRange either way). */
+    void humanizePattern (int trackIndex, double maxShiftBeats, int velocityRange);
+    /** Turns each chord into a run of single notes. direction: 0 up, 1 down, 2 up-down. */
+    void arpeggiatePattern (int trackIndex, int direction, double stepBeats);
+    /** Sets every note's length in beats. 0 = legato (each note lasts until the next one starts). */
+    void setPatternNoteLength (int trackIndex, double beats);
     std::function<void (int)> onShowSampler;
 
     /** One sound in the Rack: a new track with a one-shot KNG Sampler. Returns the track index, or -1. */

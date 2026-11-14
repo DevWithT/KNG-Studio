@@ -211,6 +211,54 @@ void RackRow::showRowMenu()
         });
     }
 
+    // Note tools for this sound's notes in the current pattern
+    {
+        juce::PopupMenu tools, humanize, arp, length;
+        auto done = [safe] { if (safe != nullptr) safe->repaint(); };
+
+        humanize.addItem ("Light",  [s, idx, done] { s->humanizePattern (idx, 0.02, 6);  done(); });
+        humanize.addItem ("Medium", [s, idx, done] { s->humanizePattern (idx, 0.04, 12); done(); });
+        humanize.addItem ("Heavy",  [s, idx, done] { s->humanizePattern (idx, 0.08, 20); done(); });
+        tools.addSubMenu ("Humanize", humanize);
+
+        if (! isDrum())
+        {
+            const char* dirNames[] = { "Up", "Down", "Up-Down" };
+            const double rates[] = { 0.25, 0.5, 0.125 };
+            const char* rateNames[] = { "1/16", "1/8", "1/32" };
+
+            for (int r = 0; r < 3; ++r)
+            {
+                for (int d = 0; d < 3; ++d)
+                {
+                    const double rate = rates[r];
+                    arp.addItem (juce::String (dirNames[d]) + " " + rateNames[r], [s, idx, d, rate, done] { s->arpeggiatePattern (idx, d, rate); done(); });
+                }
+
+                if (r < 2)
+                    arp.addSeparator();
+            }
+
+            tools.addSubMenu ("Arpeggiate Chords", arp);
+
+            const double lengths[] = { 0.25, 0.5, 1.0, 2.0 };
+            const char* lengthNames[] = { "1/16", "1/8", "1/4", "1/2" };
+
+            for (int k = 0; k < 4; ++k)
+            {
+                const double beats = lengths[k];
+                length.addItem (lengthNames[k], [s, idx, beats, done] { s->setPatternNoteLength (idx, beats); done(); });
+            }
+
+            length.addSeparator();
+            length.addItem ("Legato (to the next note)", [s, idx, done] { s->setPatternNoteLength (idx, 0.0); done(); });
+            tools.addSubMenu ("Note Length", length);
+        }
+
+        menu.addSeparator();
+        menu.addSubMenu ("Note Tools", tools);
+    }
+
     // Fill a line every Nth step: the sound channel's row, or the drum pad line under the mouse
     int fillNote = -1;
 
