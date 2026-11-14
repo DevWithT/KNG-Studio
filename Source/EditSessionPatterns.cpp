@@ -44,7 +44,8 @@ int EditSession::newPattern()
 
 int EditSession::getPatternBars (int pattern)
 {
-    return juce::jlimit (1, 4, (int) edit->state.getProperty ("kngPatternBars" + juce::String (pattern), 1));
+    // Up to 8 bars: each pattern's bank slot is 8 bars long, so a longer one would run into the next pattern
+    return juce::jlimit (1, 8, (int) edit->state.getProperty ("kngPatternBars" + juce::String (pattern), 1));
 }
 
 int EditSession::getPatternSteps (int pattern)
@@ -62,7 +63,7 @@ int EditSession::getPatternSteps (int pattern)
 
 void EditSession::setPatternBars (int pattern, int bars)
 {
-    bars = juce::jlimit (1, 4, bars);
+    bars = juce::jlimit (1, 8, bars);
 
     beginEdit();
     edit->state.setProperty ("kngPatternBars" + juce::String (pattern), bars, nullptr);
