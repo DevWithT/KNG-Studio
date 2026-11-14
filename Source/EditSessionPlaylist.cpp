@@ -76,7 +76,7 @@ void EditSession::placePatternInLane (int pattern, double atSeconds, const juce:
     if (getTransport().isRecording())
         return;
 
-    const double start = barStartAt (juce::jmax (0.0, atSeconds));
+    const double start = juce::jmax (0.0, snapTime (atSeconds));   // follows the Snap grid size (Snap off: exactly where asked)
 
     // A copy already here (in any lane) would play twice
     for (auto& b : getPatternBlocks())
@@ -110,7 +110,9 @@ void EditSession::placePatternInLane (int pattern, double atSeconds, const juce:
                      && std::abs (c->getPosition().getStart().inSeconds() - start) < 0.001)
                     c->state.setProperty (laneProp, laneId, nullptr);
 
-    save();
+    // While a paint stroke is going, the Playlist saves once when you let go
+    if (! deferSave)
+        save();
 }
 
 void EditSession::moveBlock (const PatternBlock& block, double toSeconds, const juce::String& toLane, bool copy)

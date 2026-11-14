@@ -67,6 +67,28 @@ void EditSession::addTrack()
 {
     edit->ensureNumberOfAudioTracks (getNumTracks() + 1);
     syncTrackState();
+
+    // Take the lowest free lane number, so deleting Tracks 1 to 5 and adding one gives Track 1 again
+    juce::Array<int> used;
+
+    for (int i = 0; i < getNumTracks() - 1; ++i)
+    {
+        if (auto* t = getTrack (i))
+        {
+            const auto name = t->getName();
+
+            if (name.startsWith ("Track ") && name.substring (6).trim().containsOnly ("0123456789"))
+                used.add (name.substring (6).trim().getIntValue());
+        }
+    }
+
+    int number = 1;
+
+    while (used.contains (number))
+        ++number;
+
+    if (auto* t = getTrack (getNumTracks() - 1))
+        t->setName ("Track " + juce::String (number));
 }
 
 void EditSession::deleteTrack (int index)
@@ -85,6 +107,27 @@ void EditSession::deleteTrack (int index)
         applyArm (index, false);
 
     clearSelection();
+    beginEdit();
+
+    // A lane's pattern blocks live on the Rack tracks, tagged with the lane. They go with it, so a new lane starts empty.
+    if (isLaneTrack (index))
+    {
+        const auto laneId = getLaneId (index);
+        const double bank = getBankStart() - 0.001;
+        juce::Array<te::Clip*> blocks;
+
+        if (laneId.isNotEmpty())
+            for (int i = 0; i < getNumTracks(); ++i)
+                if (i != index)
+                    if (auto* t = getTrack (i))
+                        for (auto* c : t->getClips())
+                            if (c->state.getProperty ("kngLane").toString() == laneId && c->getPosition().getStart().inSeconds() < bank)
+                                blocks.add (c);
+
+        for (auto* c : blocks)
+            c->removeFromParent();
+    }
+
     edit->deleteTrack (track);
 
     if (juce::isPositiveAndBelow (index, (int) trackInputs.size()))

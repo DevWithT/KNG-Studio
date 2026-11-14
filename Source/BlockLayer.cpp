@@ -361,6 +361,7 @@ void BlockLayer::mouseDown (const juce::MouseEvent& e)
     if (tool == 1)
     {
         painting = true;
+        session.setDeferSave (true);
         paintAt (e.x);
     }
 }
@@ -404,6 +405,13 @@ void BlockLayer::mouseUp (const juce::MouseEvent& e)
             lane = dragBlock.lane;
 
         session.moveBlock (dragBlock, dropTime, lane, e.mods.isCtrlDown());
+    }
+
+    // A paint stroke saves once, at the end
+    if (painting)
+    {
+        session.setDeferSave (false);
+        session.save();
     }
 
     moving = painting = erasing = resizing = false;

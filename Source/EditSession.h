@@ -284,6 +284,8 @@ public:
     int getLaneTrackIndex (const juce::String& laneId);
     juce::String getDefaultLaneId();
     void placePatternInLane (int pattern, double atSeconds, const juce::String& laneId);
+    /** While painting blocks, hold off saving to disk until the stroke ends (saving on every block is slow). */
+    void setDeferSave (bool shouldDefer)        { deferSave = shouldDefer; }
     void moveBlock (const PatternBlock& block, double toSeconds, const juce::String& toLane, bool copy);
     void deleteBlock (const PatternBlock& block);
     juce::Array<tracktion::Clip*> getBlockClips (const PatternBlock& block);
@@ -442,6 +444,7 @@ private:
     int currentPattern = 1;
     bool patternMode = false;
     int playlistTool = 0;
+    bool deferSave = false;
     double recordStartSeconds = 0.0;
     int recordingPattern = 0;   // set while recording notes into a pattern (Pattern mode)
     std::vector<tracktion::EditItemID> clipsBeforeRecording;
