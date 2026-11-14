@@ -223,6 +223,19 @@ void PianoRoll::mouseUp (const juce::MouseEvent&)
 {
     if (erasing || dragMode != DragMode::none)
     {
+        // Notes past the pattern's end make the pattern longer, so the list, the Rack and painted blocks follow
+        const int pattern = (int) clip->state.getProperty ("kngPattern", 0);
+
+        if (pattern > 0)
+        {
+            const double clipStart = clip->getPosition().getStart().inSeconds();
+            const double clipEnd = clip->getPosition().getEnd().inSeconds();
+            const int bars = session.barNumberAt (clipEnd - 0.001) - session.barNumberAt (clipStart) + 1;
+
+            if (bars > session.getPatternBars (pattern))
+                session.setPatternBars (pattern, bars);
+        }
+
         // Push the change to every linked copy on the timeline
         if (clip->isLinked())
             clip->updateLinkedClips();

@@ -31,7 +31,15 @@ static std::vector<KngPresetDef> presets808()
         { "Long Slide",  { { P::drop, 3.0f },  { P::length, 3000.0f }, { P::glide, 140.0f }, { P::drive, 0.25f } } },
         { "Short Knock", { { P::drop, 14.0f }, { P::dropTime, 20.0f }, { P::length, 350.0f }, { P::hold, 0.0f }, { P::punch, 0.8f }, { P::drive, 0.35f } } },
         { "Distorted",   { { P::length, 1800.0f }, { P::punch, 0.5f }, { P::drive, 0.9f }, { P::level, -6.0f } } },
-        { "Deep Sub",    { { P::drop, 2.0f },  { P::length, 2500.0f }, { P::punch, 0.1f }, { P::drive, 0.0f } } }
+        { "Deep Sub",    { { P::drop, 2.0f },  { P::length, 2500.0f }, { P::punch, 0.1f }, { P::drive, 0.0f } } },
+        { "Trap Glide",      { { P::drop, 4.0f },  { P::dropTime, 40.0f }, { P::length, 2200.0f }, { P::glide, 120.0f }, { P::punch, 0.35f }, { P::drive, 0.3f } } },
+        { "Drill Slide",     { { P::drop, 2.0f },  { P::length, 2600.0f }, { P::glide, 180.0f }, { P::punch, 0.25f }, { P::drive, 0.45f } } },
+        { "Memphis Boom",    { { P::drop, 9.0f },  { P::dropTime, 60.0f }, { P::length, 1800.0f }, { P::punch, 0.5f }, { P::drive, 0.2f } } },
+        { "Clean Sub",       { { P::drop, 0.0f },  { P::length, 2000.0f }, { P::glide, 80.0f }, { P::punch, 0.05f }, { P::drive, 0.0f } } },
+        { "Tight Bounce",    { { P::drop, 10.0f }, { P::dropTime, 25.0f }, { P::length, 600.0f }, { P::hold, 0.0f }, { P::punch, 0.6f }, { P::drive, 0.3f } } },
+        { "Overdrive Growl", { { P::drop, 6.0f },  { P::length, 2000.0f }, { P::punch, 0.4f }, { P::drive, 1.0f }, { P::level, -8.0f } } },
+        { "Laid Back",       { { P::drop, 3.0f },  { P::dropTime, 80.0f }, { P::length, 1600.0f }, { P::glide, 90.0f }, { P::punch, 0.2f }, { P::drive, 0.15f } } },
+        { "Kick 808",        { { P::drop, 18.0f }, { P::dropTime, 15.0f }, { P::length, 900.0f }, { P::punch, 0.9f }, { P::drive, 0.4f } } }
     };
 }
 
