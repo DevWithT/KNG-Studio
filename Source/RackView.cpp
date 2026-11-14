@@ -37,8 +37,11 @@ RackView::RackView (EditSession& sessionToUse)
 
     barsBox.addItem ("1 bar", 1);
     barsBox.addItem ("2 bars", 2);
+    barsBox.addItem ("3 bars", 3);
     barsBox.addItem ("4 bars", 4);
+    barsBox.addItem ("5 bars", 5);
     barsBox.addItem ("6 bars", 6);
+    barsBox.addItem ("7 bars", 7);
     barsBox.addItem ("8 bars", 8);
     barsBox.onChange = [this] { session.setPatternBars (session.getCurrentPattern(), barsBox.getSelectedId()); };
 
