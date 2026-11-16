@@ -91,6 +91,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `RackRowPaint.cpp`: RackRow painting (drum rows, mini piano roll) and header layout.
 - `RackRowMouse.cpp`: RackRow mouse: row clicks, step painting, dragging the pattern out.
 - `RackRowActions.cpp`: RackRow's actions and menus.
+- `RackRowGraph.cpp`: the step graph under a Rack row (velocity, or pitch on sound rows)
 - `PatternListPanel.cpp/.h`: column listing every pattern; click to edit, arrow loops it.
 - `PatternGrid.h`: step-grid helpers shared by the Rack and drum sequencer (16th notes).
 - `DrumRack.cpp/.h`: drum pads panel for the dock.
@@ -262,6 +263,8 @@ On a track:
 - `kngFolder`: the track's folder name.
 - `kngAutoParam`, `kngAutoShown`: which parameter the automation row edits, and whether it shows.
 - `kngRackOpen`: whether the track's Rack row is open.
+- `kngGraph`: which step graph a Rack row shows: 0 off, 1 velocity, 2 pitch.
+- `kngGraphPad`: which kit pad the step graph edits.
 
 On a clip:
 - `kngPattern`: the pattern number the clip belongs to.

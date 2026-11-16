@@ -138,10 +138,16 @@ te::MidiClip* RackRow::getClip (bool createIfMissing)
 
 int RackRow::getIdealHeight()
 {
-    if (! isDrum() || ! isExpanded())
-        return rowHeight;
+    int h = rowHeight;
 
-    return rowHeight + juce::jmax (1, getVisiblePads().size()) * padRowHeight + 6;
+    if (isDrum() && isExpanded())
+        h += juce::jmax (1, getVisiblePads().size()) * padRowHeight + 6;
+
+    // The step graph sits under everything else
+    if (getGraphMode() > 0)
+        h += graphHeight;
+
+    return h;
 }
 
 //==============================================================================

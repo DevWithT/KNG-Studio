@@ -22,6 +22,15 @@ void RackRow::mouseDown (const juce::MouseEvent& e)
     // Clicking a row shows its track in the inspector on the right
     session.selectTrack (idx);
 
+    // The step graph under the row: draw velocity or pitch
+    if (getGraphMode() > 0 && getGraphArea().contains (p))
+    {
+        session.beginEdit();
+        graphEditing = true;
+        editGraphAt (p);
+        return;
+    }
+
     // Left side: right-click for the menu, left-click to hear the sound
     if (p.x < lane.getX())
     {
@@ -76,14 +85,23 @@ void RackRow::mouseDown (const juce::MouseEvent& e)
     if (clip == nullptr)
         return;
 
-    paintOn = ! rightButton && PatternGrid::findNote (*clip, note, step) == nullptr;
+    // Sound rows find a step's hit whatever pitch the graph moved it to
+    const bool channel = isChannel();
+    paintOn = ! rightButton && (channel ? noteAtStep (*clip, step, -1) : PatternGrid::findNote (*clip, note, step)) == nullptr;
+
+    // The kit's step graph follows the pad you last clicked
+    if (isDrum())
+        track->state.setProperty ("kngGraphPad", note - EditSession::getPadNote (0), nullptr);
 
     session.beginEdit();
     painting = true;
     lastNote = note;
     lastStep = step;
 
-    PatternGrid::setStep (*clip, note, step, paintOn, &session.getEdit().getUndoManager());
+    if (channel)
+        setChannelStep (*clip, step, paintOn);
+    else
+        PatternGrid::setStep (*clip, note, step, paintOn, &session.getEdit().getUndoManager());
 
     if (paintOn)
         preview (note);
@@ -93,6 +111,12 @@ void RackRow::mouseDown (const juce::MouseEvent& e)
 
 void RackRow::mouseDrag (const juce::MouseEvent& e)
 {
+    if (graphEditing)
+    {
+        editGraphAt (e.getPosition());
+        return;
+    }
+
     // Dragging a row by its name drops the current pattern into the Playlist
     if (! painting)
     {
@@ -115,7 +139,12 @@ void RackRow::mouseDrag (const juce::MouseEvent& e)
         lastStep = step;
 
         if (auto* clip = getClip (false))
-            PatternGrid::setStep (*clip, note, step, paintOn, &session.getEdit().getUndoManager());
+        {
+            if (isChannel())
+                setChannelStep (*clip, step, paintOn);
+            else
+                PatternGrid::setStep (*clip, note, step, paintOn, &session.getEdit().getUndoManager());
+        }
 
         repaint();
     }
@@ -123,6 +152,18 @@ void RackRow::mouseDrag (const juce::MouseEvent& e)
 
 void RackRow::mouseUp (const juce::MouseEvent&)
 {
+    if (graphEditing)
+    {
+        graphEditing = false;
+
+        if (auto* clip = getClip (false))
+            if (clip->isLinked())
+                clip->updateLinkedClips();
+
+        session.save();
+        return;
+    }
+
     if (! painting)
         return;
 
@@ -130,9 +171,9 @@ void RackRow::mouseUp (const juce::MouseEvent&)
 
     if (auto* clip = getClip (false))
     {
-        // Sound rows: each hit rings until the next one
+        // Sound rows: each hit rings until the next one (whatever its pitch)
         if (isChannel())
-            PatternGrid::fillToNext (*clip, getChannelNote(), getNumSteps(), &session.getEdit().getUndoManager());
+            makeChannelLegato (*clip);
 
         // Push the change to every linked copy on the timeline
         if (clip->isLinked())

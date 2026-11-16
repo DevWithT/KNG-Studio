@@ -66,6 +66,16 @@ private:
     void dropFile (const juce::File& file);
     void fillLine (int note, int every);
 
+    // Step graph (RackRowGraph.cpp): velocity or pitch per step, drawn under the row
+    int getGraphMode();                 // 0 off, 1 velocity, 2 pitch (sound rows only)
+    int getGraphNote();                 // the note it edits: a kit's chosen pad, or -1 for any (sound rows)
+    juce::Rectangle<int> getGraphArea();
+    void paintGraph (juce::Graphics&, tracktion::MidiClip*);
+    void editGraphAt (juce::Point<int>);
+    tracktion::MidiNote* noteAtStep (tracktion::MidiClip&, int step, int pitch);   // pitch -1 = any
+    void setChannelStep (tracktion::MidiClip&, int step, bool on);
+    void makeChannelLegato (tracktion::MidiClip&);
+
     void paintDrumSummary (juce::Graphics&, tracktion::MidiClip*);
     void paintDrumRows (juce::Graphics&, tracktion::MidiClip*);
     void paintChannelSteps (juce::Graphics&, tracktion::MidiClip*);
@@ -83,10 +93,12 @@ private:
     bool hovering = false;
     bool painting = false, paintOn = true;
     int lastNote = -1, lastStep = -1;
+    bool graphEditing = false;
 
     static constexpr int headerWidth  = 300;
     static constexpr int rowHeight    = 36;
     static constexpr int padRowHeight = 24;
+    static constexpr int graphHeight  = 64;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (RackRow)
 };

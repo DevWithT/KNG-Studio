@@ -127,7 +127,7 @@ void RackRow::mouseWheelMove (const juce::MouseEvent& e, const juce::MouseWheelD
     {
         if (auto* clip = getClip (false))
         {
-            if (auto* n = PatternGrid::findNote (*clip, note, step))
+            if (auto* n = isChannel() ? noteAtStep (*clip, step, -1) : PatternGrid::findNote (*clip, note, step))
             {
                 n->setVelocity (juce::jlimit (1, 127, n->getVelocity() + (wheel.deltaY > 0.0f ? 8 : -8)),
                                 &session.getEdit().getUndoManager());
@@ -209,6 +209,35 @@ void RackRow::showRowMenu()
                 safe->repaint();
             }
         });
+    }
+
+    // Step graph: draw velocity (or pitch, on sound rows) for each step, under the row
+    if (isChannel() || isDrum())
+    {
+        juce::PopupMenu graph;
+        const int mode = getGraphMode();
+
+        auto setMode = [safe] (int m)
+        {
+            if (safe == nullptr)
+                return;
+
+            safe->track->state.setProperty ("kngGraph", m, nullptr);
+
+            if (safe->onLayoutChanged)
+                safe->onLayoutChanged();
+
+            safe->repaint();
+        };
+
+        graph.addItem ("Off", true, mode == 0, [setMode] { setMode (0); });
+        graph.addItem ("Velocity", true, mode == 1, [setMode] { setMode (1); });
+
+        if (isChannel())
+            graph.addItem ("Pitch", true, mode == 2, [setMode] { setMode (2); });
+
+        menu.addSeparator();
+        menu.addSubMenu ("Step Graph", graph);
     }
 
     // Note tools for this sound's notes in the current pattern

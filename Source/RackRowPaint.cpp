@@ -43,6 +43,8 @@ void RackRow::paint (juce::Graphics& g)
     {
         paintMelodic (g, clip);
     }
+
+    paintGraph (g, clip);
 }
 
 void RackRow::paintDrumSummary (juce::Graphics& g, te::MidiClip* clip)
