@@ -161,7 +161,8 @@ target_sources(KNGStudio PRIVATE
     Source/EditSessionNoteTools.cpp
     Source/EditSessionCrossfade.cpp
     Source/KngKeysPlugin.cpp
-    Source/KngKeysView.cpp)
+    Source/KngKeysView.cpp
+    Source/EditSessionMasterChain.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0

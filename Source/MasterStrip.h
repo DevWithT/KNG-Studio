@@ -19,6 +19,7 @@ private:
     juce::Label label;
     juce::Slider volumeSlider;
     juce::TextButton fxButton { "FX" };
+    juce::TextButton chainButton { "Master Chain" };
     LevelMeter meter;
     LoudnessDisplay loudness { session };
 

@@ -22,6 +22,21 @@ MasterStrip::MasterStrip (EditSession& sessionToUse)
             session.onShowFxChain (session.getEdit().getMasterPluginList(), "Master FX");
     };
 
+    // One click: Width, Comp, Air and Limiter, set for streaming or loud
+    addAndMakeVisible (chainButton);
+    chainButton.setTooltip ("Add a finishing chain to the master. Then nudge the Limiter's Gain until LUFS reads your target.");
+    chainButton.onClick = [this]
+    {
+        auto* s = &session;
+        juce::PopupMenu menu;
+        menu.addSectionHeader ("Width, Comp, Air and Limiter on the master");
+        menu.addItem ("Streaming Ready (about -14 LUFS)", [s] { s->applyMasterChain (1); });
+        menu.addItem ("Loud (about -9 LUFS, trap and club)", [s] { s->applyMasterChain (2); });
+        menu.addSeparator();
+        menu.addItem ("Remove Master Chain", [s] { s->applyMasterChain (0); });
+        menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&chainButton));
+    };
+
     // Tooltips
     volumeSlider.setTooltip ("Master volume (double-click for 0 dB)");
     fxButton.setTooltip ("Open effects on the master bus");
@@ -43,6 +58,8 @@ void MasterStrip::resized()
 
     label.setBounds (r.removeFromLeft (80));
     fxButton.setBounds (r.removeFromLeft (44));
+    r.removeFromLeft (6);
+    chainButton.setBounds (r.removeFromLeft (110));
     r.removeFromLeft (10);
     meter.setBounds (r.removeFromRight (200).reduced (0, 4));
     r.removeFromRight (10);

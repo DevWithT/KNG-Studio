@@ -45,6 +45,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `EditSessionFolders.cpp`: track folders: membership, collapse, rename, mute, solo.
 - `EditSessionInstruments.cpp`: puts a built-in instrument on a track.
 - `EditSessionLatency.cpp`: recording latency offset.
+- `EditSessionMasterChain.cpp`: one-click master chain (Width, Comp, Air, Limiter)
 - `EditSessionMidi.cpp`: MIDI tracks, MIDI clips and VST instruments.
 - `EditSessionMixer.cpp`: effect list add/move/remove, reverb send and bus, master meters.
 - `EditSessionNoteTools.cpp`: humanize, arpeggiate chords and note length for a pattern.
@@ -206,6 +207,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `EditSessionFolders.cpp`: getTrackFolder, getFolderTracks, getFolderNames, setTrackFolder, isFolderCollapsed, setFolderCollapsed, renameFolder, removeFolder, toggleFolderMute, toggleFolderSolo
 - `EditSessionInstruments.cpp`: setBuiltInInstrument
 - `EditSessionLatency.cpp`: getLatencyOffsetMs, setLatencyOffsetMs
+- `EditSessionMasterChain.cpp`: applyMasterChain
 - `EditSessionMidi.cpp`: addMidiTrack, isMidiTrack, createMidiClip, setInstrument, getInstrument, removeInstrument
 - `EditSessionMixer.cpp`: getFxPlugins, addPlugin, movePlugin, removePlugin, findSend, isReverbBus, getSendDb, setSendDb, ensureReverbBus, getMasterMeterPlugin, getLoudnessMeter
 - `EditSessionNoteTools.cpp`: humanizePattern, arpeggiatePattern, setPatternNoteLength, humanizeClip, arpeggiateClip, setClipNoteLength

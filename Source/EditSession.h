@@ -371,6 +371,8 @@ public:
     tracktion::Plugin* getMasterMeterPlugin();
     /** The loudness meter at the end of the master chain (added the first time it's asked for). */
     KngLoudnessPlugin* getLoudnessMeter();
+    /** Master chain: 0 removes it, 1 Streaming Ready (about -14 LUFS), 2 Loud (about -9 LUFS). Clicking again replaces it. */
+    void applyMasterChain (int style);
 
     // Lets the UI open an FX chain window (MainComponent sets this)
     std::function<void (tracktion::PluginList&, const juce::String&)> onShowFxChain;
