@@ -132,6 +132,10 @@ public:
     void setClipGain (tracktion::AudioClipBase& clip, float db);
     /** Crossfades every pair of overlapping audio clips on a lane. Returns how many it did. */
     int crossfadeOverlaps (int trackIndex);
+    /** Lines a double or ad-lib up with the lead vocal on another lane: slides the whole clip, then
+        cuts it at its gaps and nudges each phrase onto the lead. Returns how many moves it made, 0 if
+        it was already tight, -1 if it couldn't (no audio to compare). */
+    int alignClipToTrack (tracktion::WaveAudioClip& dub, int leadTrackIndex);
     std::function<void (tracktion::AudioClipBase&)> onShowClipProps;
 
     // Markers

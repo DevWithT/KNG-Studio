@@ -85,6 +85,43 @@ void TrackLane::showClipMenu (te::Clip* clip)
             menu.addItem ("Comp Takes (loop-record to get takes)", false, false, nullptr);
         }
 
+        // Line a double or ad-lib up with the lead vocal on another lane
+        juce::PopupMenu align;
+
+        for (int i = 0; i < s->getNumTracks(); ++i)
+        {
+            auto* t = s->getTrack (i);
+
+            if (i == trackIndex || t == nullptr || ! s->isLaneTrack (i))
+                continue;
+
+            bool hasAudio = false;
+
+            for (auto* c : t->getClips())
+                if (dynamic_cast<te::WaveAudioClip*> (c) != nullptr)
+                    hasAudio = true;
+
+            if (! hasAudio)
+                continue;
+
+            align.addItem (t->getName(), [s, clipPtr, i]
+            {
+                const int moves = s->alignClipToTrack (*clipPtr, i);
+
+                if (moves < 0)
+                    juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::WarningIcon, "Couldn't align",
+                                                            "There's no lead vocal under this clip to line it up with.");
+                else if (moves == 0)
+                    juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::InfoIcon, "Already tight",
+                                                            "This take already lines up with the lead.");
+            });
+        }
+
+        if (align.getNumItems() > 0)
+            menu.addSubMenu ("Align to Lead", align);
+        else
+            menu.addItem ("Align to Lead (put the lead on another lane first)", false, false, nullptr);
+
         menu.addSeparator();
     }
 

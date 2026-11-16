@@ -67,6 +67,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `EditSessionTracks.cpp`: move a track; duplicate, copy and paste a clip.
 - `EditSessionTransport.cpp`: play, record, stop, BPM, click, count-in, loop, undo/redo, retake.
 - `EditSessionView.cpp`: view range, zoom, scroll, x/time mapping, snap grid, beginEdit, split.
+- `EditSessionVocalAlign.cpp`: lines a double or ad-lib up with the lead vocal (slide, then per-phrase nudges)
 - `EditSessionVolume.cpp`: track and master volume in dB.
 
 ### Playlist
@@ -229,6 +230,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `EditSessionTracks.cpp`: moveTrack, duplicateSelectedClip, copySelectedClip, pasteClip
 - `EditSessionTransport.cpp`: play, record, stop, setBpm, getBpm, setClickEnabled, isClickEnabled, setCountInBars, getCountInBars, setLooping, isLooping, setLoopRange, getLoopStart, getLoopEnd, undo, redo, retake
 - `EditSessionView.cpp`: setView, zoomAround, scrollBy, xToTime, timeToX, snapTime, getSnapGrid, setSnapGrid, beginEdit, splitSelectedClipAtPlayhead
+- `EditSessionVocalAlign.cpp`: alignClipToTrack
 - `EditSessionVolume.cpp`: getTrackVolumeDb, setTrackVolumeDb, getMasterVolumeDb, setMasterVolumeDb
 
 ## 5. Adding a KNG effect checklist
