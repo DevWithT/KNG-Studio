@@ -1,5 +1,6 @@
 #include "TracksView.h"
 #include "PluginBrowser.h"
+#include "KngTheme.h"
 
 TracksView::TracksView (EditSession& sessionToUse)
     : session (sessionToUse)
@@ -312,7 +313,7 @@ void TracksView::paintOverChildren (juce::Graphics& g)
     if (hoverY < 0)
         return;
 
-    const juce::Colour accent (0xff3a8ee6);
+    const juce::Colour accent = KngTheme::accent;
     const int track = trackAtY (hoverY);
 
     if (track >= 0)

@@ -4,13 +4,14 @@
 #include "VolumeHelpers.h"
 #include "KngSamplerPlugin.h"
 #include "KngSynthPlugin.h"
+#include "KngTheme.h"
 
 namespace te = tracktion;
 
 static void styleHeading (juce::Label& l)
 {
     l.setFont (juce::Font (juce::FontOptions (11.0f, juce::Font::bold)));
-    l.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.45f));
+    l.setColour (juce::Label::textColourId, KngTheme::muted);
     l.setInterceptsMouseClicks (false, false);
 }
 
@@ -31,7 +32,7 @@ TrackInspector::TrackInspector (EditSession& sessionToUse)
     hintLabel.setText ("Click a track or a Rack row to see its instrument, effects and sends here.", juce::dontSendNotification);
     hintLabel.setJustificationType (juce::Justification::centred);
     hintLabel.setFont (juce::Font (juce::FontOptions (13.0f)));
-    hintLabel.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.5f));
+    hintLabel.setColour (juce::Label::textColourId, KngTheme::muted);
 
     volumeSlider.setSliderStyle (juce::Slider::LinearHorizontal);
     volumeSlider.setTextBoxStyle (juce::Slider::TextBoxRight, false, 56, 20);
@@ -362,15 +363,18 @@ void TrackInspector::newBus()
 //==============================================================================
 void TrackInspector::paint (juce::Graphics& g)
 {
-    g.setColour (juce::Colour (0xff24282c));
-    g.fillRoundedRectangle (getLocalBounds().toFloat(), 6.0f);
+    g.fillAll (KngTheme::panel);
+
+    // Thin line down the left edge
+    g.setColour (KngTheme::line);
+    g.drawVerticalLine (0, 0.0f, (float) getHeight());
 
     if (! instrumentCard.isEmpty() && instHeading.isVisible())
     {
-        g.setColour (juce::Colour (0xff1e2124));
-        g.fillRoundedRectangle (instrumentCard.toFloat(), 8.0f);
-        g.setColour (juce::Colour (0xff3a8ee6));
-        g.drawRoundedRectangle (instrumentCard.toFloat().reduced (0.5f), 8.0f, 1.0f);
+        g.setColour (KngTheme::inset);
+        g.fillRoundedRectangle (instrumentCard.toFloat(), 3.0f);
+        g.setColour (KngTheme::line2);
+        g.drawRoundedRectangle (instrumentCard.toFloat().reduced (0.5f), 3.0f, 1.0f);
     }
 }
 
