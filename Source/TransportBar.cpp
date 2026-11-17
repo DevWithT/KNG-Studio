@@ -66,7 +66,13 @@ TransportBar::TransportBar (EditSession& sessionToUse)
     countInBox.setSelectedId (session.getCountInBars() + 1, juce::dontSendNotification);
     countInBox.onChange = [this] { session.setCountInBars (countInBox.getSelectedId() - 1); };
 
-    // Toggles
+    // Toggles: flat buttons that stay lit while on
+    for (auto* b : { &clickButton, &loopButton, &punchButton, &snapButton, &monitorButton, &writeButton })
+    {
+        b->setClickingTogglesState (true);
+        b->setColour (juce::TextButton::buttonOnColourId, KngTheme::accentSoft);
+        b->setColour (juce::TextButton::textColourOnId, KngTheme::text);
+    }
     clickButton.onClick   = [this] { session.setClickEnabled (clickButton.getToggleState()); };
     loopButton.onClick    = [this] { session.setLooping (loopButton.getToggleState()); };
     punchButton.onClick   = [this] { session.setPunchEnabled (punchButton.getToggleState()); };

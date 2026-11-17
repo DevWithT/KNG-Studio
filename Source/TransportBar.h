@@ -37,8 +37,8 @@ private:
     juce::TextButton timeSigButton { "4/4" };
     juce::TextButton learnButton { "Learn" };
     juce::TextButton patternModeButton { "Pattern" }, songModeButton { "Song" };
-    juce::ToggleButton clickButton { "Click" }, loopButton { "Loop" }, punchButton { "Punch" }, snapButton { "Snap" },
-                       monitorButton { "Monitor" }, writeButton { "Auto Write" };
+    juce::TextButton clickButton { "Click" }, loopButton { "Loop" }, punchButton { "Punch" }, snapButton { "Snap" },
+                     monitorButton { "Monitor" }, writeButton { "Auto Write" };
 
     std::unique_ptr<juce::FileChooser> chooser;
     juce::Component::SafePointer<juce::DialogWindow> exportWindow;
