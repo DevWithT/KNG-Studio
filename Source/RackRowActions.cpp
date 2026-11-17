@@ -1,6 +1,7 @@
 #include "RackRow.h"
 #include "PatternGrid.h"
 #include "KitBrowser.h"
+#include "KngTheme.h"
 
 namespace te = tracktion;
 
@@ -91,11 +92,11 @@ void RackRow::paintChannelSteps (juce::Graphics& g, te::MidiClip* clip)
         if (velocity[step] > 0)
         {
             const float v = velocity[step] / 127.0f;
-            g.setColour (juce::Colour (0xff3a8ee6).interpolatedWith (juce::Colour (0xff9fd4ff), v * 0.6f));
+            g.setColour (KngTheme::accent.withAlpha (0.55f + 0.45f * v));
         }
         else
         {
-            g.setColour ((step / 4) % 2 == 0 ? juce::Colour (0xff353a40) : juce::Colour (0xff43363a));
+            g.setColour ((step / 4) % 2 == 0 ? KngTheme::btn : KngTheme::chrome);
         }
 
         g.fillRoundedRectangle (cell, 3.0f);
@@ -112,7 +113,7 @@ void RackRow::paintOverChildren (juce::Graphics& g)
 {
     if (hovering)
     {
-        g.setColour (juce::Colour (0xff3a8ee6));
+        g.setColour (KngTheme::accent);
         g.drawRoundedRectangle (getLocalBounds().toFloat().reduced (1.0f), 5.0f, 2.0f);
     }
 }
