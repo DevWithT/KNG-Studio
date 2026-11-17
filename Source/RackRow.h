@@ -95,8 +95,8 @@ private:
     int lastNote = -1, lastStep = -1;
     bool graphEditing = false;
 
-    static constexpr int headerWidth  = 300;
-    static constexpr int rowHeight    = 36;
+    static constexpr int headerWidth  = 320;
+    static constexpr int rowHeight    = 40;
     static constexpr int padRowHeight = 24;
     static constexpr int graphHeight  = 64;
 

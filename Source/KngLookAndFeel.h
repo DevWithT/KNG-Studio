@@ -124,8 +124,12 @@ public:
         g.setColour (KngTheme::line2);
         g.strokePath (track, juce::PathStrokeType (line, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
 
+        // Pan-style knobs (symmetric range) fill from the middle
+        const bool bipolar = slider.getMinimum() == -slider.getMaximum();
+        const float fromAngle = bipolar ? startAngle + (endAngle - startAngle) * 0.5f : startAngle;
+
         juce::Path value;
-        value.addCentredArc (centre.x, centre.y, arcRadius, arcRadius, 0.0f, startAngle, angle, true);
+        value.addCentredArc (centre.x, centre.y, arcRadius, arcRadius, 0.0f, fromAngle, angle, true);
         g.setColour (slider.findColour (juce::Slider::rotarySliderFillColourId));
         g.strokePath (value, juce::PathStrokeType (line, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
 

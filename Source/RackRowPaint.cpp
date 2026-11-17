@@ -14,14 +14,16 @@ void RackRow::paint (juce::Graphics& g)
     auto r = getLocalBounds().toFloat();
 
     g.setColour (KngTheme::panel);
-    g.fillRoundedRectangle (r, 2.0f);
+    g.fillRoundedRectangle (r, KngTheme::radius);
+    g.setColour (KngTheme::line2.withAlpha (0.35f));
+    g.drawRoundedRectangle (r.reduced (0.5f), KngTheme::radius, 1.0f);
 
-    // Track colour along the left edge
+    // Track colour: a small pill on the left of the first line
     if (auto* at = getAudioTrack())
     {
         const auto c = at->getColour();
         g.setColour (c.getAlpha() > 0 ? c.withAlpha (1.0f) : KngTheme::laneGrey);
-        g.fillRoundedRectangle (r.withWidth (5.0f), 2.0f);
+        g.fillRoundedRectangle (r.getX() + 4.0f, r.getY() + 8.0f, 3.0f, (float) rowHeight - 16.0f, 1.5f);
     }
 
     if (getTrackIndex() < 0)
@@ -215,18 +217,20 @@ void RackRow::resized()
     auto r = juce::Rectangle<int> (0, 0, headerWidth, rowHeight).reduced (8, 6);
     r.removeFromLeft (2);
 
-    expandButton.setBounds (r.removeFromLeft (22));
+    auto small = [] (juce::Rectangle<int> b) { return b.withSizeKeepingCentre (b.getWidth(), 24); };
+
+    expandButton.setBounds (small (r.removeFromLeft (22)));
     r.removeFromLeft (4);
-    instrumentButton.setBounds (r.removeFromRight (70));
+    instrumentButton.setBounds (small (r.removeFromRight (70)));
     r.removeFromRight (4);
-    panKnob.setBounds (r.removeFromRight (24));
-    volKnob.setBounds (r.removeFromRight (24));
+    panKnob.setBounds (r.removeFromRight (28));
+    volKnob.setBounds (r.removeFromRight (28));
     r.removeFromRight (4);
-    soloButton.setBounds (r.removeFromRight (22));
+    soloButton.setBounds (small (r.removeFromRight (22)));
     r.removeFromRight (2);
-    muteButton.setBounds (r.removeFromRight (22));
+    muteButton.setBounds (small (r.removeFromRight (22)));
     r.removeFromRight (2);
-    armButton.setBounds (r.removeFromRight (22));
+    armButton.setBounds (small (r.removeFromRight (22)));
     r.removeFromRight (4);
     nameLabel.setBounds (r);
 }

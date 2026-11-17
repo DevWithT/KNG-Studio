@@ -191,7 +191,7 @@ void RackView::layoutRows()
     {
         const int h = row->getIdealHeight();
         row->setBounds (0, y, width, h);
-        y += h + 4;
+        y += h + 6;
         sig << h << ",";
     }
 

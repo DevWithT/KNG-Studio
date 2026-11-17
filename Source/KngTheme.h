@@ -24,7 +24,7 @@ namespace KngTheme
     inline const juce::Colour ink       { 0xff14171c };   // dark text that sits on a lane color
 
     // Accent (use sparingly: selection, active tab, on-state)
-    inline const juce::Colour accent    { 0xff4aa3ff };
+    inline const juce::Colour accent    { 0xff5b9fe0 };
     inline const juce::Colour accentInk { 0xff0c1824 };   // text on the accent
     inline const juce::Colour accentSoft{ 0xff2c3f55 };
     inline const juce::Colour selection { 0xff34506f };   // selected list row

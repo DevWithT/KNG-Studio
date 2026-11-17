@@ -210,23 +210,25 @@ void TrackHeader::paint (juce::Graphics& g)
         muted = t->isMuted (false);
     }
 
-    g.setColour (base.withAlpha (muted ? 0.5f : 1.0f));
-    g.fillRoundedRectangle (r, 2.0f);
+    base = base.withMultipliedSaturation (0.78f);
 
-    // Darker strip down the left edge (click it to pick a color)
-    g.setColour (juce::Colours::black.withAlpha (0.18f));
-    g.fillRect (r.withWidth ((float) stripWidth));
+    g.setColour (base.withAlpha (muted ? 0.5f : 1.0f));
+    g.fillRoundedRectangle (r, KngTheme::radius);
+
+    // Darker pill down the left edge (click it to pick a color)
+    g.setColour (juce::Colours::black.withAlpha (0.2f));
+    g.fillRoundedRectangle (r.getX() + 4.0f, r.getY() + 6.0f, 4.0f, r.getHeight() - 12.0f, 2.0f);
 
     if (session.isArmed (trackIndex))
     {
         g.setColour (KngTheme::rec);
-        g.drawRoundedRectangle (r.reduced (1.0f), 2.0f, 2.0f);
+        g.drawRoundedRectangle (r.reduced (1.0f), KngTheme::radius, 2.0f);
     }
     else if (session.getSelectedTrackIndex() == trackIndex)
     {
         // Selected lane: accent bar down the right edge
         g.setColour (KngTheme::accent);
-        g.fillRect (r.removeFromRight (3.0f));
+        g.fillRoundedRectangle (r.getRight() - 4.0f, r.getY() + 6.0f, 3.0f, r.getHeight() - 12.0f, 1.5f);
     }
 }
 
