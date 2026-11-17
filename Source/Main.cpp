@@ -1,6 +1,16 @@
 #include "MainComponent.h"
 #include "PluginWindow.h"
 #include "KngLookAndFeel.h"
+#include "KngTheme.h"
+
+#if JUCE_WINDOWS
+ #ifndef NOMINMAX
+  #define NOMINMAX
+ #endif
+ #include <windows.h>
+ #include <dwmapi.h>
+ #pragma comment (lib, "dwmapi.lib")
+#endif
 
 // Any crash writes a stack trace to Documents\KNG Studio\crash_log.txt
 static void kngCrashHandler (void*)
@@ -12,6 +22,26 @@ static void kngCrashHandler (void*)
           .appendText ("\n==== " + juce::Time::getCurrentTime().toString (true, true) + " ====\n"
                        + juce::SystemStats::getStackBacktrace());
 }
+
+#if JUCE_WINDOWS
+// Windows 11 lets an app set its title bar colors (older Windows ignores this and keeps the default)
+static void kngDarkTitleBar (juce::Component& window)
+{
+    if (auto* peer = window.getPeer())
+    {
+        auto hwnd = (HWND) peer->getNativeHandle();
+        const BOOL dark = TRUE;
+        const COLORREF caption = RGB (KngTheme::menu.getRed(), KngTheme::menu.getGreen(), KngTheme::menu.getBlue());
+        const COLORREF text    = RGB (KngTheme::text.getRed(), KngTheme::text.getGreen(), KngTheme::text.getBlue());
+        const COLORREF border  = RGB (KngTheme::line.getRed(), KngTheme::line.getGreen(), KngTheme::line.getBlue());
+
+        DwmSetWindowAttribute (hwnd, 20, &dark, sizeof (dark));         // dark mode caption buttons
+        DwmSetWindowAttribute (hwnd, 34, &border, sizeof (border));     // window border
+        DwmSetWindowAttribute (hwnd, 35, &caption, sizeof (caption));   // title bar
+        DwmSetWindowAttribute (hwnd, 36, &text, sizeof (text));         // title text
+    }
+}
+#endif
 
 class KngStudioApplication : public juce::JUCEApplication
 {
@@ -61,6 +91,10 @@ public:
                 restoreWindowStateFromString (saved);
 
             setVisible (true);
+
+           #if JUCE_WINDOWS
+            kngDarkTitleBar (*this);
+           #endif
         }
 
         void closeButtonPressed() override

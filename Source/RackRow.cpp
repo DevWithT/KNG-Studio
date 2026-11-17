@@ -4,6 +4,7 @@
 #include "KngSamplerPlugin.h"
 #include "KngSynthPlugin.h"
 #include <map>
+#include "KngTheme.h"
 
 namespace te = tracktion;
 
@@ -23,8 +24,8 @@ RackRow::RackRow (EditSession& sessionToUse, te::Track& trackToUse)
     for (auto* b : { &muteButton, &soloButton })
         b->setClickingTogglesState (false);
 
-    muteButton.setColour (juce::TextButton::buttonOnColourId, juce::Colours::orange);
-    soloButton.setColour (juce::TextButton::buttonOnColourId, juce::Colours::gold);
+    muteButton.setColour (juce::TextButton::buttonOnColourId, KngTheme::accent);
+    soloButton.setColour (juce::TextButton::buttonOnColourId, KngTheme::laneYellow);
 
     muteButton.onClick = [this] { if (auto* at = getAudioTrack()) at->setMute (! at->isMuted (false)); };
     soloButton.onClick = [this] { if (auto* at = getAudioTrack()) at->setSolo (! at->isSolo (false)); };
@@ -53,7 +54,7 @@ RackRow::RackRow (EditSession& sessionToUse, te::Track& trackToUse)
     // Record from your MIDI keyboard; the take becomes a pattern block in the Playlist
     addAndMakeVisible (armButton);
     armButton.setClickingTogglesState (false);
-    armButton.setColour (juce::TextButton::buttonOnColourId, juce::Colours::red);
+    armButton.setColour (juce::TextButton::buttonOnColourId, KngTheme::rec);
     armButton.setTooltip ("Arm to record from your MIDI keyboard (in Song mode). The take becomes a pattern block.");
     armButton.onClick = [this]
     {

@@ -1,4 +1,5 @@
 #include "MarkerBar.h"
+#include "KngTheme.h"
 
 namespace te = tracktion;
 
@@ -35,7 +36,7 @@ te::Clip* MarkerBar::findMarkerAt (int x)
 
 void MarkerBar::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colour (0xff1b1d20));
+    g.fillAll (KngTheme::inset);
     g.setFont (juce::Font (juce::FontOptions (11.0f)));
 
     for (auto& m : session.getMarkers())
@@ -46,17 +47,17 @@ void MarkerBar::paint (juce::Graphics& g)
         if (x + w < 0 || x > getWidth())
             continue;
 
-        g.setColour (juce::Colour (0xffe6a23a));
+        g.setColour (KngTheme::laneYellow);
         g.fillRect (x, 0, 2, getHeight());
         g.fillRoundedRectangle ((float) x, 1.0f, (float) w, (float) getHeight() - 2.0f, 3.0f);
 
-        g.setColour (juce::Colours::black);
+        g.setColour (KngTheme::ink);
         g.drawText (m->getName(), x + 5, 0, w - 6, getHeight(), juce::Justification::centredLeft);
     }
 
     if (session.getMarkers().empty())
     {
-        g.setColour (juce::Colours::white.withAlpha (0.25f));
+        g.setColour (KngTheme::muted.withAlpha (0.7f));
         g.drawText ("Double-click here to add a marker", getLocalBounds().reduced (6, 0),
                     juce::Justification::centredLeft);
     }

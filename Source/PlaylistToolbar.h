@@ -2,6 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "EditSession.h"
+#include "KngTheme.h"
 
 /** Select, Paint and Cut tools for the Playlist. Also keeps the Playlist tidy as you work. */
 class PlaylistToolbar : public juce::Component,
@@ -14,7 +15,7 @@ public:
         {
             addAndMakeVisible (b);
             b->setClickingTogglesState (false);
-            b->setColour (juce::TextButton::buttonOnColourId, juce::Colour (0xff3a8ee6));
+            b->setColour (juce::TextButton::buttonOnColourId, KngTheme::accent);
         }
 
         selectButton.onClick = [this] { session.setPlaylistTool (0); };
@@ -27,7 +28,7 @@ public:
 
         addAndMakeVisible (hint);
         hint.setFont (juce::Font (juce::FontOptions (12.0f)));
-        hint.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.5f));
+        hint.setColour (juce::Label::textColourId, KngTheme::muted);
         hint.setText ("Drag a pattern from the list into a lane. Stretch a block by its right edge to repeat it.", juce::dontSendNotification);
 
         startTimerHz (8);

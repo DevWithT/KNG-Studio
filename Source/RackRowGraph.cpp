@@ -1,6 +1,7 @@
 #include "RackRow.h"
 #include "PatternGrid.h"
 #include <algorithm>
+#include "KngTheme.h"
 
 namespace te = tracktion;
 
@@ -116,19 +117,19 @@ void RackRow::paintGraph (juce::Graphics& g, te::MidiClip* clip)
     }
 
     g.setFont (juce::Font (juce::FontOptions (11.0f)));
-    g.setColour (juce::Colours::white.withAlpha (0.55f));
+    g.setColour (KngTheme::muted);
     g.drawFittedText (label, 30, area.getY(), headerWidth - 40, area.getHeight(), juce::Justification::centredLeft, 2);
 
-    g.setColour (juce::Colour (0xff1b1d20));
+    g.setColour (KngTheme::inset);
     g.fillRoundedRectangle (area.toFloat(), 4.0f);
 
     if (mode == 2)
     {
-        g.setColour (juce::Colours::white.withAlpha (0.15f));
+        g.setColour (KngTheme::muted.withAlpha (0.3f));
         g.drawHorizontalLine (area.getCentreY(), (float) area.getX(), (float) area.getRight());
     }
 
-    const juce::Colour barColour = mode == 2 ? juce::Colour (0xffb07cff) : juce::Colour (0xffe6893a);
+    const juce::Colour barColour = mode == 2 ? KngTheme::lanePurple : KngTheme::laneOrange;
 
     for (int step = 0; step < steps; ++step)
     {
@@ -139,7 +140,7 @@ void RackRow::paintGraph (juce::Graphics& g, te::MidiClip* clip)
 
         if (n == nullptr)
         {
-            g.setColour (juce::Colours::white.withAlpha (0.06f));
+            g.setColour (KngTheme::muted.withAlpha (0.15f));
             g.fillRect (bar.withSizeKeepingCentre (bar.getWidth(), 2.0f).withY (mode == 2 ? bar.getCentreY() - 1.0f : bar.getBottom() - 2.0f));
             continue;
         }
@@ -162,7 +163,7 @@ void RackRow::paintGraph (juce::Graphics& g, te::MidiClip* clip)
 
             if (offset != 0 && bar.getWidth() >= 14.0f)
             {
-                g.setColour (juce::Colours::white.withAlpha (0.8f));
+                g.setColour (KngTheme::text);
                 g.setFont (juce::Font (juce::FontOptions (9.0f)));
                 g.drawText ((offset > 0 ? "+" : "") + juce::String (offset), bar.withHeight (12.0f).withY (offset > 0 ? bar.getBottom() - 12.0f : bar.getY()),
                             juce::Justification::centred, false);
