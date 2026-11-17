@@ -2,6 +2,7 @@
 #include "TheoryHelper.h"
 #include "KngSamplerPlugin.h"
 #include "KngSynthPlugin.h"
+#include "KngTheme.h"
 
 // Slide arrows only make sense when the instrument plays one note at a time
 static bool slidesEnabled (tracktion::MidiClip& clip)
@@ -28,10 +29,10 @@ namespace te = tracktion;
 //==============================================================================
 void PianoRoll::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colour (0xff1b1d20));
+    g.fillAll (KngTheme::panel2);
 
     // Toolbar
-    g.setColour (juce::Colour (0xff26292d));
+    g.setColour (KngTheme::panel);
     g.fillRect (getLocalBounds().removeFromTop (toolbarHeight));
 
     auto grid = getGridArea();
@@ -47,7 +48,7 @@ void PianoRoll::paint (juce::Graphics& g)
 
         // Playhead
         const double playBeat = clip->getContentBeatAtTime (session.getTransport().getPosition()).inBeats();
-        g.setColour (juce::Colours::yellow);
+        g.setColour (KngTheme::accent);
         g.fillRect (beatToX (playBeat), grid.getY(), 2, grid.getHeight());
     }
 
@@ -69,7 +70,7 @@ void PianoRoll::paintRows (juce::Graphics& g, juce::Rectangle<int> grid)
         const int y = noteToY (note);
         juce::Rectangle<int> row (grid.getX(), y, grid.getWidth(), noteHeight);
 
-        auto base = Theory::isBlackKey (note) ? juce::Colour (0xff23272b) : juce::Colour (0xff2b3035);
+        auto base = Theory::isBlackKey (note) ? KngTheme::panel2 : KngTheme::chrome;
 
         // Out-of-key rows go darker
         if (scale != nullptr && ! Theory::inScale (note, getKeyRoot(), *scale))
@@ -85,8 +86,8 @@ void PianoRoll::paintRows (juce::Graphics& g, juce::Rectangle<int> grid)
 
             if (tone >= 0)
             {
-                g.setColour (tone == 0 ? juce::Colour (0xffe6a23a).withAlpha (0.22f)
-                                       : juce::Colour (0xff3a8ee6).withAlpha (0.17f));
+                g.setColour (tone == 0 ? KngTheme::laneYellow.withAlpha (0.22f)
+                                       : KngTheme::accent.withAlpha (0.17f));
                 g.fillRect (row);
             }
         }
@@ -98,7 +99,7 @@ void PianoRoll::paintRows (juce::Graphics& g, juce::Rectangle<int> grid)
         }
 
         // Brighter line under every C
-        g.setColour (note % 12 == 0 ? juce::Colours::white.withAlpha (0.16f) : juce::Colours::black.withAlpha (0.25f));
+        g.setColour (note % 12 == 0 ? KngTheme::muted.withAlpha (0.25f) : juce::Colours::black.withAlpha (0.25f));
         g.drawHorizontalLine (y + noteHeight - 1, (float) grid.getX(), (float) grid.getRight());
     }
 
@@ -135,7 +136,7 @@ void PianoRoll::paintGridLines (juce::Graphics& g, juce::Rectangle<int> grid)
         if (step * pxPerBeat < 4.0 && ! isBeat)
             continue;
 
-        g.setColour (juce::Colours::white.withAlpha (isBar ? 0.25f : isBeat ? 0.11f : 0.04f));
+        g.setColour (KngTheme::muted.withAlpha (isBar ? 0.4f : isBeat ? 0.2f : 0.08f));
         g.drawVerticalLine (beatToX (b), (float) grid.getY(), (float) grid.getBottom());
     }
 }
@@ -160,8 +161,8 @@ void PianoRoll::paintNotes (juce::Graphics& g, juce::Rectangle<int> grid)
         const bool outOfKey = scale != nullptr && ! Theory::inScale (n->getNoteNumber(), getKeyRoot(), *scale);
 
         // Notes outside the key turn red so you can see them
-        auto colour = outOfKey ? juce::Colour (0xffd05a5a)
-                               : juce::Colour (0xff3a8ee6).interpolatedWith (juce::Colour (0xffe6893a), vel);
+        auto colour = outOfKey ? KngTheme::rec
+                               : KngTheme::accent.interpolatedWith (KngTheme::laneOrange, vel);
 
         g.setColour (colour);
         g.fillRoundedRectangle (r.toFloat(), 3.0f);
@@ -191,7 +192,7 @@ void PianoRoll::paintNotes (juce::Graphics& g, juce::Rectangle<int> grid)
 
         if (r.getWidth() > 28)
         {
-            g.setColour (juce::Colours::black.withAlpha (0.75f));
+            g.setColour (KngTheme::ink);
             g.drawText (Theory::noteName (n->getNoteNumber()), r.reduced (4, 0), juce::Justification::centredLeft);
         }
     }
@@ -221,7 +222,7 @@ void PianoRoll::paintKeyboard (juce::Graphics& g)
 
         if (note == hoverNote)
         {
-            g.setColour (juce::Colour (0xff3a8ee6).withAlpha (0.4f));
+            g.setColour (KngTheme::accent.withAlpha (0.4f));
             g.fillRect (key);
         }
 
@@ -234,7 +235,7 @@ void PianoRoll::paintKeyboard (juce::Graphics& g)
 
         if (tone >= 0)
         {
-            g.setColour (tone == 0 ? juce::Colour (0xffe6a23a) : juce::Colour (0xff3a8ee6));
+            g.setColour (tone == 0 ? KngTheme::laneYellow : KngTheme::accent);
             g.fillRoundedRectangle (badge.toFloat(), 3.0f);
             g.setColour (juce::Colours::white);
             g.setFont (juce::Font (juce::FontOptions (9.5f)));
@@ -242,7 +243,7 @@ void PianoRoll::paintKeyboard (juce::Graphics& g)
         }
         else if (scale != nullptr && Theory::inScale (note, getKeyRoot(), *scale))
         {
-            g.setColour (juce::Colour (0xff3a8ee6).withAlpha (0.8f));
+            g.setColour (KngTheme::accent.withAlpha (0.8f));
             g.fillEllipse (badge.withSizeKeepingCentre (5, 5).toFloat());
         }
 
@@ -257,9 +258,9 @@ void PianoRoll::paintVelocity (juce::Graphics& g)
 {
     auto va = getVelocityArea();
 
-    g.setColour (juce::Colour (0xff17191b));
+    g.setColour (KngTheme::inset);
     g.fillRect (va);
-    g.setColour (juce::Colours::white.withAlpha (0.1f));
+    g.setColour (KngTheme::line2);
     g.drawHorizontalLine (va.getY(), (float) va.getX(), (float) va.getRight());
 
     juce::Graphics::ScopedSaveState saveState (g);
@@ -270,7 +271,7 @@ void PianoRoll::paintVelocity (juce::Graphics& g)
         const int x = beatToX (n->getStartBeat().inBeats());
         const int h = juce::roundToInt (n->getVelocity() / 127.0 * (va.getHeight() - 6));
 
-        g.setColour (selected.contains (n) ? juce::Colours::white : juce::Colour (0xff3a8ee6));
+        g.setColour (selected.contains (n) ? KngTheme::text : KngTheme::accent);
         g.fillRect (x, va.getBottom() - h, 4, h);
     }
 }
@@ -279,9 +280,9 @@ void PianoRoll::paintRuler (juce::Graphics& g)
 {
     auto r = getRulerArea();
 
-    g.setColour (juce::Colour (0xff202326));
+    g.setColour (KngTheme::panel);
     g.fillRect (r);
-    g.setColour (juce::Colours::black.withAlpha (0.4f));
+    g.setColour (KngTheme::line);
     g.drawHorizontalLine (r.getBottom() - 1, (float) r.getX(), (float) r.getRight());
 
     juce::Graphics::ScopedSaveState saveState (g);
@@ -303,7 +304,7 @@ void PianoRoll::paintRuler (juce::Graphics& g)
 
         if ((i % 2) == 0)
         {
-            g.setColour (juce::Colours::white.withAlpha (0.2f));
+            g.setColour (KngTheme::muted.withAlpha (0.5f));
             g.drawVerticalLine (x, (float) r.getBottom() - 5.0f, (float) r.getBottom());
         }
 
@@ -314,9 +315,9 @@ void PianoRoll::paintRuler (juce::Graphics& g)
 
         const int bar = inBank ? session.barNumberAt (t) - firstBar + 1 : session.barNumberAt (t);
 
-        g.setColour (juce::Colours::white.withAlpha (0.35f));
+        g.setColour (KngTheme::muted.withAlpha (0.6f));
         g.drawVerticalLine (x, (float) r.getY() + 6.0f, (float) r.getBottom());
-        g.setColour (juce::Colours::white.withAlpha (0.8f));
+        g.setColour (KngTheme::text);
         g.drawText (juce::String (bar), x + 4, r.getY(), 40, r.getHeight(), juce::Justification::centredLeft);
     }
 
@@ -325,7 +326,7 @@ void PianoRoll::paintRuler (juce::Graphics& g)
     const float px = (float) beatToX (playBeat);
     juce::Path tri;
     tri.addTriangle (px - 5.0f, (float) r.getY(), px + 5.0f, (float) r.getY(), px, (float) r.getY() + 8.0f);
-    g.setColour (juce::Colours::yellow);
+    g.setColour (KngTheme::accent);
     g.fillPath (tri);
 }
 
@@ -335,7 +336,7 @@ void PianoRoll::paintGhostNotes (juce::Graphics& g, juce::Rectangle<int> grid)
     const auto viewStart = clip->getTimeOfContentBeat (te::BeatPosition::fromBeats (xToBeat (grid.getX())));
     const auto viewEnd   = clip->getTimeOfContentBeat (te::BeatPosition::fromBeats (xToBeat (grid.getRight())));
 
-    g.setColour (juce::Colours::white.withAlpha (0.13f));
+    g.setColour (KngTheme::muted.withAlpha (0.18f));
 
     for (auto* track : te::getAudioTracks (session.getEdit()))
     {

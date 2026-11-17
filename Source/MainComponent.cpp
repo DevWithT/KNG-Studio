@@ -183,7 +183,7 @@ void MainComponent::resized()
     if (transportBar != nullptr)
         transportBar->setBounds (area.removeFromTop (40));
 
-    area = area.reduced (10, 8);
+    // Panels sit flush; a 1 px gap shows the window background as a thin line between them
 
     // Track inspector down the right side, full height
     if (inspector != nullptr)
@@ -193,7 +193,7 @@ void MainComponent::resized()
         if (inspectorVisible)
         {
             inspector->setBounds (area.removeFromRight (300));
-            area.removeFromRight (8);
+            area.removeFromRight (1);
         }
     }
 
@@ -213,7 +213,7 @@ void MainComponent::resized()
     if (browserVisible)
     {
         browserTabs.setBounds (area.removeFromLeft (240));
-        area.removeFromLeft (8);
+        area.removeFromLeft (1);
     }
 
     // Patterns list next to the timeline
@@ -224,7 +224,7 @@ void MainComponent::resized()
         if (patternsVisible)
         {
             patternList->setBounds (area.removeFromLeft (180));
-            area.removeFromLeft (8);
+            area.removeFromLeft (1);
         }
     }
 
@@ -232,7 +232,7 @@ void MainComponent::resized()
     if (masterStrip != nullptr)
         masterStrip->setBounds (area.removeFromBottom (40));
 
-    area.removeFromBottom (6);
+    area.removeFromBottom (1);
 
     // Ruler lines up with the track lanes (TracksView headerWidth 240 + gap 1)
     constexpr int laneOffset = 241;
@@ -254,7 +254,6 @@ void MainComponent::resized()
         ruler->setBounds (rulerRow.withTrimmedLeft (laneOffset)
                                   .withTrimmedRight (tracksViewport.getScrollBarThickness()));
 
-    area.removeFromTop (4);
     tracksViewport.setBounds (area);
 
     // At least as tall as the view, so the empty space below the tracks takes drops
