@@ -1,4 +1,5 @@
 #include "TimelineRuler.h"
+#include "KngTheme.h"
 
 namespace te = tracktion;
 
@@ -32,7 +33,7 @@ double TimelineRuler::snapToBeat (double seconds) const
 
 void TimelineRuler::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colour (0xff222222));
+    g.fillAll (KngTheme::panel);
 
     if (getWidth() <= 0)
         return;
@@ -46,9 +47,9 @@ void TimelineRuler::paint (juce::Graphics& g)
         const int x1 = timeToX (loopStart);
         const int x2 = timeToX (loopEnd);
 
-        g.setColour (session.isPunchEnabled() ? juce::Colour (0xffb03030).withAlpha (0.8f)
-                   : session.isLooping()      ? juce::Colour (0xff2e7d32).withAlpha (0.8f)
-                                              : juce::Colours::grey.withAlpha (0.35f));
+        g.setColour (session.isPunchEnabled() ? KngTheme::rec.withAlpha (0.8f)
+                   : session.isLooping()      ? KngTheme::accent.withAlpha (0.45f)
+                                              : KngTheme::muted.withAlpha (0.3f));
         g.fillRect (x1, 0, juce::jmax (1, x2 - x1), getHeight());
     }
 
@@ -85,7 +86,7 @@ void TimelineRuler::paint (juce::Graphics& g)
         const int x = timeToX (bar);
         const bool labelled = ((barNumber - 1) % labelStep) == 0;
 
-        g.setColour (juce::Colours::white.withAlpha (labelled ? 0.7f : 0.35f));
+        g.setColour ((labelled ? KngTheme::text : KngTheme::muted).withAlpha (labelled ? 0.9f : 0.5f));
         g.drawVerticalLine (x, labelled ? 0.0f : h * 0.5f, h);
 
         if (labelled)
@@ -102,7 +103,7 @@ void TimelineRuler::paint (juce::Graphics& g)
             // 16th ticks
             if (showSteps)
             {
-                g.setColour (juce::Colours::white.withAlpha (0.14f));
+                g.setColour (KngTheme::muted.withAlpha (0.25f));
 
                 for (double b = std::ceil (b1 * 4.0) / 4.0; b < b2 - 1.0e-6; b += 0.25)
                     if (std::abs (b - std::round (b)) > 1.0e-6)
@@ -115,13 +116,13 @@ void TimelineRuler::paint (juce::Graphics& g)
             for (double b = std::floor (b1) + 1.0; b < b2 - 1.0e-6; b += 1.0, ++beatInBar)
             {
                 const int bx = timeToX (ts.toTime (te::BeatPosition::fromBeats (b)).inSeconds());
-                g.setColour (juce::Colours::white.withAlpha (0.3f));
+                g.setColour (KngTheme::muted.withAlpha (0.5f));
                 g.drawVerticalLine (bx, h * 0.62f, h);
 
                 if (labelBeats)
                 {
                     g.setFont (beatFont);
-                    g.setColour (juce::Colours::white.withAlpha (0.45f));
+                    g.setColour (KngTheme::muted);
                     g.drawText (juce::String (barNumber) + "." + juce::String (beatInBar), bx + 3, 1, 40, 12,
                                 juce::Justification::left);
                 }
@@ -146,7 +147,7 @@ void TimelineRuler::paint (juce::Graphics& g)
         g.setColour (colour);
         g.fillRect (x, 0, 2, getHeight());
         g.fillRoundedRectangle ((float) x, (float) getHeight() - 11.0f, 52.0f, 11.0f, 2.0f);
-        g.setColour (juce::Colours::black);
+        g.setColour (KngTheme::ink);
         g.drawText (m.label, x + 3, getHeight() - 11, 50, 11, juce::Justification::centredLeft);
     }
 

@@ -1,5 +1,6 @@
 #include "KitBrowser.h"
 #include "EditSession.h"
+#include "KngTheme.h"
 
 static const char* audioPatterns = "*.wav;*.aif;*.aiff;*.flac;*.mp3;*.ogg";
 
@@ -92,7 +93,8 @@ KitBrowser::KitBrowser (juce::AudioDeviceManager& deviceManager)
     // Lets you drag samples and kit folders onto the Rack and samplers
     tree.setDragAndDropDescription ("KngSample");
     tree.addListener (this);
-    tree.setColour (juce::FileTreeComponent::backgroundColourId, juce::Colour (0xff1b1d20));
+    tree.setColour (juce::FileTreeComponent::backgroundColourId, KngTheme::panel);
+    tree.setColour (juce::TreeView::selectedItemBackgroundColourId, KngTheme::selection);
 
     addAndMakeVisible (title);
     title.setFont (juce::Font (juce::FontOptions (14.0f)));
@@ -111,14 +113,18 @@ KitBrowser::KitBrowser (juce::AudioDeviceManager& deviceManager)
     syncButton.setTooltip ("Preview loops at your song's tempo (needs the tempo in the file name, like \"loop 140bpm\")");
 
     addAndMakeVisible (search);
-    search.setTextToShowWhenEmpty ("Search sounds...", juce::Colours::white.withAlpha (0.4f));
+    search.setTextToShowWhenEmpty ("Search sounds...", KngTheme::muted);
+    search.setColour (juce::TextEditor::backgroundColourId, KngTheme::inset);
+    search.setColour (juce::TextEditor::outlineColourId, KngTheme::line);
+    search.setColour (juce::TextEditor::focusedOutlineColourId, KngTheme::accent);
+    search.setColour (juce::TextEditor::textColourId, KngTheme::text);
     search.onTextChange = [this] { searchCountdown = 3; };
 
     addAndMakeVisible (tree);
     addChildComponent (list);
     list.setModel (this);
     list.setRowHeight (24);
-    list.setColour (juce::ListBox::backgroundColourId, juce::Colour (0xff1b1d20));
+    list.setColour (juce::ListBox::backgroundColourId, KngTheme::panel);
 
     loadFavorites();
     lastSignature = getFolderSignature();
@@ -306,8 +312,8 @@ void KitBrowser::paintListBoxItem (int row, juce::Graphics& g, int width, int he
 
     if (selected)
     {
-        g.setColour (juce::Colour (0xff3a8ee6).withAlpha (0.25f));
-        g.fillRoundedRectangle (juce::Rectangle<float> (2.0f, 1.0f, width - 4.0f, height - 2.0f), 4.0f);
+        g.setColour (KngTheme::selection);
+        g.fillRect (juce::Rectangle<float> (0.0f, 0.0f, (float) width, (float) height));
     }
 
     auto r = juce::Rectangle<int> (6, 0, width - 12, height);
@@ -322,12 +328,12 @@ void KitBrowser::paintListBoxItem (int row, juce::Graphics& g, int width, int he
 
     if (bpm > 0.0)
     {
-        g.setColour (juce::Colours::white.withAlpha (0.45f));
+        g.setColour (KngTheme::muted);
         g.setFont (juce::Font (juce::FontOptions (10.0f)));
         g.drawText (juce::String (juce::roundToInt (bpm)) + " BPM", r.removeFromRight (52), juce::Justification::centredRight);
     }
 
-    g.setColour (juce::Colours::white.withAlpha (0.9f));
+    g.setColour (KngTheme::text);
     g.setFont (juce::Font (juce::FontOptions (13.0f)));
     g.drawText (f.getFileNameWithoutExtension(), r, juce::Justification::centredLeft, true);
 }
@@ -363,8 +369,7 @@ juce::String KitBrowser::getTooltipForRow (int row)
 //==============================================================================
 void KitBrowser::paint (juce::Graphics& g)
 {
-    g.setColour (juce::Colour (0xff24282c));
-    g.fillRoundedRectangle (getLocalBounds().toFloat(), 6.0f);
+    g.fillAll (KngTheme::panel);
 }
 
 void KitBrowser::resized()
