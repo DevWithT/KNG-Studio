@@ -2,6 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "KngTheme.h"
+#include "KngFonts.h"
 
 /** One dark theme for every window in the app: flat buttons, arc knobs, slim sliders. Colors come from KngTheme. */
 class KngLookAndFeel : public juce::LookAndFeel_V4
@@ -53,6 +54,16 @@ public:
     juce::Font getPopupMenuFont() override               { return juce::Font (juce::FontOptions (14.0f)); }
     juce::Font getComboBoxFont (juce::ComboBox&) override { return juce::Font (juce::FontOptions (13.0f)); }
 
+    // Every font without its own typeface (the whole main UI) uses Inter.
+    // Plugin faces set their own typeface and are not affected.
+    juce::Typeface::Ptr getTypefaceForFont (const juce::Font& font) override
+    {
+        if (auto tf = KngFonts::get (font.isBold() ? KngFonts::interSemiBold : KngFonts::interRegular))
+            return tf;
+
+        return juce::LookAndFeel_V4::getTypefaceForFont (font);
+    }
+
     //==============================================================================
     // Flat buttons: small radius, thin dark outline, light hover
     void drawButtonBackground (juce::Graphics& g, juce::Button& button, const juce::Colour& background,
@@ -67,10 +78,33 @@ public:
             c = c.brighter (0.08f);
 
         g.setColour (c);
-        g.fillRoundedRectangle (r, 3.0f);
+        g.fillRoundedRectangle (r, KngTheme::radius);
 
-        g.setColour (juce::Colours::black.withAlpha (0.35f));
-        g.drawRoundedRectangle (r, 3.0f, 1.0f);
+        g.setColour (juce::Colours::black.withAlpha (0.3f));
+        g.drawRoundedRectangle (r, KngTheme::radius, 1.0f);
+    }
+
+    //==============================================================================
+    // Dropdown boxes: rounded, with a small chevron
+    void drawComboBox (juce::Graphics& g, int width, int height, bool, int, int, int, int,
+                       juce::ComboBox& box) override
+    {
+        auto r = juce::Rectangle<float> (0.0f, 0.0f, (float) width, (float) height).reduced (0.5f);
+
+        g.setColour (box.findColour (juce::ComboBox::backgroundColourId));
+        g.fillRoundedRectangle (r, KngTheme::radius);
+        g.setColour (box.findColour (juce::ComboBox::outlineColourId));
+        g.drawRoundedRectangle (r, KngTheme::radius, 1.0f);
+
+        const float cx = (float) width - 14.0f;
+        const float cy = (float) height * 0.5f;
+        juce::Path arrow;
+        arrow.startNewSubPath (cx - 3.5f, cy - 1.5f);
+        arrow.lineTo (cx, cy + 2.0f);
+        arrow.lineTo (cx + 3.5f, cy - 1.5f);
+
+        g.setColour (box.findColour (juce::ComboBox::arrowColourId).withAlpha (box.isEnabled() ? 1.0f : 0.3f));
+        g.strokePath (arrow, juce::PathStrokeType (1.6f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
     }
 
     //==============================================================================
@@ -139,9 +173,9 @@ public:
                                                  : juce::Point<float> (x + width * 0.5f, sliderPos));
 
         g.setColour (KngTheme::text);
-        g.fillRoundedRectangle (thumb, 2.0f);
+        g.fillRoundedRectangle (thumb, 3.0f);
         g.setColour (juce::Colours::black.withAlpha (0.4f));
-        g.drawRoundedRectangle (thumb, 2.0f, 1.0f);
+        g.drawRoundedRectangle (thumb, 3.0f, 1.0f);
 
         if (! horizontal)
         {
@@ -157,9 +191,9 @@ public:
         juce::Rectangle<float> r (0.0f, 0.0f, (float) width, (float) height);
 
         g.setColour (KngTheme::inset);
-        g.fillRoundedRectangle (r, 3.0f);
+        g.fillRoundedRectangle (r, KngTheme::radius);
         g.setColour (KngTheme::line2);
-        g.drawRoundedRectangle (r.reduced (0.5f), 3.0f, 1.0f);
+        g.drawRoundedRectangle (r.reduced (0.5f), KngTheme::radius, 1.0f);
 
         g.setColour (KngTheme::text);
         g.setFont (juce::Font (juce::FontOptions (13.0f)));

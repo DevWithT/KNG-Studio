@@ -14,6 +14,9 @@ namespace KngFonts
             case spaceGrotesk: return "SpaceGrotesk-Bold.ttf";
             case sora:         return "Sora-ExtraBold.ttf";
             case mono:         return "JetBrainsMono-Bold.ttf";
+            case interRegular:  return "Inter-Regular.ttf";
+            case interMedium:   return "Inter-Medium.ttf";
+            case interSemiBold: return "Inter-SemiBold.ttf";
             default:           break;
         }
 

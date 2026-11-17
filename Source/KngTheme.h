@@ -5,6 +5,9 @@
 /** Flat Dark colors. Every restyled screen reads its colors from here. */
 namespace KngTheme
 {
+    // Shape
+    inline constexpr float radius = 5.0f;     // corner radius for buttons, boxes and cards
+
     // Surfaces
     inline const juce::Colour bg        { 0xff1f2023 };   // window and arrangement background
     inline const juce::Colour menu      { 0xff232427 };   // menu bar and status bar
