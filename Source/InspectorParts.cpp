@@ -1,6 +1,7 @@
 #include "InspectorParts.h"
 #include "GenericPluginPanel.h"
 #include "InspectorCards.h"
+#include "KngTheme.h"
 
 namespace te = tracktion;
 
@@ -29,7 +30,7 @@ ParamKnob::ParamKnob (EditSession& sessionToUse, te::AutomatableParameter::Ptr p
     label.setText (param->getParameterName(), juce::dontSendNotification);
     label.setFont (juce::Font (juce::FontOptions (11.0f)));
     label.setJustificationType (juce::Justification::centred);
-    label.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.6f));
+    label.setColour (juce::Label::textColourId, KngTheme::muted);
     label.setInterceptsMouseClicks (false, false);
     label.setMinimumHorizontalScale (0.7f);
 
@@ -81,21 +82,22 @@ void EffectRow::openPlugin (EditSession& session, te::Plugin& p, juce::Component
 void EffectRow::paint (juce::Graphics& g)
 {
     auto r = getLocalBounds().toFloat();
-    g.setColour (juce::Colour (0xff2c3137));
-    g.fillRoundedRectangle (r, 6.0f);
+    g.setColour (KngTheme::inset);
+    g.fillRoundedRectangle (r, 3.0f);
 
+    // On/off square: accent when on
     const bool on = plugin->isEnabled();
-    g.setColour (on ? juce::Colour (0xff5ad45a) : juce::Colours::white.withAlpha (0.25f));
-    g.fillEllipse (12.0f, r.getCentreY() - 4.0f, 8.0f, 8.0f);
+    g.setColour (on ? KngTheme::accent : KngTheme::line2);
+    g.fillRoundedRectangle (juce::Rectangle<float> (11.0f, r.getCentreY() - 5.0f, 10.0f, 10.0f), 2.0f);
 
     // The plugin's own color chip (dim when it's bypassed)
     kngDrawChip (g, juce::Rectangle<float> (28.0f, r.getCentreY() - 11.0f, 22.0f, 22.0f), kngIdentityFor (*plugin), on ? 1.0f : 0.4f);
 
     auto text = getLocalBounds().withTrimmedLeft (58).withTrimmedRight (10);
     g.setFont (juce::Font (juce::FontOptions (13.0f)));
-    g.setColour (juce::Colours::white.withAlpha (0.55f));
+    g.setColour (KngTheme::muted);
     g.drawText ("Open", text.removeFromRight (44), juce::Justification::centredRight);
-    g.setColour (juce::Colours::white.withAlpha (on ? 0.92f : 0.45f));
+    g.setColour (on ? KngTheme::text : KngTheme::muted);
     g.drawText (plugin->getName(), text, juce::Justification::centredLeft, true);
 }
 

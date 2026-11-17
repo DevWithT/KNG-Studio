@@ -58,7 +58,7 @@ private:
     static constexpr int maxRowHeight = 160;
     static constexpr int autoHeight   = 80;
     static constexpr int headerWidth  = 240;
-    static constexpr int gap          = 4;
+    static constexpr int gap          = 1;
     static constexpr int folderHeight = 30;
     static constexpr int indent       = 10;
 

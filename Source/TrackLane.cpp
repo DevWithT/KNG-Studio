@@ -1,4 +1,5 @@
 #include "TrackLane.h"
+#include "KngTheme.h"
 
 namespace te = tracktion;
 
@@ -10,10 +11,10 @@ static juce::Colour clipColourFor (te::Clip& clip)
         const auto c = t->getColour();
 
         if (c.getAlpha() > 0)
-            return c.withAlpha (1.0f).darker (0.2f);
+            return c.withAlpha (1.0f);
     }
 
-    return juce::Colour (0xff3a6ea5);
+    return KngTheme::laneBlue;
 }
 
 TrackLane::TrackLane (EditSession& sessionToUse, int trackIndexToUse)
@@ -131,14 +132,14 @@ void TrackLane::syncRecordingThumb()
 //==============================================================================
 void TrackLane::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colour (0xff2a2a2a));
+    g.fillAll (KngTheme::panel2);
 
     // Loop region tint
     if (session.isLooping() && session.getLoopEnd() > session.getLoopStart())
     {
         const int lx1 = timeToX (session.getLoopStart());
         const int lx2 = timeToX (session.getLoopEnd());
-        g.setColour (juce::Colour (0xff2e7d32).withAlpha (0.12f));
+        g.setColour (KngTheme::accent.withAlpha (0.08f));
         g.fillRect (lx1, 0, juce::jmax (1, lx2 - lx1), getHeight());
     }
 
@@ -148,7 +149,7 @@ void TrackLane::paint (juce::Graphics& g)
     drawBox (g);
 
     const int px = timeToX (session.getTransport().getPosition().inSeconds());
-    g.setColour (juce::Colours::yellow);
+    g.setColour (KngTheme::accent);
     g.fillRect (px, 0, 2, getHeight());
 }
 
@@ -178,14 +179,14 @@ void TrackLane::drawGrid (juce::Graphics& g)
         if (next <= bar)
             break;
 
-        g.setColour (juce::Colours::white.withAlpha (0.10f));
+        g.setColour (KngTheme::muted.withAlpha (0.18f));
         g.drawVerticalLine (timeToX (bar), 0.0f, (float) getHeight());
 
         if (showBeats)
         {
             const double b1 = ts.toBeats (te::TimePosition::fromSeconds (bar)).inBeats();
             const double b2 = ts.toBeats (te::TimePosition::fromSeconds (next)).inBeats();
-            g.setColour (juce::Colours::white.withAlpha (0.04f));
+            g.setColour (KngTheme::muted.withAlpha (0.07f));
 
             for (double b = std::floor (b1) + 1.0; b < b2 - 1.0e-6; b += 1.0)
                 g.drawVerticalLine (timeToX (ts.toTime (te::BeatPosition::fromBeats (b)).inSeconds()),
@@ -197,7 +198,7 @@ void TrackLane::drawGrid (juce::Graphics& g)
 }
 
 // Mini note preview for MIDI clips
-static void drawMidiNotes (juce::Graphics& g, te::Clip& clip, juce::Rectangle<int> area,
+static void drawMidiNotes (juce::Graphics& g, te::Clip& clip, juce::Rectangle<int> area, juce::Colour noteColour,
                            const std::function<int (double)>& toX)
 {
     auto* mc = dynamic_cast<te::MidiClip*> (&clip);
@@ -213,7 +214,7 @@ static void drawMidiNotes (juce::Graphics& g, te::Clip& clip, juce::Rectangle<in
     const auto clipStart = clip.getPosition().getStart();
     const auto clipEnd   = clip.getPosition().getEnd();
 
-    g.setColour (juce::Colours::white.withAlpha (0.85f));
+    g.setColour (noteColour);
 
     for (auto* n : seq.getNotes())
     {
@@ -228,7 +229,7 @@ static void drawMidiNotes (juce::Graphics& g, te::Clip& clip, juce::Rectangle<in
 
         const int x1 = toX (t1.inSeconds());
         const int x2 = toX (t2.inSeconds());
-        const float y = area.getY() + 4.0f + (1.0f - (n->getNoteNumber() - lo) / span) * (area.getHeight() - 10.0f);
+        const float y = area.getY() + 18.0f + (1.0f - (n->getNoteNumber() - lo) / span) * (area.getHeight() - 24.0f);
 
         g.fillRect ((float) x1, y, (float) juce::jmax (2, x2 - x1), 3.0f);
     }
@@ -258,8 +259,18 @@ void TrackLane::drawClips (juce::Graphics& g)
         juce::Rectangle<int> area (x1, 0, juce::jmax (1, x2 - x1), getHeight());
 
         const auto base = clipColourFor (*ct.clip);
-        g.setColour (selected ? base.brighter (0.3f) : base);
+
+        // Tinted body, solid name band along the top
+        g.setColour (base.withAlpha (selected ? 0.34f : 0.22f));
         g.fillRect (area);
+
+        const auto band = area.withHeight (juce::jmin (14, area.getHeight()));
+        g.setColour (base);
+        g.fillRect (band);
+        g.setColour (KngTheme::ink);
+        g.setFont (juce::Font (juce::FontOptions (10.5f, juce::Font::bold)));
+        g.drawText (ct.clip->getName(), band.reduced (5, 0), juce::Justification::centredLeft, true);
+        g.setFont (juce::Font (juce::FontOptions (11.0f)));
 
         // Only draw the visible part of the waveform
         if (ct.thumb != nullptr)
@@ -272,18 +283,18 @@ void TrackLane::drawClips (juce::Graphics& g)
             {
                 const int vx1 = timeToX (visStart);
                 const int vx2 = timeToX (visEnd);
-                juce::Rectangle<int> visArea (vx1, 4, juce::jmax (1, vx2 - vx1), juce::jmax (1, getHeight() - 8));
+                juce::Rectangle<int> visArea (vx1, 16, juce::jmax (1, vx2 - vx1), juce::jmax (1, getHeight() - 20));
 
                 te::TimeRange sourceRange (te::TimePosition::fromSeconds (offset + (visStart - clipStart)),
                                            te::TimePosition::fromSeconds (offset + (visEnd - clipStart)));
 
-                g.setColour (juce::Colours::white.withAlpha (0.85f));
+                g.setColour (base);
                 ct.thumb->drawChannel (g, visArea, sourceRange, 0, 1.0f);
             }
         }
 
         drawFades (g, *ct.clip, area);
-        drawMidiNotes (g, *ct.clip, area, [this] (double s) { return timeToX (s); });
+        drawMidiNotes (g, *ct.clip, area, base, [this] (double s) { return timeToX (s); });
 
         // Take label
         if (auto* wac = dynamic_cast<te::WaveAudioClip*> (ct.clip.get()))
@@ -294,7 +305,7 @@ void TrackLane::drawClips (juce::Graphics& g)
             {
                 g.setColour (juce::Colours::white);
                 g.drawText ("Take " + juce::String (wac->getCurrentTake() + 1) + "/" + juce::String (numTakes),
-                            area.reduced (12, 2).removeFromTop (14), juce::Justification::left);
+                            area.withTrimmedTop (16).reduced (12, 2).removeFromTop (14), juce::Justification::left);
             }
         }
 
@@ -322,12 +333,12 @@ void TrackLane::drawClips (juce::Graphics& g)
 
         if (selected)
         {
-            g.setColour (juce::Colours::white);
+            g.setColour (KngTheme::accent);
             g.drawRect (area, 2);
         }
         else
         {
-            g.setColour (juce::Colours::black);
+            g.setColour (base);
             g.drawRect (area);
         }
     }

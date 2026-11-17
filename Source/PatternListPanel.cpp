@@ -1,4 +1,5 @@
 #include "PatternListPanel.h"
+#include "KngTheme.h"
 
 PatternListPanel::PatternListPanel (EditSession& sessionToUse)
     : session (sessionToUse)
@@ -71,10 +72,11 @@ void PatternListPanel::timerCallback()
 //==============================================================================
 void PatternListPanel::paint (juce::Graphics& g)
 {
-    g.setColour (juce::Colour (0xff24282c));
-    g.fillRoundedRectangle (getLocalBounds().toFloat(), 6.0f);
+    g.fillAll (KngTheme::panel);
+    g.setColour (KngTheme::line);
+    g.drawVerticalLine (getWidth() - 1, 0.0f, (float) getHeight());
 
-    g.setColour (juce::Colours::white.withAlpha (0.45f));
+    g.setColour (KngTheme::muted);
     g.setFont (juce::Font (juce::FontOptions (11.0f, juce::Font::bold)));
     g.drawText ("PATTERNS", 12, 0, getWidth() - 24, headerHeight, juce::Justification::centredLeft);
 
@@ -86,10 +88,10 @@ void PatternListPanel::paint (juce::Graphics& g)
 
         if (p == current)
         {
-            g.setColour (juce::Colour (0xff2f3d4c));
-            g.fillRoundedRectangle (r.toFloat(), 5.0f);
-            g.setColour (juce::Colour (0xff3a8ee6));
-            g.drawRoundedRectangle (r.toFloat().reduced (0.5f), 5.0f, 1.0f);
+            g.setColour (KngTheme::selection);
+            g.fillRoundedRectangle (r.toFloat(), 2.0f);
+            g.setColour (KngTheme::accent);
+            g.drawRoundedRectangle (r.toFloat().reduced (0.5f), 2.0f, 1.0f);
         }
 
         auto inner = r.reduced (8, 0);
@@ -99,13 +101,13 @@ void PatternListPanel::paint (juce::Graphics& g)
         juce::Path tri;
         tri.addTriangle (play.getX(), play.getCentreY() - 5.0f, play.getX(), play.getCentreY() + 5.0f,
                          play.getX() + 9.0f, play.getCentreY());
-        g.setColour (juce::Colours::white.withAlpha (0.6f));
+        g.setColour (KngTheme::muted);
         g.fillPath (tri);
         inner.removeFromRight (6);
 
         const int bars = session.getPatternBars (p);
         g.setFont (juce::Font (juce::FontOptions (11.0f)));
-        g.setColour (juce::Colours::white.withAlpha (0.45f));
+        g.setColour (KngTheme::muted);
         g.drawText (juce::String (bars) + (bars == 1 ? " bar" : " bars"), inner.removeFromRight (40),
                     juce::Justification::centredRight);
 
@@ -115,7 +117,7 @@ void PatternListPanel::paint (juce::Graphics& g)
         inner.removeFromLeft (8);
 
         g.setFont (juce::Font (juce::FontOptions (13.0f)));
-        g.setColour (juce::Colours::white.withAlpha (0.9f));
+        g.setColour (KngTheme::text);
         g.drawText (session.getPatternName (p), inner, juce::Justification::centredLeft, true);
     }
 }
@@ -186,9 +188,9 @@ void PatternListPanel::showMenu (int pattern)
 
     struct Swatch { const char* name; juce::uint32 argb; };
     const Swatch swatches[] = {
-        { "Blue",   0xff3a6ea5 }, { "Red",    0xffc0392b }, { "Orange", 0xffd35400 },
-        { "Yellow", 0xffc9a227 }, { "Green",  0xff2e8b57 }, { "Teal",   0xff16a085 },
-        { "Purple", 0xff8e44ad }, { "Pink",   0xffc2185b }, { "Grey",   0xff607d8b }
+        { "Orange", 0xffc97d56 }, { "Yellow", 0xffc0a054 }, { "Blue",   0xff7c86c9 },
+        { "Teal",   0xff5fa8a0 }, { "Green",  0xff809670 }, { "Pink",   0xffcd6e82 },
+        { "Purple", 0xffa075b0 }, { "Brown",  0xffac8a6e }, { "Grey",   0xff7d848c }
     };
 
     juce::PopupMenu colours;

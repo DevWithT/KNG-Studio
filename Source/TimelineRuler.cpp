@@ -153,7 +153,7 @@ void TimelineRuler::paint (juce::Graphics& g)
 
     // Playhead
     const int px = timeToX (session.getTransport().getPosition().inSeconds());
-    g.setColour (juce::Colours::yellow);
+    g.setColour (KngTheme::accent);
     g.fillRect (px, 0, 2, getHeight());
 }
 

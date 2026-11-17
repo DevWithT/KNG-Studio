@@ -1,5 +1,6 @@
 #include "MasterStrip.h"
 #include "VolumeHelpers.h"
+#include "KngTheme.h"
 
 MasterStrip::MasterStrip (EditSession& sessionToUse)
     : session (sessionToUse)
@@ -48,8 +49,9 @@ MasterStrip::MasterStrip (EditSession& sessionToUse)
 
 void MasterStrip::paint (juce::Graphics& g)
 {
-    g.setColour (juce::Colour (0xff3a3f44));
-    g.fillRoundedRectangle (getLocalBounds().toFloat(), 4.0f);
+    g.fillAll (KngTheme::panel);
+    g.setColour (KngTheme::line);
+    g.drawHorizontalLine (0, 0.0f, (float) getWidth());
 }
 
 void MasterStrip::resized()

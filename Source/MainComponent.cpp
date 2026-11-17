@@ -234,8 +234,8 @@ void MainComponent::resized()
 
     area.removeFromBottom (6);
 
-    // Ruler lines up with the track lanes (TracksView headerWidth 240 + gap 4)
-    constexpr int laneOffset = 244;
+    // Ruler lines up with the track lanes (TracksView headerWidth 240 + gap 1)
+    constexpr int laneOffset = 241;
     auto markerRow = area.removeFromTop (18);
 
     if (markerBar != nullptr)
