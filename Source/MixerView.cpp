@@ -2,6 +2,7 @@
 #include "VolumeHelpers.h"
 #include "PluginBrowser.h"
 #include "GenericPluginPanel.h"
+#include "KngTheme.h"
 #include <map>
 
 namespace te = tracktion;
@@ -34,7 +35,8 @@ MixerStrip::MixerStrip (EditSession& sessionToUse, int trackIndexToUse)
     fxButton.setVisible (false);
 
     nameLabel.setJustificationType (juce::Justification::centred);
-    nameLabel.setFont (juce::Font (juce::FontOptions (13.0f)));
+    nameLabel.setFont (juce::Font (juce::FontOptions (12.5f, juce::Font::bold)));
+    nameLabel.setColour (juce::Label::textColourId, KngTheme::ink);
 
     for (auto* l : { &sendLabel, &panLabel })
     {
@@ -57,8 +59,8 @@ MixerStrip::MixerStrip (EditSession& sessionToUse, int trackIndexToUse)
     // Mute and solo
     muteButton.setClickingTogglesState (false);
     soloButton.setClickingTogglesState (false);
-    muteButton.setColour (juce::TextButton::buttonOnColourId, juce::Colours::orange);
-    soloButton.setColour (juce::TextButton::buttonOnColourId, juce::Colours::gold);
+    muteButton.setColour (juce::TextButton::buttonOnColourId, KngTheme::accent);
+    soloButton.setColour (juce::TextButton::buttonOnColourId, KngTheme::laneYellow);
 
     muteButton.onClick = [this]
     {
@@ -199,26 +201,24 @@ void MixerStrip::paint (juce::Graphics& g)
 {
     auto r = getLocalBounds().toFloat();
 
-    g.setColour (isMaster()                       ? juce::Colour (0xff3a3530)
-               : isBus                            ? juce::Colour (0xff3b3548)
-               : session.isMidiTrack (trackIndex) ? juce::Colour (0xff34403a)
-                                                  : juce::Colour (0xff3a3f44));
-    g.fillRoundedRectangle (r, 4.0f);
+    g.setColour (KngTheme::panel);
+    g.fillRect (r);
 
-    // Track colour along the top
+    // Header band: the track's color (accent for the master), with the name on it
+    juce::Colour band = isMaster() ? KngTheme::accent
+                      : isBus      ? juce::Colour (0xff8c84a6)
+                                   : KngTheme::laneGrey;
+
     if (! isMaster())
-    {
         if (auto* t = session.getTrack (trackIndex))
-        {
-            const auto c = t->getColour();
+            if (t->getColour().getAlpha() > 0)
+                band = t->getColour().withAlpha (1.0f);
 
-            if (c.getAlpha() > 0)
-            {
-                g.setColour (c.withAlpha (1.0f));
-                g.fillRoundedRectangle (r.withHeight (5.0f), 2.0f);
-            }
-        }
-    }
+    g.setColour (band);
+    g.fillRect (r.withHeight (32.0f));
+
+    g.setColour (KngTheme::line);
+    g.drawRect (r, 1.0f);
 }
 
 void MixerStrip::resized()
@@ -316,7 +316,7 @@ void MixerView::rebuild()
 
 void MixerView::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colour (0xff1e2124));
+    g.fillAll (KngTheme::panel2);
 }
 
 void MixerView::resized()
@@ -338,7 +338,7 @@ void MixerView::resized()
 
 //==============================================================================
 MixerWindow::MixerWindow (EditSession& session)
-    : DocumentWindow ("Mixer", juce::Colour (0xff1e2124), DocumentWindow::allButtons)
+    : DocumentWindow ("Mixer", KngTheme::bg, DocumentWindow::allButtons)
 {
     setUsingNativeTitleBar (true);
     setContentOwned (new MixerView (session), true);

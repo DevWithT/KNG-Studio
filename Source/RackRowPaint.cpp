@@ -3,6 +3,7 @@
 #include "VolumeHelpers.h"
 #include "KngSamplerPlugin.h"
 #include "KngSynthPlugin.h"
+#include "KngTheme.h"
 #include <map>
 
 namespace te = tracktion;
@@ -12,14 +13,14 @@ void RackRow::paint (juce::Graphics& g)
 {
     auto r = getLocalBounds().toFloat();
 
-    g.setColour (juce::Colour (0xff24282c));
-    g.fillRoundedRectangle (r, 5.0f);
+    g.setColour (KngTheme::panel);
+    g.fillRoundedRectangle (r, 2.0f);
 
     // Track colour along the left edge
     if (auto* at = getAudioTrack())
     {
         const auto c = at->getColour();
-        g.setColour (c.getAlpha() > 0 ? c.withAlpha (1.0f) : juce::Colour (0xff3a8ee6));
+        g.setColour (c.getAlpha() > 0 ? c.withAlpha (1.0f) : KngTheme::laneGrey);
         g.fillRoundedRectangle (r.withWidth (5.0f), 2.0f);
     }
 
@@ -75,9 +76,9 @@ void RackRow::paintDrumSummary (juce::Graphics& g, te::MidiClip* clip)
         const int x2 = lane.getX() + (step + 1) * lane.getWidth() / steps;
         auto cell = juce::Rectangle<int> (x1, lane.getY(), x2 - x1, lane.getHeight()).reduced (1).toFloat();
 
-        g.setColour (hit[step]            ? juce::Colour (0xff3a8ee6)
-                   : (step / 4) % 2 == 0  ? juce::Colour (0xff30353a)
-                                          : juce::Colour (0xff3a3034));
+        g.setColour (hit[step]            ? KngTheme::accent
+                   : (step / 4) % 2 == 0  ? KngTheme::chrome
+                                          : KngTheme::btn);
         g.fillRoundedRectangle (cell, 2.0f);
 
         if (step == playStep)
@@ -97,7 +98,7 @@ void RackRow::paintDrumRows (juce::Graphics& g, te::MidiClip* clip)
 
     if (pads.isEmpty())
     {
-        g.setColour (juce::Colours::white.withAlpha (0.4f));
+        g.setColour (KngTheme::muted);
         g.setFont (juce::Font (juce::FontOptions (12.0f)));
         g.drawText ("Drop a kit folder here from the Browser, or click Load Kit.",
                     getLocalBounds().withTrimmedTop (rowHeight).withHeight (padRowHeight).reduced (30, 0),
@@ -129,7 +130,7 @@ void RackRow::paintDrumRows (juce::Graphics& g, te::MidiClip* clip)
         const int pad = pads[sub];
         const int y = rowHeight + sub * padRowHeight;
 
-        g.setColour (juce::Colours::white.withAlpha (0.8f));
+        g.setColour (KngTheme::text);
         g.drawFittedText (session.getPadName (idx, pad), 30, y, headerWidth - 40, padRowHeight,
                           juce::Justification::centredLeft, 1);
 
@@ -140,11 +141,11 @@ void RackRow::paintDrumRows (juce::Graphics& g, te::MidiClip* clip)
             if (velocity[pad][step] > 0)
             {
                 const float v = velocity[pad][step] / 127.0f;
-                g.setColour (juce::Colour (0xff3a8ee6).interpolatedWith (juce::Colour (0xff9fd4ff), v * 0.6f));
+                g.setColour (KngTheme::accent.darker (0.6f * (1.0f - v)));
             }
             else
             {
-                g.setColour ((step / 4) % 2 == 0 ? juce::Colour (0xff353a40) : juce::Colour (0xff43363a));
+                g.setColour ((step / 4) % 2 == 0 ? KngTheme::chrome : KngTheme::btn);
             }
 
             g.fillRoundedRectangle (cell, 3.0f);
@@ -162,12 +163,12 @@ void RackRow::paintMelodic (juce::Graphics& g, te::MidiClip* clip)
 {
     auto lane = getLaneArea().reduced (0, 5);
 
-    g.setColour (juce::Colour (0xff1b1d20));
+    g.setColour (KngTheme::inset);
     g.fillRoundedRectangle (lane.toFloat(), 4.0f);
 
     if (clip == nullptr || clip->getSequence().getNumNotes() == 0)
     {
-        g.setColour (juce::Colours::white.withAlpha (0.35f));
+        g.setColour (KngTheme::muted);
         g.setFont (juce::Font (juce::FontOptions (12.0f)));
         g.drawText ("Click to write notes for this pattern", lane, juce::Justification::centred);
         return;
@@ -180,7 +181,7 @@ void RackRow::paintMelodic (juce::Graphics& g, te::MidiClip* clip)
     const int lo = range.getStart() - 1;
     const float span = (float) juce::jmax (8, range.getEnd() + 1 - lo);
 
-    g.setColour (juce::Colour (0xff3a8ee6));
+    g.setColour (KngTheme::accent);
 
     for (auto* n : clip->getSequence().getNotes())
     {
@@ -204,7 +205,7 @@ void RackRow::paintMelodic (juce::Graphics& g, te::MidiClip* clip)
     {
         const double beat = clip->getContentBeatAtTime (session.getTransport().getPosition()).inBeats() - start;
         const int x = lane.getX() + juce::roundToInt (beat / lengthBeats * lane.getWidth());
-        g.setColour (juce::Colours::yellow);
+        g.setColour (KngTheme::accent);
         g.fillRect (x, lane.getY(), 2, lane.getHeight());
     }
 }

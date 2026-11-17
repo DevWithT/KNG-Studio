@@ -1,6 +1,7 @@
 #include "RackView.h"
 #include "PluginBrowser.h"
 #include "KitBrowser.h"
+#include "KngTheme.h"
 
 namespace te = tracktion;
 
@@ -333,14 +334,16 @@ void RackView::filesDropped (const juce::StringArray& files, int, int)
 //==============================================================================
 void RackView::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colour (0xff1b1d20));
+    g.fillAll (KngTheme::panel2);
 
-    g.setColour (juce::Colour (0xff26292d));
+    g.setColour (KngTheme::panel);
     g.fillRect (getLocalBounds().removeFromTop (toolbarHeight));
+    g.setColour (KngTheme::line);
+    g.drawHorizontalLine (toolbarHeight - 1, 0.0f, (float) getWidth());
 
     if (rows.isEmpty())
     {
-        g.setColour (juce::Colours::white.withAlpha (0.4f));
+        g.setColour (KngTheme::muted);
         g.setFont (juce::Font (juce::FontOptions (15.0f)));
         g.drawText ("Drag samples here from the Browser, or click + Add a sound or instrument.",
                     getLocalBounds().withTrimmedTop (toolbarHeight + addRowHeight + 12), juce::Justification::centred);
@@ -351,9 +354,9 @@ void RackView::paintOverChildren (juce::Graphics& g)
 {
     if (hovering)
     {
-        g.setColour (juce::Colour (0xff3a8ee6).withAlpha (0.12f));
+        g.setColour (KngTheme::accent.withAlpha (0.12f));
         g.fillRect (getLocalBounds().withTrimmedTop (toolbarHeight));
-        g.setColour (juce::Colour (0xff3a8ee6));
+        g.setColour (KngTheme::accent);
         g.drawRect (getLocalBounds().withTrimmedTop (toolbarHeight), 2);
     }
 }
