@@ -1,5 +1,6 @@
 #include "TrackHeader.h"
 #include "SendPopup.h"
+#include "KngTheme.h"
 
 namespace te = tracktion;
 
@@ -8,9 +9,9 @@ static void addColourItems (juce::PopupMenu& menu, EditSession& session, int idx
 {
     struct Swatch { const char* name; juce::uint32 argb; };
     static const Swatch swatches[] = {
-        { "Blue",   0xff3a6ea5 }, { "Red",    0xffc0392b }, { "Orange", 0xffd35400 },
-        { "Yellow", 0xffc9a227 }, { "Green",  0xff2e8b57 }, { "Teal",   0xff16a085 },
-        { "Purple", 0xff8e44ad }, { "Pink",   0xffc2185b }, { "Grey",   0xff607d8b }
+        { "Orange", 0xffc97d56 }, { "Yellow", 0xffc0a054 }, { "Blue",   0xff7c86c9 },
+        { "Teal",   0xff5fa8a0 }, { "Green",  0xff809670 }, { "Pink",   0xffcd6e82 },
+        { "Purple", 0xffa075b0 }, { "Brown",  0xffac8a6e }, { "Grey",   0xff7d848c }
     };
 
     auto* s = &session;
@@ -55,7 +56,11 @@ TrackHeader::TrackHeader (EditSession& sessionToUse, int trackIndexToUse)
       isBus (sessionToUse.isReverbBus (trackIndexToUse))
 {
     addAndMakeVisible (nameLabel);
-    nameLabel.setFont (juce::Font (juce::FontOptions (14.0f)));
+    nameLabel.setFont (juce::Font (juce::FontOptions (13.5f, juce::Font::bold)));
+    nameLabel.setColour (juce::Label::textColourId, KngTheme::ink);
+    nameLabel.setColour (juce::Label::textWhenEditingColourId, KngTheme::text);
+    nameLabel.setColour (juce::Label::backgroundWhenEditingColourId, KngTheme::inset);
+    nameLabel.setColour (juce::Label::outlineWhenEditingColourId, KngTheme::accent);
     nameLabel.setMinimumHorizontalScale (0.8f);
     nameLabel.setInterceptsMouseClicks (false, false);
     nameLabel.onTextChange = [this]
@@ -79,9 +84,17 @@ TrackHeader::TrackHeader (EditSession& sessionToUse, int trackIndexToUse)
         b->setClickingTogglesState (false);
     }
 
-    armButton.setColour (juce::TextButton::buttonOnColourId, juce::Colours::red);
-    muteButton.setColour (juce::TextButton::buttonOnColourId, juce::Colours::orange);
-    soloButton.setColour (juce::TextButton::buttonOnColourId, juce::Colours::gold);
+    for (auto* b : { &armButton, &muteButton, &soloButton })
+    {
+        b->setColour (juce::TextButton::buttonColourId, juce::Colours::black.withAlpha (0.2f));
+        b->setColour (juce::TextButton::textColourOffId, KngTheme::ink);
+        b->setColour (juce::TextButton::textColourOnId, juce::Colours::white);
+    }
+
+    armButton.setColour (juce::TextButton::buttonOnColourId, KngTheme::rec);
+    muteButton.setColour (juce::TextButton::buttonOnColourId, KngTheme::ink);
+    soloButton.setColour (juce::TextButton::buttonOnColourId, juce::Colour (0xfff2f2f2));
+    soloButton.setColour (juce::TextButton::textColourOnId, KngTheme::ink);
 
     armButton.onClick = [this] { session.setArmed (trackIndex, ! session.isArmed (trackIndex)); };
 
@@ -99,6 +112,10 @@ TrackHeader::TrackHeader (EditSession& sessionToUse, int trackIndexToUse)
 
     addChildComponent (inputBox);
     inputBox.setTextWhenNoChoicesAvailable ("No inputs");
+    inputBox.setColour (juce::ComboBox::backgroundColourId, juce::Colours::black.withAlpha (0.2f));
+    inputBox.setColour (juce::ComboBox::textColourId, KngTheme::ink);
+    inputBox.setColour (juce::ComboBox::outlineColourId, juce::Colours::transparentBlack);
+    inputBox.setColour (juce::ComboBox::arrowColourId, KngTheme::ink);
     inputBox.onChange = [this]
     {
         const int id = inputBox.getSelectedId();
@@ -162,7 +179,7 @@ void TrackHeader::timerCallback()
         const bool muted = t->isMuted (false);
         muteButton.setToggleState (muted, juce::dontSendNotification);
         soloButton.setToggleState (t->isSolo (false), juce::dontSendNotification);
-        nameLabel.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (muted ? 0.45f : 0.92f));
+        nameLabel.setColour (juce::Label::textColourId, KngTheme::ink.withAlpha (muted ? 0.6f : 0.95f));
 
         // Picks up undo/redo of a rename
         if (! nameLabel.isBeingEdited() && nameLabel.getText() != t->getName())
@@ -179,26 +196,37 @@ void TrackHeader::paint (juce::Graphics& g)
 {
     auto r = getLocalBounds().toFloat();
 
-    g.setColour (isBus ? juce::Colour (0xff3b3548) : juce::Colour (0xff3a3f44));
-    g.fillRoundedRectangle (r, 4.0f);
+    // The whole header takes the lane color (grey if the lane has none)
+    auto base = isBus ? juce::Colour (0xff8c84a6) : KngTheme::laneGrey;
+    bool muted = false;
 
-    // Color strip down the left edge (click it to pick a color)
     if (auto* t = session.getTrack (trackIndex))
     {
         const auto c = t->getColour();
-        g.setColour (c.getAlpha() > 0 ? c.withAlpha (1.0f) : juce::Colour (0xff5a6066));
-        g.fillRoundedRectangle (r.withWidth ((float) stripWidth), 2.0f);
+
+        if (c.getAlpha() > 0)
+            base = c.withAlpha (1.0f);
+
+        muted = t->isMuted (false);
     }
+
+    g.setColour (base.withAlpha (muted ? 0.5f : 1.0f));
+    g.fillRoundedRectangle (r, 2.0f);
+
+    // Darker strip down the left edge (click it to pick a color)
+    g.setColour (juce::Colours::black.withAlpha (0.18f));
+    g.fillRect (r.withWidth ((float) stripWidth));
 
     if (session.isArmed (trackIndex))
     {
-        g.setColour (juce::Colours::red.withAlpha (0.7f));
-        g.drawRoundedRectangle (r.reduced (1.0f), 4.0f, 2.0f);
+        g.setColour (KngTheme::rec);
+        g.drawRoundedRectangle (r.reduced (1.0f), 2.0f, 2.0f);
     }
     else if (session.getSelectedTrackIndex() == trackIndex)
     {
-        g.setColour (juce::Colour (0xff3a8ee6));
-        g.drawRoundedRectangle (r.reduced (1.0f), 4.0f, 2.0f);
+        // Selected lane: accent bar down the right edge
+        g.setColour (KngTheme::accent);
+        g.fillRect (r.removeFromRight (3.0f));
     }
 }
 

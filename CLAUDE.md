@@ -186,6 +186,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `KngFxView.cpp/.h`: ready-made panel for KngFxBase effects, built from their parameters.
 - `GenericPluginPanel.cpp/.h`: panel of sliders for plugins with no UI of their own.
 - `KngLookAndFeel.h`: the app's one dark theme: buttons, knobs, sliders.
+- `KngTheme.h`: Flat Dark color tokens (surfaces, text, accent, lane colors).
 - `KngFonts.cpp/.h`: the fonts built into the app for the plugin faces.
 - `KngPopOut.cpp/.h`: KNG plugin panels in their own windows; dock them back.
 - `KngPresets.cpp/.h`: user presets saved in Documents\KNG Studio\Presets, and KngPresetMenu.

@@ -1,5 +1,6 @@
 #include "TransportBar.h"
 #include "ExportDialog.h"
+#include "KngTheme.h"
 
 TransportBar::TransportBar (EditSession& sessionToUse)
     : session (sessionToUse)
@@ -15,17 +16,18 @@ TransportBar::TransportBar (EditSession& sessionToUse)
     recordButton.onClick = [this] { session.record(); };
 
     playButton.setColour (juce::TextButton::buttonOnColourId, juce::Colour (0xff2e8b57));
-    recordButton.setColour (juce::TextButton::buttonOnColourId, juce::Colours::red);
-    recordButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xffff6b6b));
+    recordButton.setColour (juce::TextButton::buttonOnColourId, KngTheme::rec);
+    recordButton.setColour (juce::TextButton::textColourOffId, KngTheme::rec);
 
     timeLabel.setJustificationType (juce::Justification::centred);
+    timeLabel.setColour (juce::Label::textColourId, KngTheme::text);
     timeLabel.setFont (juce::Font (juce::FontOptions (20.0f)));
     timeLabel.setText (formatTime (0.0), juce::dontSendNotification);
 
     addAndMakeVisible (barLabel);
     barLabel.setJustificationType (juce::Justification::centred);
     barLabel.setFont (juce::Font (juce::FontOptions (15.0f)));
-    barLabel.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.7f));
+    barLabel.setColour (juce::Label::textColourId, KngTheme::muted);
     barLabel.setTooltip ("Time at the playhead (minutes:seconds)");
     timeLabel.setTooltip ("Bar . beat . 16th at the playhead");
 
@@ -78,18 +80,12 @@ TransportBar::TransportBar (EditSession& sessionToUse)
     learnButton.setTooltip ("MIDI Learn (Ctrl+L): move a knob here, then twist one on your controller to link them");
     learnButton.onClick = [this] { session.setMidiLearn (! session.isMidiLearn()); };
 
-    addAndMakeVisible (rackButton);
-    addAndMakeVisible (mixerButton);
-    rackButton.setTooltip ("Show or hide the Rack (R)");
-    mixerButton.setTooltip ("Show or hide the Mixer (M)");
-    rackButton.onClick  = [this] { if (onShowRack) onShowRack(); };
-    mixerButton.onClick = [this] { if (onShowMixer) onShowMixer(); };
-
     for (auto* b : { &patternModeButton, &songModeButton })
     {
         addAndMakeVisible (b);
         b->setClickingTogglesState (false);
-        b->setColour (juce::TextButton::buttonOnColourId, juce::Colour (0xff3a8ee6));
+        b->setColour (juce::TextButton::buttonOnColourId, KngTheme::accent);
+        b->setColour (juce::TextButton::textColourOnId, KngTheme::accentInk);
     }
 
     patternModeButton.setTooltip ("Pattern: loop just the pattern you're editing");
@@ -271,10 +267,19 @@ juce::String TransportBar::formatTime (double seconds)
 //==============================================================================
 void TransportBar::paint (juce::Graphics& g)
 {
-    g.setColour (juce::Colour (0xff24282c));
-    g.fillRoundedRectangle (getLocalBounds().toFloat(), 6.0f);
+    g.fillAll (KngTheme::chrome);
 
-    g.setColour (juce::Colours::white.withAlpha (0.08f));
+    g.setColour (KngTheme::line);
+    g.drawHorizontalLine (getHeight() - 1, 0.0f, (float) getWidth());
+
+    // One inset box behind the bar.beat.16th and minutes:seconds readouts
+    const auto readout = timeLabel.getBounds().getUnion (barLabel.getBounds()).toFloat().reduced (0.0f, 2.0f);
+    g.setColour (KngTheme::inset);
+    g.fillRoundedRectangle (readout, 3.0f);
+    g.setColour (KngTheme::line);
+    g.drawRoundedRectangle (readout, 3.0f, 1.0f);
+
+    g.setColour (KngTheme::line2);
 
     for (int x : dividers)
         g.drawVerticalLine (x, 6.0f, (float) getHeight() - 6.0f);
@@ -284,12 +289,6 @@ void TransportBar::resized()
 {
     auto r = getLocalBounds().reduced (6, 4);
     dividers.clear();
-
-    // Rack and Mixer sit at the right end
-    mixerButton.setBounds (r.removeFromRight (80));
-    r.removeFromRight (4);
-    rackButton.setBounds (r.removeFromRight (80));
-    r.removeFromRight (8);
 
     auto place = [&r] (juce::Component& c, int w)
     {
