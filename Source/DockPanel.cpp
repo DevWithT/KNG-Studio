@@ -8,6 +8,7 @@
 #include "KngSamplerView.h"
 #include "KngSynthView.h"
 #include "KngSynthPlugin.h"
+#include "KngTheme.h"
 
 namespace te = tracktion;
 
@@ -39,11 +40,11 @@ void DockPanel::Slot::clear()
 
 void DockPanel::Slot::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colour (0xff1e2124));
+    g.fillAll (KngTheme::bg);
 
     if (content == nullptr)
     {
-        g.setColour (juce::Colours::white.withAlpha (0.4f));
+        g.setColour (KngTheme::muted);
         g.setFont (juce::Font (juce::FontOptions (14.0f)));
         g.drawText (message, getLocalBounds(), juce::Justification::centred);
     }
@@ -73,15 +74,11 @@ DockPanel::DockPanel()
         auto* slot = new Slot();
         slot->message = messages[i];
         slots[i] = slot;
-        tabs.addTab (baseTabNames()[i], juce::Colour (0xff24282c), slot, true);
+        tabs.addTab (baseTabNames()[i], KngTheme::panel2, slot, true);
     }
 
-    // No tab row: the Rack and Mixer buttons, the inspector and clicks on clips decide what shows here
+    // The built-in tab bar stays hidden; the tab row along the top of the dock (drawn in paint) replaces it
     tabs.setTabBarDepth (0);
-
-    addAndMakeVisible (titleLabel);
-    titleLabel.setFont (juce::Font (juce::FontOptions (14.0f, juce::Font::bold)));
-    titleLabel.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.85f));
     tabs.setOutline (0);
     addAndMakeVisible (tabs);
 
@@ -193,10 +190,8 @@ void DockPanel::showTab (Tab tab)
 
 void DockPanel::updateTitle()
 {
-    const auto name = tabs.getTabNames()[tabs.getCurrentTabIndex()];
-
-    if (titleLabel.getText() != name)
-        titleLabel.setText (name, juce::dontSendNotification);
+    // Redraw the tab row so names and the current tab stay in step
+    repaint (0, 0, getWidth(), stripHeight);
 }
 
 DockPanel::Tab DockPanel::getCurrentTab() const
@@ -251,15 +246,76 @@ void DockPanel::timerCallback()
     }
 }
 
+std::vector<std::pair<int, juce::Rectangle<int>>> DockPanel::tabLayout() const
+{
+    static const int order[] = { rackTab, mixerTab, pianoRollTab, instrumentTab, fxTab, effectTab, compTab };
+    const juce::Font font (juce::FontOptions (13.0f, juce::Font::bold));
+    const int current = tabs.getCurrentTabIndex();
+    std::vector<std::pair<int, juce::Rectangle<int>>> out;
+    int x = 6;
+
+    for (int i : order)
+    {
+        const bool always = i == rackTab || i == mixerTab;
+
+        if (! always && i != current && (slots[i] == nullptr || slots[i]->content == nullptr))
+            continue;
+
+        const int w = juce::jmin (240, juce::GlyphArrangement::getStringWidthInt (font, tabs.getTabNames()[i]) + 28);
+        out.push_back ({ i, juce::Rectangle<int> (x, 0, w, stripHeight) });
+        x += w;
+    }
+
+    return out;
+}
+
 void DockPanel::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colour (0xff1e2124));
+    g.fillAll (KngTheme::panel2);
+
+    // Tab row
+    g.setColour (KngTheme::panel);
+    g.fillRect (0, 0, getWidth(), stripHeight);
+    g.setColour (KngTheme::line);
+    g.drawHorizontalLine (stripHeight - 1, 0.0f, (float) getWidth());
+
+    const int current = tabs.getCurrentTabIndex();
+    g.setFont (juce::Font (juce::FontOptions (13.0f, juce::Font::bold)));
+
+    for (auto& t : tabLayout())
+    {
+        const bool on = t.first == current;
+
+        g.setColour (on ? KngTheme::text : KngTheme::muted);
+        g.drawText (tabs.getTabNames()[t.first], t.second.reduced (10, 0), juce::Justification::centredLeft, true);
+
+        if (on)
+        {
+            g.setColour (KngTheme::accent);
+            g.fillRect (t.second.getX() + 4, stripHeight - 3, t.second.getWidth() - 8, 2);
+        }
+    }
+}
+
+void DockPanel::mouseDown (const juce::MouseEvent& e)
+{
+    if (e.y >= stripHeight)
+        return;
+
+    for (auto& t : tabLayout())
+    {
+        if (t.second.contains (e.getPosition()))
+        {
+            showTab ((Tab) t.first);
+            return;
+        }
+    }
 }
 
 void DockPanel::resized()
 {
     auto r = getLocalBounds();
-    titleLabel.setBounds (r.removeFromTop (28).reduced (10, 0));
+    r.removeFromTop (stripHeight);
     tabs.setBounds (r);
 }
 

@@ -1,4 +1,5 @@
 #include "BlockLayer.h"
+#include "KngTheme.h"
 
 namespace te = tracktion;
 
@@ -22,7 +23,7 @@ static double gridFloor (EditSession& session, double seconds)
 
 // A block's real notes, from every sound in it (stretched blocks show each repeat). False if it has none.
 static bool drawBlockNotes (juce::Graphics& g, EditSession& session, const EditSession::PatternBlock& b,
-                            juce::Rectangle<float> area, int width, float alpha)
+                            juce::Rectangle<float> area, int width, juce::Colour noteColour, float alpha)
 {
     auto& ts = session.getEdit().tempoSequence;
     const auto clips = session.getBlockClips (b);
@@ -40,7 +41,7 @@ static bool drawBlockNotes (juce::Graphics& g, EditSession& session, const EditS
         return false;
 
     const float span = (float) juce::jmax (12, hi - lo + 1);
-    g.setColour (juce::Colours::white.withAlpha (alpha));
+    g.setColour (noteColour.withAlpha (alpha));
 
     for (auto* c : clips)
     {
@@ -171,33 +172,40 @@ void BlockLayer::paint (juce::Graphics& g)
         auto r = juce::Rectangle<int> (x1, 3, juce::jmax (4, x2 - x1), getHeight() - 6).toFloat().reduced (1.0f, 0.0f);
         const bool dragged = (moving || resizing) && b.pattern == dragBlock.pattern && std::abs (b.start - dragBlock.start) < 0.001;
         const auto colour = session.getPatternColour (b.pattern);
+        const float fade = muted ? 0.5f : dragged ? 0.4f : 1.0f;
 
-        g.setColour (colour.withAlpha (muted ? 0.3f : dragged ? 0.35f : 0.92f));
-        g.fillRoundedRectangle (r, 4.0f);
+        // Tinted body
+        g.setColour (colour.withAlpha (0.22f * fade));
+        g.fillRoundedRectangle (r, 2.0f);
 
-        // Name strip
-        auto strip = r.withHeight (16.0f);
-        g.setColour (juce::Colours::black.withAlpha (0.18f));
-        g.fillRoundedRectangle (strip, 4.0f);
-        g.setColour (juce::Colours::white.withAlpha (muted ? 0.5f : 1.0f));
-        g.setFont (juce::Font (juce::FontOptions (11.0f, juce::Font::bold)));
-        g.drawText (session.getPatternName (b.pattern), strip.toNearestInt().reduced (6, 0), juce::Justification::centredLeft, true);
+        // Solid name band along the top
+        auto band = r.withHeight (14.0f);
+        juce::Path top;
+        top.addRoundedRectangle (band.getX(), band.getY(), band.getWidth(), band.getHeight(), 2.0f, 2.0f, true, true, false, false);
+        g.setColour (colour.withAlpha (fade));
+        g.fillPath (top);
+
+        g.setColour (KngTheme::ink.withAlpha (fade));
+        g.setFont (juce::Font (juce::FontOptions (10.5f, juce::Font::bold)));
+        g.drawText (session.getPatternName (b.pattern), band.toNearestInt().reduced (5, 0), juce::Justification::centredLeft, true);
 
         // The pattern's real notes
         {
             juce::Graphics::ScopedSaveState clip (g);
             g.reduceClipRegion (r.toNearestInt());
 
-            if (! drawBlockNotes (g, session, b, r.withTrimmedTop (18.0f).reduced (2.0f, 3.0f), getWidth(), muted ? 0.3f : 0.9f))
+            if (! drawBlockNotes (g, session, b, r.withTrimmedTop (16.0f).reduced (2.0f, 3.0f), getWidth(), colour, fade))
             {
-                g.setColour (juce::Colours::white.withAlpha (0.45f));
+                g.setColour (KngTheme::muted.withAlpha (fade));
                 g.setFont (juce::Font (juce::FontOptions (11.0f)));
-                g.drawText ("Empty", r.withTrimmedTop (16.0f).toNearestInt(), juce::Justification::centred);
+                g.drawText ("Empty", r.withTrimmedTop (14.0f).toNearestInt(), juce::Justification::centred);
             }
         }
 
-        g.setColour (b.pattern == current ? juce::Colours::white : juce::Colours::black.withAlpha (0.35f));
-        g.drawRoundedRectangle (r, 4.0f, b.pattern == current ? 1.5f : 1.0f);
+        // Outline: accent for the pattern you're editing, lane color for the rest
+        const bool isCurrent = b.pattern == current;
+        g.setColour (isCurrent ? KngTheme::accent : colour.withAlpha (0.9f * fade));
+        g.drawRoundedRectangle (r, 2.0f, isCurrent ? 2.0f : 1.0f);
     }
 
     // Where a dragged block will land
@@ -207,10 +215,10 @@ void BlockLayer::paint (juce::Graphics& g)
         const int x2 = session.timeToX (dropTime + (dragBlock.end - dragBlock.start), getWidth());
         auto r = juce::Rectangle<int> (x1, 3, juce::jmax (4, x2 - x1), getHeight() - 6).toFloat();
 
-        g.setColour (session.getPatternColour (dragBlock.pattern).withAlpha (0.55f));
-        g.fillRoundedRectangle (r, 4.0f);
-        g.setColour (juce::Colours::white);
-        g.drawRoundedRectangle (r, 4.0f, 1.5f);
+        g.setColour (session.getPatternColour (dragBlock.pattern).withAlpha (0.45f));
+        g.fillRoundedRectangle (r, 2.0f);
+        g.setColour (KngTheme::accent);
+        g.drawRoundedRectangle (r, 2.0f, 1.5f);
     }
 
     // The new length while stretching
@@ -220,10 +228,10 @@ void BlockLayer::paint (juce::Graphics& g)
         const int x2 = session.timeToX (resizeEnd, getWidth());
         auto r = juce::Rectangle<int> (x1, 3, juce::jmax (4, x2 - x1), getHeight() - 6).toFloat();
 
-        g.setColour (session.getPatternColour (dragBlock.pattern).withAlpha (0.55f));
-        g.fillRoundedRectangle (r, 4.0f);
-        g.setColour (juce::Colours::white);
-        g.drawRoundedRectangle (r, 4.0f, 1.5f);
+        g.setColour (session.getPatternColour (dragBlock.pattern).withAlpha (0.45f));
+        g.fillRoundedRectangle (r, 2.0f);
+        g.setColour (KngTheme::accent);
+        g.drawRoundedRectangle (r, 2.0f, 1.5f);
     }
 }
 

@@ -2,6 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "EditSession.h"
+#include "KngTheme.h"
 
 //==============================================================================
 /** Tabbed panel docked along the bottom of the main window. */
@@ -27,6 +28,7 @@ public:
 
     void paint (juce::Graphics&) override;
     void resized() override;
+    void mouseDown (const juce::MouseEvent&) override;
 
 private:
     /** Holds whatever is open in one tab, or a hint when it's empty. */
@@ -46,9 +48,13 @@ private:
     void updateTitle();
     static juce::String getTrackName (tracktion::Track* track);
 
+    /** The tabs that are showing, left to right: tab index and its rectangle in the tab row. */
+    std::vector<std::pair<int, juce::Rectangle<int>>> tabLayout() const;
+
+    static constexpr int stripHeight = 30;
+
     EditSession* session = nullptr;
     juce::TabbedComponent tabs { juce::TabbedButtonBar::TabsAtTop };
-    juce::Label titleLabel;
     Slot* slots[numTabs] {};   // owned by the tabs
 
     // What each tab is showing, so it can clear itself if that gets deleted
@@ -75,7 +81,7 @@ public:
 
     void paint (juce::Graphics& g) override
     {
-        g.setColour (juce::Colours::white.withAlpha (0.18f));
+        g.setColour (KngTheme::line2);
         g.fillRoundedRectangle (getLocalBounds().withSizeKeepingCentre (60, 3).toFloat(), 1.5f);
     }
 
