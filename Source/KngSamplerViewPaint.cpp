@@ -208,4 +208,13 @@ void KngSamplerView::paintWave (juce::Graphics& g)
         g.drawText ("Drag the purple edges to set the loop", w.reduced (16.0f, 8.0f).removeFromBottom (14.0f),
                     juce::Justification::centredLeft, false);
     }
+
+    // Where the root note is set
+    if (w.getHeight() > 120.0f && w.getWidth() > 560.0f)
+    {
+        g.setFont (KngFonts::font (KngFonts::mono, 10.0f));
+        g.setColour (juce::Colour (0xff5d5672));
+        g.drawText ("Right-click a key to set the root note", w.reduced (16.0f, 8.0f).removeFromBottom (14.0f),
+                    juce::Justification::centredRight, false);
+    }
 }

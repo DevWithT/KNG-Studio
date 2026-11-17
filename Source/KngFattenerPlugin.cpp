@@ -26,12 +26,12 @@ static std::vector<KngPresetDef> fattenerPresets()
     using P = KngFattenerPlugin;
 
     return {
-        { "Default", {} },
-        { "Thick 808",         { { P::sub, 0.5f }, { P::punch, 0.2f }, { P::drive, 0.3f } } },
-        { "Hard Kick",         { { P::sub, 0.2f }, { P::punch, 0.8f }, { P::drive, 0.35f }, { P::tone, 0.25f }, { P::clip, 0.4f } } },
-        { "Distorted 808",     { { P::sub, 0.3f }, { P::punch, 0.4f }, { P::drive, 0.85f }, { P::tone, 0.3f }, { P::clip, 0.5f }, { P::output, -3.0f } } },
-        { "Club Sub",          { { P::sub, 0.8f }, { P::octave, 0.3f }, { P::punch, 0.1f }, { P::drive, 0.1f }, { P::tone, -0.4f } } },
-        { "Phone Speaker 808", { { P::sub, 0.2f }, { P::drive, 0.6f }, { P::tone, 0.5f }, { P::clip, 0.3f } } }
+        { "Default", { { P::fat, 0.0f } } },
+        { "Thick 808",         { { P::sub, 0.5f }, { P::punch, 0.2f }, { P::drive, 0.3f }, { P::fat, 0.0f } } },
+        { "Hard Kick",         { { P::sub, 0.2f }, { P::punch, 0.8f }, { P::drive, 0.35f }, { P::tone, 0.25f }, { P::clip, 0.4f }, { P::fat, 0.0f } } },
+        { "Distorted 808",     { { P::sub, 0.3f }, { P::punch, 0.4f }, { P::drive, 0.85f }, { P::tone, 0.3f }, { P::clip, 0.5f }, { P::output, -3.0f }, { P::fat, 0.0f } } },
+        { "Club Sub",          { { P::sub, 0.8f }, { P::octave, 0.3f }, { P::punch, 0.1f }, { P::drive, 0.1f }, { P::tone, -0.4f }, { P::fat, 0.0f } } },
+        { "Phone Speaker 808", { { P::sub, 0.2f }, { P::drive, 0.6f }, { P::tone, 0.5f }, { P::clip, 0.3f }, { P::fat, 0.0f } } }
     };
 }
 
