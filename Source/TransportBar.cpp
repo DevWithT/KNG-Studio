@@ -76,7 +76,7 @@ TransportBar::TransportBar (EditSession& sessionToUse)
 
     addAndMakeVisible (learnButton);
     learnButton.setClickingTogglesState (false);
-    learnButton.setColour (juce::TextButton::buttonOnColourId, juce::Colour (0xffc0392b));
+    learnButton.setColour (juce::TextButton::buttonOnColourId, KngTheme::accent);
     learnButton.setTooltip ("MIDI Learn (Ctrl+L): move a knob here, then twist one on your controller to link them");
     learnButton.onClick = [this] { session.setMidiLearn (! session.isMidiLearn()); };
 

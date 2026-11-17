@@ -26,6 +26,7 @@
 #include "PluginWindow.h"
 #include "MidiMapDialog.h"
 #include "KngPopOut.h"
+#include "KngTheme.h"
 
 MainComponent::MainComponent (tracktion::Engine& engineToUse)
     : engine (engineToUse)
@@ -63,8 +64,8 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
     for (auto* l : { &projectLabel, &deviceLabel })
     {
         addAndMakeVisible (l);
-        l->setFont (juce::Font (juce::FontOptions (12.0f)));
-        l->setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.6f));
+        l->setFont (juce::Font (juce::FontOptions (11.5f)));
+        l->setColour (juce::Label::textColourId, KngTheme::muted);
     }
 
     projectLabel.setJustificationType (juce::Justification::centredLeft);
@@ -77,7 +78,7 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
     };
     pluginBrowser = std::make_unique<PluginBrowser> (engine);
 
-    const juce::Colour tabColour (0xff24282c);
+    const juce::Colour tabColour (KngTheme::panel);
     browserTabs.addTab ("Sounds", tabColour, kitBrowser.get(), false);
     browserTabs.addTab ("Plugins", tabColour, pluginBrowser.get(), false);
     browserTabs.setTabBarDepth (28);
@@ -158,11 +159,14 @@ MainComponent::~MainComponent()
 //==============================================================================
 void MainComponent::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colour (0xff1e2124));
+    g.fillAll (KngTheme::bg);
 
     // Status bar
-    g.setColour (juce::Colour (0xff17191b));
-    g.fillRect (getLocalBounds().removeFromBottom (statusHeight));
+    const auto status = getLocalBounds().removeFromBottom (statusHeight);
+    g.setColour (KngTheme::menu);
+    g.fillRect (status);
+    g.setColour (KngTheme::line);
+    g.drawHorizontalLine (status.getY(), 0.0f, (float) getWidth());
 }
 
 void MainComponent::resized()
@@ -175,12 +179,11 @@ void MainComponent::resized()
     projectLabel.setBounds (status.removeFromLeft (320).reduced (8, 0));
     deviceLabel.setBounds (status.reduced (8, 0));
 
-    area = area.reduced (10, 8);
-
+    // The transport bar runs the full width, flush under the menu
     if (transportBar != nullptr)
         transportBar->setBounds (area.removeFromTop (40));
 
-    area.removeFromTop (8);
+    area = area.reduced (10, 8);
 
     // Track inspector down the right side, full height
     if (inspector != nullptr)
