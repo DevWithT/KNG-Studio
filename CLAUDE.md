@@ -61,6 +61,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `EditSessionRouting.cpp`: buses, sends to a bus, sidechain ducking.
 - `EditSessionSampler.cpp`: KNG Sampler settings, chop a clip to pads, open the piano roll.
 - `EditSessionSelection.cpp`: multi-clip selection.
+- `EditSessionSlices.cpp`: Slices: findHits (finds hits in a clip), writeSliceFile, chopClipAtCuts (Rack rows plus Chops), slicesToPads (Drum Kit pads)
 - `EditSessionSynth.cpp`: puts KNG Synth on a track.
 - `EditSessionTempo.cpp`: bar maths, tempo and time-signature changes, MIDI learn.
 - `EditSessionTools.cpp`: built-in effects list, adding one, bounce in place, move pattern block.
@@ -83,6 +84,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `MarkerBar.cpp/.h`: thin row above the ruler for song section markers.
 - `PlaylistToolbar.h`: Select, Paint and Cut tools; keeps the Playlist tidy.
 - `ClipProps.cpp/.h`: stretch, pitch and gain for one audio clip.
+- `SliceEditorView.cpp/.h`: Slice Editor window: waveform with draggable slice markers, Detect Hits, Chop to Rack, Send to Pads. showSliceEditor (session, clip) opens it. Opened from the audio clip right-click menu.
 - `CompView.cpp/.h`: take comping for an audio clip, and its window.
 
 ### Rack and patterns
@@ -225,6 +227,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `EditSessionRouting.cpp`: getBusNumbers, getBusName, addBus, getSendToBusDb, setSendToBusDb, duckFromTrack, removeDucking, getDuckSource
 - `EditSessionSampler.cpp`: getKngSampler, setBuiltInSampler, setSamplerSample, getSamplerSampleName, getSamplerRoot, setSamplerRoot, getSamplerGain, setSamplerGain, getSamplerOneShot, setSamplerOneShot, chopClipToPads, openPianoRollForTrack
 - `EditSessionSelection.cpp`: clearSelection, toggleClipSelection, addClipsToSelection, isClipSelected, getSelectedClips, selectAllClips
+- Slice functions (findHits, chopClipAtCuts, slicesToPads, writeSliceFile): EditSessionSlices.cpp. chopClipToPads (EditSessionSampler.cpp) now only builds the cut list and calls chopClipAtCuts.
 - `EditSessionSynth.cpp`: setBuiltInSynth
 - `EditSessionTempo.cpp`: barStartAt, barsAfter, barNumberAt, getBpmAt, setBpmAt, getTimeSigAt, addTempoChange, addTimeSigChange, getTempoMarks, removeTempoMark, setMidiLearn, isMidiLearn
 - `EditSessionTools.cpp`: getBuiltInEffects, addBuiltInPlugin, bounceTrackInPlace, movePatternBlock

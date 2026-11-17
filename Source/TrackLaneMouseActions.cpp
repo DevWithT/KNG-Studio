@@ -1,4 +1,5 @@
 #include "TrackLane.h"
+#include "SliceEditorView.h"
 
 namespace te = tracktion;
 

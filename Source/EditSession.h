@@ -1,6 +1,7 @@
 #pragma once
 
 #include <tracktion_engine/tracktion_engine.h>
+#include <vector>
 
 class KngSamplerPlugin;
 class KngLoudnessPlugin;
@@ -182,6 +183,21 @@ public:
     bool getSamplerOneShot (int trackIndex);
     void setSamplerOneShot (int trackIndex, bool oneShot);
     int chopClipToPads (tracktion::AudioClipBase& clip, int slices, bool atMarkers);
+
+    /** Hit positions in a clip, in seconds from the clip start (the start itself is not included).
+        Sensitivity runs 0 to 1. Returns at most 15 positions. */
+    std::vector<double> findHits (tracktion::AudioClipBase& clip, float sensitivity);
+
+    /** Cut times are timeline seconds. The first is the clip start, the last is the clip end.
+        Makes one Rack row per slice (max 16) and mutes the clip. Returns the first new row, or -1. */
+    int chopClipAtCuts (tracktion::AudioClipBase& clip, const std::vector<double>& cuts);
+
+    /** Same cuts as above, but loads slice 1 on pad 1, slice 2 on pad 2 and so on, on a Drum Kit track.
+        Returns how many pads were loaded, or -1. */
+    int slicesToPads (tracktion::AudioClipBase& clip, const std::vector<double>& cuts, int trackIndex);
+
+    /** Writes one slice of a clip to its own 24 bit wav in the project Audio folder. Empty File on failure. */
+    juce::File writeSliceFile (tracktion::AudioClipBase& clip, double fromTime, double toTime, int number);
     void openPianoRollForTrack (int trackIndex);
 
     // Note tools for one sound's notes in the current pattern (Rack row menu)

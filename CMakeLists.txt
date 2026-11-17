@@ -164,7 +164,9 @@ target_sources(KNGStudio PRIVATE
     Source/KngKeysView.cpp
     Source/EditSessionMasterChain.cpp
     Source/EditSessionVocalAlign.cpp
-    Source/RackRowGraph.cpp)
+    Source/RackRowGraph.cpp
+    Source/EditSessionSlices.cpp
+    Source/SliceEditorView.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
     JUCE_WEB_BROWSER=0

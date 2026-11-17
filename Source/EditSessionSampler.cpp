@@ -138,18 +138,9 @@ void EditSession::setSamplerOneShot (int trackIndex, bool oneShot)
 
 int EditSession::chopClipToPads (te::AudioClipBase& clip, int slices, bool atMarkers)
 {
-    if (getTransport().isRecording())
-        return -1;
-
-    const auto source = clip.getAudioFile().getFile();
-
-    if (! source.existsAsFile())
-        return -1;
-
     const auto pos = clip.getPosition();
     const double clipStart = pos.getStart().inSeconds();
     const double clipLength = pos.getLength().inSeconds();
-    const double offset = pos.getOffset().inSeconds();
 
     // Cut points, in timeline seconds
     std::vector<double> cuts { clipStart };
@@ -173,81 +164,7 @@ int EditSession::chopClipToPads (te::AudioClipBase& clip, int slices, bool atMar
     cuts.push_back (clipStart + clipLength);
     std::sort (cuts.begin(), cuts.end());
 
-    const int numSlices = juce::jmin (16, (int) cuts.size() - 1);
-
-    if (numSlices < 1)
-        return -1;
-
-    juce::AudioFormatManager formats;
-    formats.registerBasicFormats();
-    std::unique_ptr<juce::AudioFormatReader> reader (formats.createReaderFor (source));
-
-    if (reader == nullptr)
-        return -1;
-
-    auto folder = getProjectFolder().getChildFile ("Audio");
-    folder.createDirectory();
-
-    const auto baseName = juce::File::createLegalFileName (clip.getName().isNotEmpty() ? clip.getName()
-                                                                                       : source.getFileNameWithoutExtension());
-    juce::WavAudioFormat wav;
-    int firstIndex = -1;
-
-    for (int i = 0; i < numSlices; ++i)
-    {
-        // Save the slice as its own file
-        const auto startSample = (juce::int64) ((offset + cuts[(size_t) i] - clipStart) * reader->sampleRate);
-        const int len = (int) ((cuts[(size_t) i + 1] - cuts[(size_t) i]) * reader->sampleRate);
-
-        if (len <= 0)
-            continue;
-
-        juce::AudioBuffer<float> sliceBuffer ((int) reader->numChannels, len);
-        reader->read (&sliceBuffer, 0, len, startSample, true, true);
-
-        auto file = folder.getNonexistentChildFile (baseName + " slice " + juce::String (i + 1), ".wav");
-        auto* stream = new juce::FileOutputStream (file);
-        std::unique_ptr<juce::AudioFormatWriter> writer (wav.createWriterFor (stream, reader->sampleRate,
-                                                                              (unsigned int) sliceBuffer.getNumChannels(),
-                                                                              24, {}, 0));
-
-        if (writer == nullptr)
-        {
-            delete stream;
-            continue;
-        }
-
-        writer->writeFromAudioSampleBuffer (sliceBuffer, 0, len);
-        writer.reset();
-
-        // One Rack row per slice
-        const int index = addSampleChannel (file);
-
-        if (index < 0)
-            continue;
-
-        if (firstIndex < 0)
-            firstIndex = index;
-
-        // A hit where this slice was, so the chops play back like the original
-        if (auto* track = getTrack (index))
-        {
-            if (auto midi = track->insertMIDIClip (te::TimeRange (pos.getStart(), pos.getEnd()), nullptr))
-            {
-                midi->setName ("Chops");
-                const auto b1 = midi->getContentBeatAtTime (te::TimePosition::fromSeconds (cuts[(size_t) i]));
-                const auto b2 = midi->getContentBeatAtTime (te::TimePosition::fromSeconds (cuts[(size_t) i + 1]));
-                midi->getSequence().addNote (60, b1, b2 - b1, 100, 0, &edit->getUndoManager());
-            }
-        }
-    }
-
-    // So you don't hear it twice
-    beginEdit();
-    clip.setMuted (true);
-    save();
-
-    return firstIndex;
+    return chopClipAtCuts (clip, cuts);
 }
 
 //==============================================================================
