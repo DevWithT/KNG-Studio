@@ -3,6 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "KngTheme.h"
 #include "KngFonts.h"
+#include "KngLogo.h"
 
 /** One dark theme for every window in the app: flat buttons, arc knobs, slim sliders. Colors come from KngTheme. */
 class KngLookAndFeel : public juce::LookAndFeel_V4
@@ -62,6 +63,34 @@ public:
             return tf;
 
         return juce::LookAndFeel_V4::getTypefaceForFont (font);
+    }
+
+    //==============================================================================
+    // The window's own title bar: dark, with the crown logo and the app name
+    void drawDocumentWindowTitleBar (juce::DocumentWindow& window, juce::Graphics& g, int w, int h,
+                                     int, int, const juce::Image*, bool) override
+    {
+        g.fillAll (KngTheme::menu);
+        g.setColour (KngTheme::line);
+        g.drawHorizontalLine (h - 1, 0.0f, (float) w);
+
+        float x = 12.0f;
+        const auto& logo = KngLogo::keyed();
+
+        if (logo.isValid())
+        {
+            // Just the crown, cropped out of the full logo
+            const int iconH = h - 10;
+            const int iconW = juce::roundToInt ((float) iconH * 400.0f / 295.0f);
+            g.setOpacity (1.0f);
+            g.drawImage (logo, (int) x, (h - iconH) / 2, iconW, iconH, 190, 55, 400, 295);
+            x += (float) iconW + 8.0f;
+        }
+
+        g.setColour (KngTheme::text);
+        g.setFont (juce::Font (juce::FontOptions (13.0f, juce::Font::bold)));
+        g.drawText (window.getName(), juce::Rectangle<float> (x, 0.0f, (float) w - x, (float) h),
+                    juce::Justification::centredLeft, true);
     }
 
     //==============================================================================

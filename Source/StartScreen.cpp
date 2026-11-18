@@ -1,4 +1,6 @@
 #include "StartScreen.h"
+#include "KngTheme.h"
+#include "KngLogo.h"
 
 //==============================================================================
 StartScreen::Card::Card (const juce::String& t, const juce::String& s, juce::Colour a)
@@ -11,7 +13,7 @@ void StartScreen::Card::paint (juce::Graphics& g)
 {
     auto r = getLocalBounds().toFloat().reduced (1.0f);
 
-    g.setColour (hover ? juce::Colour (0xff2c3137) : juce::Colour (0xff24282c));
+    g.setColour (hover ? KngTheme::btn : KngTheme::panel);
     g.fillRoundedRectangle (r, 10.0f);
 
     g.setColour (hover ? accent : accent.withAlpha (0.5f));
@@ -22,11 +24,11 @@ void StartScreen::Card::paint (juce::Graphics& g)
 
     auto text = getLocalBounds().reduced (22, 20);
 
-    g.setColour (juce::Colours::white);
+    g.setColour (KngTheme::text);
     g.setFont (juce::Font (juce::FontOptions (24.0f, juce::Font::bold)));
     g.drawText (title, text.removeFromTop (34), juce::Justification::centredLeft);
 
-    g.setColour (juce::Colours::white.withAlpha (0.6f));
+    g.setColour (KngTheme::muted);
     g.setFont (juce::Font (juce::FontOptions (14.0f)));
     g.drawText (subtitle, text.removeFromTop (22), juce::Justification::centredLeft);
 }
@@ -48,7 +50,7 @@ StartScreen::StartScreen()
     openOtherButton.onClick = [this] { if (onOpenOther) onOpenOther(); };
 
     recentLabel.setFont (juce::Font (juce::FontOptions (13.0f, juce::Font::bold)));
-    recentLabel.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.6f));
+    recentLabel.setColour (juce::Label::textColourId, KngTheme::muted);
 }
 
 StartScreen::~StartScreen() = default;
@@ -102,21 +104,29 @@ void StartScreen::refresh (const juce::File& current)
 //==============================================================================
 void StartScreen::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colour (0xff17191b));
+    g.fillAll (KngTheme::bg);
 
     auto r = getLocalBounds().withSizeKeepingCentre (juce::jmin (820, getWidth() - 40), getHeight());
 
-    g.setColour (juce::Colours::white);
+    // The logo, top right (its black background is keyed out)
+    if (KngLogo::keyed().isValid())
+    {
+        g.setOpacity (1.0f);
+        g.drawImage (KngLogo::keyed(), juce::Rectangle<float> ((float) r.getRight() - 190.0f, 14.0f, 190.0f, 130.0f),
+                     juce::RectanglePlacement::centred);
+    }
+
+    g.setColour (KngTheme::text);
     g.setFont (juce::Font (juce::FontOptions (40.0f, juce::Font::bold)));
     g.drawText ("KNG Studio", r.getX(), 50, r.getWidth(), 50, juce::Justification::centredLeft);
 
-    g.setColour (juce::Colours::white.withAlpha (0.5f));
+    g.setColour (KngTheme::muted);
     g.setFont (juce::Font (juce::FontOptions (15.0f)));
     g.drawText ("What are we making today?", r.getX(), 100, r.getWidth(), 24, juce::Justification::centredLeft);
 
     if (currentProject.existsAsFile())
     {
-        g.setColour (juce::Colours::white.withAlpha (0.3f));
+        g.setColour (KngTheme::muted.withAlpha (0.7f));
         g.setFont (juce::Font (juce::FontOptions (12.0f)));
         g.drawText ("Esc to go back to your project", r.getX(), getHeight() - 34, r.getWidth(), 20,
                     juce::Justification::centredLeft);

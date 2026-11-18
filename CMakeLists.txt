@@ -192,7 +192,8 @@ juce_add_binary_data(KNGStudioAssets
         ${CMAKE_CURRENT_SOURCE_DIR}/Assets/Fonts/JetBrainsMono-Bold.ttf
         ${CMAKE_CURRENT_SOURCE_DIR}/Assets/Fonts/Inter-Regular.ttf
         ${CMAKE_CURRENT_SOURCE_DIR}/Assets/Fonts/Inter-Medium.ttf
-        ${CMAKE_CURRENT_SOURCE_DIR}/Assets/Fonts/Inter-SemiBold.ttf)
+        ${CMAKE_CURRENT_SOURCE_DIR}/Assets/Fonts/Inter-SemiBold.ttf
+        ${CMAKE_CURRENT_SOURCE_DIR}/Assets/Images/KngLogo.png)
 
 target_link_libraries(KNGStudio PRIVATE
     KNGStudioAssets

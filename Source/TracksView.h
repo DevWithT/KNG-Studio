@@ -17,6 +17,7 @@ public:
     explicit TracksView (EditSession& sessionToUse);
     ~TracksView() override;
 
+    void paint (juce::Graphics&) override;
     void resized() override;
     void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails&) override;
     void setLaneHeight (int newHeight);

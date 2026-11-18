@@ -1,4 +1,5 @@
 #include "SettingsComponent.h"
+#include "KngTheme.h"
 
 namespace te = tracktion;
 
@@ -18,7 +19,7 @@ static juce::Label* makeText (const juce::String& text, float size, float alpha)
 {
     auto* l = new juce::Label ({}, text);
     l->setFont (juce::Font (juce::FontOptions (size)));
-    l->setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (alpha));
+    l->setColour (juce::Label::textColourId, alpha >= 1.0f ? KngTheme::text : KngTheme::muted);
     l->setJustificationType (juce::Justification::topLeft);
     return l;
 }
@@ -27,7 +28,7 @@ static juce::Label* makeText (const juce::String& text, float size, float alpha)
 SettingsComponent::SettingsComponent (te::Engine& engineToUse)
     : engine (engineToUse)
 {
-    const juce::Colour tabColour (0xff24282c);
+    const juce::Colour tabColour = KngTheme::panel;
 
     auto* audio = new juce::AudioDeviceSelectorComponent (engine.getDeviceManager().deviceManager,
                                                           0, 256, 0, 256, true, false, false, false);
@@ -139,7 +140,7 @@ juce::Component* SettingsComponent::makeAboutPage()
 
 void SettingsComponent::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colour (0xff1e2124));
+    g.fillAll (KngTheme::bg);
 }
 
 void SettingsComponent::resized()

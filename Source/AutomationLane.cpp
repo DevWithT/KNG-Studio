@@ -1,4 +1,5 @@
 #include "AutomationLane.h"
+#include "KngTheme.h"
 
 namespace te = tracktion;
 
@@ -67,8 +68,8 @@ void AutomationHeader::refreshList()
 
 void AutomationHeader::paint (juce::Graphics& g)
 {
-    g.setColour (juce::Colour (0xff2e3236));
-    g.fillRoundedRectangle (getLocalBounds().toFloat(), 4.0f);
+    g.setColour (KngTheme::panel);
+    g.fillRoundedRectangle (getLocalBounds().toFloat(), KngTheme::radius);
 }
 
 void AutomationHeader::resized()
@@ -123,13 +124,13 @@ int AutomationLane::findPointAt (te::AutomationCurve& curve, juce::Point<int> p,
 
 void AutomationLane::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colour (0xff232629));
+    g.fillAll (KngTheme::panel2);
 
     auto* param = session.getAutomationParam (trackIndex);
 
     if (param == nullptr)
     {
-        g.setColour (juce::Colours::white.withAlpha (0.4f));
+        g.setColour (KngTheme::muted);
         g.drawText ("Nothing to automate on this track", getLocalBounds(), juce::Justification::centred);
         return;
     }
@@ -156,11 +157,11 @@ void AutomationLane::paint (juce::Graphics& g)
             path.lineTo ((float) x, y);
     }
 
-    g.setColour (juce::Colour (0xffe6a23a));
+    g.setColour (KngTheme::laneYellow);
     g.strokePath (path, juce::PathStrokeType (2.0f));
 
     // The points
-    g.setColour (juce::Colours::white);
+    g.setColour (KngTheme::text);
 
     for (int i = 0; i < curve.getNumPoints(); ++i)
     {
@@ -170,14 +171,14 @@ void AutomationLane::paint (juce::Graphics& g)
     }
 
     // Current value
-    g.setColour (juce::Colours::white.withAlpha (0.6f));
+    g.setColour (KngTheme::muted);
     g.setFont (juce::Font (juce::FontOptions (11.0f)));
     g.drawText (param->getParameterName() + "  " + param->getCurrentValueAsString(),
                 getLocalBounds().reduced (6, 2).removeFromTop (14), juce::Justification::left);
 
     // Playhead
     const int px = session.timeToX (session.getTransport().getPosition().inSeconds(), getWidth());
-    g.setColour (juce::Colours::yellow);
+    g.setColour (KngTheme::accent);
     g.fillRect (px, 0, 2, getHeight());
 }
 

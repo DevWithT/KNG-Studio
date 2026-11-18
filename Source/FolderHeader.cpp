@@ -1,4 +1,5 @@
 #include "FolderHeader.h"
+#include "KngTheme.h"
 
 FolderHeader::FolderHeader (EditSession& sessionToUse, const juce::String& folderName)
     : session (sessionToUse), folder (folderName)
@@ -12,8 +13,8 @@ FolderHeader::FolderHeader (EditSession& sessionToUse, const juce::String& folde
     for (auto* b : { &muteButton, &soloButton })
         b->setClickingTogglesState (false);
 
-    muteButton.setColour (juce::TextButton::buttonOnColourId, juce::Colours::orange);
-    soloButton.setColour (juce::TextButton::buttonOnColourId, juce::Colours::gold);
+    muteButton.setColour (juce::TextButton::buttonOnColourId, KngTheme::accent);
+    soloButton.setColour (juce::TextButton::buttonOnColourId, KngTheme::laneYellow);
 
     arrowButton.setTooltip ("Show or hide this folder's tracks");
     muteButton.setTooltip ("Mute every track in this folder");
@@ -35,7 +36,7 @@ FolderHeader::~FolderHeader()
 juce::Colour FolderHeader::getColour() const
 {
     const auto hue = (float) ((juce::uint32) folder.hashCode() % 360) / 360.0f;
-    return juce::Colour::fromHSV (hue, 0.45f, 0.75f, 1.0f);
+    return juce::Colour::fromHSV (hue, 0.35f, 0.72f, 1.0f);
 }
 
 void FolderHeader::timerCallback()
@@ -68,11 +69,11 @@ void FolderHeader::paint (juce::Graphics& g)
 {
     auto r = getLocalBounds().toFloat();
 
-    g.setColour (juce::Colour (0xff2c3035));
-    g.fillRoundedRectangle (r, 4.0f);
+    g.setColour (KngTheme::chrome);
+    g.fillRoundedRectangle (r, KngTheme::radius);
 
     g.setColour (getColour());
-    g.fillRoundedRectangle (r.withWidth (6.0f), 2.0f);
+    g.fillRoundedRectangle (r.getX() + 4.0f, r.getY() + 6.0f, 4.0f, r.getHeight() - 12.0f, 2.0f);
 }
 
 void FolderHeader::resized()

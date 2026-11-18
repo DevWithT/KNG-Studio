@@ -1,6 +1,7 @@
 #include "TracksView.h"
 #include "PluginBrowser.h"
 #include "KngTheme.h"
+#include "KngLogo.h"
 
 TracksView::TracksView (EditSession& sessionToUse)
     : session (sessionToUse)
@@ -207,6 +208,21 @@ void TracksView::updateLayout()
         setSize (getWidth(), h);
 
     layout (true);
+}
+
+void TracksView::paint (juce::Graphics& g)
+{
+    // A big, very faint logo behind the lanes (lane rows paint over it, so it shows in the empty space)
+    const auto& logo = KngLogo::keyed();
+
+    if (! logo.isValid())
+        return;
+
+    auto area = getLocalBounds().withTrimmedLeft (headerWidth + gap).toFloat();
+    auto box = area.reduced (area.getWidth() * 0.15f, area.getHeight() * 0.1f);
+
+    g.setOpacity (0.06f);
+    g.drawImage (logo, box, juce::RectanglePlacement::centred);
 }
 
 void TracksView::resized()
