@@ -20,6 +20,7 @@
 #include "PluginWindow.h"
 #include "MidiMapDialog.h"
 #include "KngPopOut.h"
+#include "KngTheme.h"
 
 //==============================================================================
 void MainComponent::showFxChain (tracktion::PluginList& list, const juce::String& title)
@@ -80,9 +81,9 @@ void MainComponent::showPluginScanner()
     juce::DialogWindow::LaunchOptions options;
     options.content.setOwned (comp);
     options.dialogTitle = "Plugins";
-    options.dialogBackgroundColour = juce::Colour (0xff2b2f33);
+    options.dialogBackgroundColour = KngTheme::bg;
     options.escapeKeyTriggersCloseButton = true;
-    options.useNativeTitleBar = true;
+    options.useNativeTitleBar = false;
     options.resizable = true;
     options.launchAsync();
 }
@@ -97,9 +98,9 @@ void MainComponent::showLatencyDialog()
     juce::DialogWindow::LaunchOptions options;
     options.content.setOwned (dialog);
     options.dialogTitle = "Latency Check";
-    options.dialogBackgroundColour = juce::Colour (0xff2b2f33);
+    options.dialogBackgroundColour = KngTheme::bg;
     options.escapeKeyTriggersCloseButton = true;
-    options.useNativeTitleBar = true;
+    options.useNativeTitleBar = false;
     options.resizable = false;
     songWindows.add (options.launchAsync());
 }
@@ -120,9 +121,9 @@ void MainComponent::showAudioSettings()
     juce::DialogWindow::LaunchOptions options;
     options.content.setOwned (selector);
     options.dialogTitle = "Audio Settings";
-    options.dialogBackgroundColour = juce::Colour (0xff2b2f33);
+    options.dialogBackgroundColour = KngTheme::bg;
     options.escapeKeyTriggersCloseButton = true;
-    options.useNativeTitleBar = true;
+    options.useNativeTitleBar = false;
     options.resizable = false;
     options.launchAsync();
 }
@@ -137,9 +138,9 @@ void MainComponent::showClipProps (tracktion::AudioClipBase& clip)
     juce::DialogWindow::LaunchOptions options;
     options.content.setOwned (comp);
     options.dialogTitle = "Stretch, Pitch & Gain";
-    options.dialogBackgroundColour = juce::Colour (0xff2b2f33);
+    options.dialogBackgroundColour = KngTheme::bg;
     options.escapeKeyTriggersCloseButton = true;
-    options.useNativeTitleBar = true;
+    options.useNativeTitleBar = false;
     options.resizable = false;
     songWindows.add (options.launchAsync());
 }
@@ -176,9 +177,9 @@ void MainComponent::showSettings()
     juce::DialogWindow::LaunchOptions options;
     options.content.setOwned (settings);
     options.dialogTitle = "Settings";
-    options.dialogBackgroundColour = juce::Colour (0xff1e2124);
+    options.dialogBackgroundColour = KngTheme::bg;
     options.escapeKeyTriggersCloseButton = true;
-    options.useNativeTitleBar = true;
+    options.useNativeTitleBar = false;
     options.resizable = true;
     options.launchAsync();
 }
@@ -198,9 +199,9 @@ void MainComponent::showMidiMappings()
     juce::DialogWindow::LaunchOptions options;
     options.content.setOwned (new MidiMapDialog (*session));
     options.dialogTitle = "MIDI Mappings";
-    options.dialogBackgroundColour = juce::Colour (0xff2b2f33);
+    options.dialogBackgroundColour = KngTheme::bg;
     options.escapeKeyTriggersCloseButton = true;
-    options.useNativeTitleBar = true;
+    options.useNativeTitleBar = false;
     options.resizable = true;
     midiMapWindow = options.launchAsync();
 }
