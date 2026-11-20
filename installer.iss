@@ -4,7 +4,9 @@
 ; 3. Open this file in Inno Setup and press Compile. The installer lands in the installer folder.
 
 #define AppName "KNG Studio"
-#define AppVersion "0.1.0"
+#ifndef AppVersion
+  #define AppVersion "0.1.0"
+#endif
 #define BuildDir "build\KNGStudio_artefacts\Release"
 #define ExeName "KNG Studio.exe"
 
@@ -12,6 +14,7 @@
 AppId={{8F3C2A41-6B7E-4D2A-9C55-3E1F0B7A9D21}
 AppName={#AppName}
 AppVersion={#AppVersion}
+VersionInfoVersion={#AppVersion}
 DefaultDirName={autopf}\{#AppName}
 DefaultGroupName={#AppName}
 OutputDir=installer

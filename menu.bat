@@ -66,7 +66,7 @@ if errorlevel 1 (
 goto done
 
 :installer
-set "ISCC=C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+set "ISCC=C:\Users\Admin\AppData\Local\Programs\Inno Setup 6\ISCC.exe"
 if not exist "%ISCC%" (
     echo   Inno Setup 6 isn't installed. Get it free at jrsoftware.org, then try again.
     goto done
@@ -77,11 +77,21 @@ if errorlevel 1 (
     echo   ===== RELEASE BUILD FAILED =====
     goto done
 )
-"%ISCC%" installer.iss
+set "VER=0.1.0"
+if exist VERSION set /p VER=<VERSION
+for /f "tokens=1-3 delims=." %%a in ("%VER%") do (
+    set "VMAJOR=%%a"
+    set "VMINOR=%%b"
+    set /a VPATCH=%%c+1
+)
+set "NEWVER=%VMAJOR%.%VMINOR%.%VPATCH%"
+echo   Building installer version %NEWVER%
+"%ISCC%" /DAppVersion=%NEWVER% installer.iss
 if errorlevel 1 (
     echo   ===== INSTALLER FAILED =====
 ) else (
-    echo   Installer is in the installer folder.
+    >VERSION echo %NEWVER%
+    echo   Installer %NEWVER% is in the installer folder.
     start "" "installer"
 )
 goto done
