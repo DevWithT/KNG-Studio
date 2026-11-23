@@ -1,6 +1,7 @@
 #include "InspectorParts.h"
 #include "GenericPluginPanel.h"
 #include "InspectorCards.h"
+#include "SidechainMenu.h"
 #include "KngTheme.h"
 
 namespace te = tracktion;
@@ -129,6 +130,7 @@ void EffectRow::mouseDown (const juce::MouseEvent& e)
         menu.addItem ("Move Down", [s, list, ptr] { s->movePlugin (*list, ptr.get(), 1); });
     }
 
+    KngSidechain::addMenu (menu, *s, *ptr);
     menu.addSeparator();
     menu.addItem ("Remove", [s, ptr] { juce::MessageManager::callAsync ([s, ptr] { s->removePlugin (ptr.get()); }); });
     menu.showMenuAsync ({});
