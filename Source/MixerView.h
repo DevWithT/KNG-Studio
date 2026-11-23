@@ -33,6 +33,46 @@ private:
     struct InsertButton : public juce::TextButton
     {
         std::function<void()> onRightClick;
+        std::function<void (int)> onReorder;   // slots moved on release: negative is up
+        int slotsUp = 0, slotsDown = 0;        // how far this button can travel
+        bool dragged = false;                  // true after a drag, so the release is not a click
+        int restTop = 0;
+        static constexpr int pitch = 20;       // a button is 18 px tall with 2 px between
+
+        void mouseDrag (const juce::MouseEvent& e) override
+        {
+            juce::TextButton::mouseDrag (e);
+
+            if (e.mods.isPopupMenu())
+                return;
+
+            const int dy = e.getScreenPosition().y - e.getMouseDownScreenPosition().y;
+
+            if (! dragged && std::abs (dy) < 5)
+                return;
+
+            dragged = true;
+            toFront (false);
+            setTopLeftPosition (getX(), restTop + juce::jlimit (-slotsUp * pitch, slotsDown * pitch, dy));
+        }
+
+        void mouseUp (const juce::MouseEvent& e) override
+        {
+            juce::Component::SafePointer<InsertButton> safe (this);
+
+            if (dragged)
+            {
+                const int slots = juce::jlimit (-slotsUp, slotsDown,
+                                                (int) std::lround ((double) (getY() - restTop) / (double) pitch));
+                setTopLeftPosition (getX(), restTop);
+
+                if (slots != 0 && onReorder)
+                    onReorder (slots);
+            }
+
+            if (safe != nullptr)
+                juce::TextButton::mouseUp (e);
+        }
 
         void mouseDown (const juce::MouseEvent& e) override
         {
@@ -45,6 +85,8 @@ private:
             }
 
             juce::TextButton::mouseDown (e);
+            dragged = false;
+            restTop = getY();
         }
     };
 
@@ -61,6 +103,7 @@ private:
     void openPlugin (tracktion::Plugin& plugin, juce::Component& anchor);
     void showAddFxMenu();
     void addEffect (const juce::String& id);
+    void moveInsert (tracktion::Plugin& plugin, int slots);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MixerStrip)
 };

@@ -48,12 +48,12 @@ void MixerStrip::rebuildInserts()
         b->setColour (juce::TextButton::buttonColourId, p->isEnabled() ? identity.accent.interpolatedWith (juce::Colour (0xff1e2124), 0.55f)
                                                                         : juce::Colour (0xff2b2f33));
         b->setColour (juce::TextButton::textColourOffId, juce::Colours::white.withAlpha (p->isEnabled() ? 0.95f : 0.4f));
-        b->setTooltip ("Click to open. Right-click to bypass, move, sidechain or remove.");
+        b->setTooltip ("Click to open. Drag up or down to reorder. Right-click to bypass, move, sidechain or remove.");
 
         te::Plugin::Ptr ptr (p);
         juce::Component::SafePointer<MixerStrip> safe (this);
 
-        b->onClick = [safe, ptr, b] { if (safe != nullptr) safe->openPlugin (*ptr, *b); };
+        b->onClick = [safe, ptr, b] { if (safe != nullptr && ! b->dragged) safe->openPlugin (*ptr, *b); };
 
         b->onRightClick = [safe, ptr]
         {
@@ -76,6 +76,8 @@ void MixerStrip::rebuildInserts()
         };
 
         addAndMakeVisible (b);
+
+        b->onReorder = [safe, ptr] (int slots) { if (safe != nullptr) safe->moveInsert (*ptr, slots); };
     }
 
     resized();
@@ -177,4 +179,16 @@ void MixerStrip::showAddFxMenu()
     }
 
     menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&addFxButton));
+}
+
+void MixerStrip::moveInsert (te::Plugin& plugin, int slots)
+{
+    auto* list = getPluginList();
+
+    if (list == nullptr || slots == 0)
+        return;
+
+    // One step at a time, the same move the right-click menu uses
+    for (int i = 0; i < std::abs (slots); ++i)
+        session.movePlugin (*list, &plugin, slots > 0 ? 1 : -1);
 }

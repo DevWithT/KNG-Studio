@@ -268,6 +268,8 @@ void MixerStrip::resized()
     for (int i = 0; i < insertButtons.size(); ++i)
     {
         insertButtons[i]->setVisible (i < 4);
+        insertButtons[i]->slotsUp = juce::jmin (i, 3);
+        insertButtons[i]->slotsDown = juce::jmax (0, juce::jmin (insertButtons.size(), 4) - 1 - i);
 
         if (i < 4)
         {

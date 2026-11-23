@@ -323,7 +323,7 @@ Planned work, roughly in order. When an item is finished, move it out of this li
 ### Project
 - Project templates (built: File > Save as Template and the Start Screen "From Template..." button, not yet tested): save a whole song setup (tracks, lanes, instruments, effects, tempo) as a template and start a new song from one on the Start Screen.
 - Drag sounds from the Sounds browser onto Playlist lanes: built (audio lands on the lane at the drop point, below the lanes makes a new lane), not yet tested.
-- Reorder effects: Move Up / Move Down is in the mixer insert right-click menu (built, not yet tested) and on the inspector rows. Dragging to reorder is still to do (mixer inserts, inspector list).
+- Reorder effects: drag effects up and down in a mixer strip (built, not yet tested), plus Move Up / Move Down in the mixer insert right-click menu and on the inspector rows. Dragging in the inspector list is still to do.
 - Playlist scroll bar for more bars: bar built (covers the song plus one empty screen), not yet tested.
 - Bars past the end of the song are dimmed in the Playlist lanes until something is placed there: built, not yet tested.
 - Snap on and off in every area. The Playlist follows the Snap button already, the piano roll has its own grid box with Grid Off. Check drops and anywhere else that ignores it.
