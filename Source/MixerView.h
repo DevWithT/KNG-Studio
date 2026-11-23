@@ -50,6 +50,7 @@ private:
 
     juce::OwnedArray<InsertButton> insertButtons;
     juce::TextButton addFxButton { "+ FX" };
+    juce::TextButton outputButton { "Out: Master" };
     juce::ComboBox sendBusBox;
     juce::String lastInsertSignature, lastBusSignature;
     int sendBus = 0;

@@ -294,10 +294,9 @@ Planned work, roughly in order. When an item is finished, move it out of this li
 - KngSat stays a single-band saturator. Multiband saturation is a new premium plugin in the Vox line (KNG Vox Sat), built in the KngPlugins repo.
 
 ### Mixing and routing
-- Sidechain: a "Sidechain: [track]" source choice on each plugin slot (FxChainComponent, MixerViewInserts, TrackInspector) so any plugin with a sidechain input can be fed by another track. Needed so KNG Vox EQ can duck a beat from the vocal. Today EditSessionRouting only adds a KNG Comp marked kngDuck. First check how Tracktion Engine exposes sidechain sources.
+- Sidechain (built into mixer inserts, FX chain rows and inspector rows, not yet tested): a "Sidechain: [track]" source choice on each plugin slot (FxChainComponent, MixerViewInserts, TrackInspector) so any plugin with a sidechain input can be fed by another track. Needed so KNG Vox EQ can duck a beat from the vocal. Today EditSessionRouting only adds a KNG Comp marked kngDuck. First check how Tracktion Engine exposes sidechain sources.
 - Buses: easier create, name, and manage.
-- Routes: choose where a track's output goes (master, a bus, another track) from the mixer and inspector.
-- Track pan: a pan control on every track, in the mixer strip and the inspector.
+- Routes (Output menu built into the inspector and mixer strips, not yet tested): choose where a track's output goes (master, a bus, another track) from the mixer and inspector.
 - Track widener: a stereo width control on every track.
 
 ### Vocals

@@ -3,6 +3,7 @@
 #include "PluginBrowser.h"
 #include "GenericPluginPanel.h"
 #include "KngTheme.h"
+#include "RouteMenu.h"
 #include <map>
 
 namespace te = tracktion;
@@ -15,12 +16,23 @@ MixerStrip::MixerStrip (EditSession& sessionToUse, int trackIndexToUse)
 
     for (auto* c : std::initializer_list<juce::Component*> { &nameLabel, &fxButton, &muteButton, &soloButton,
                                                              &sendLabel, &panLabel, &sendKnob, &panKnob,
-                                                             &fader, &meter })
+                                                             &fader, &meter, &outputButton })
         addAndMakeVisible (c);
 
     addAndMakeVisible (addFxButton);
     addFxButton.setTooltip ("Add an effect to this channel");
     addFxButton.onClick = [this] { showAddFxMenu(); };
+
+    outputButton.setTooltip ("Where this channel's sound goes: Master, or another track such as a bus");
+    outputButton.onClick = [this]
+    {
+        if (auto* t = session.getTrack (trackIndex))
+        {
+            juce::PopupMenu menu;
+            KngRoute::addItems (menu, session, *t);
+            menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&outputButton));
+        }
+    };
 
     addAndMakeVisible (sendBusBox);
     sendBusBox.setTooltip ("Which bus the send knob below feeds");
@@ -130,6 +142,7 @@ MixerStrip::MixerStrip (EditSession& sessionToUse, int trackIndexToUse)
         soloButton.setVisible (false);
         panKnob.setVisible (false);
         panLabel.setVisible (false);
+        outputButton.setVisible (false);
         meter.attachTo (session.getMasterMeterPlugin());
     }
     else if (auto* t = session.getTrack (trackIndex))
@@ -179,6 +192,11 @@ void MixerStrip::timerCallback()
 
     muteButton.setToggleState (t->isMuted (false), juce::dontSendNotification);
     soloButton.setToggleState (t->isSolo (false), juce::dontSendNotification);
+
+    const auto outText = "Out: " + KngRoute::currentName (*t);
+
+    if (outputButton.getButtonText() != outText)
+        outputButton.setButtonText (outText);
 
     if (auto* vp = t->getVolumePlugin())
     {
@@ -251,6 +269,9 @@ void MixerStrip::resized()
     auto panArea = r.removeFromTop (50);
     panLabel.setBounds (panArea.removeFromTop (14));
     panKnob.setBounds (panArea.withSizeKeepingCentre (36, 36));
+
+    outputButton.setBounds (r.removeFromTop (20).reduced (2, 0));
+    r.removeFromTop (4);
 
     auto msRow = r.removeFromBottom (24);
     muteButton.setBounds (msRow.removeFromLeft (msRow.getWidth() / 2).reduced (2, 0));
