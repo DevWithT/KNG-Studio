@@ -79,6 +79,8 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `TrackLaneMouseActions.cpp`: TrackLane scroll wheel, keys, clip menu, audio file drops, double-click.
 - `BlockLayer.cpp/.h`: sits over one lane and draws its pattern blocks.
 - `PatternWav.h`: header-only: KngPatternWav::render bakes one pattern block to a WAV loop in the song's Loops folder (block menu: Convert to WAV).
+- `PitchTracker.h` (header only): finds the notes in one melody line (YIN pitch guesses every 10 ms, steady stretches become notes). One note at a time, no chords. Used by Convert to MIDI.
+- `AudioToMidi.h` (header only): Convert to MIDI. Runs the pitch tracker on an audio clip and puts the notes in a MIDI clip on a new KNG Synth track.
 - `AutomationLane.cpp/.h`: automation row: AutomationHeader (pick target) and the curve.
 - `FolderHeader.cpp/.h`: bar above a folder's tracks: collapse, name, mute, solo.
 - `TimelineRuler.cpp/.h`: the bar.beat ruler above the lanes.
