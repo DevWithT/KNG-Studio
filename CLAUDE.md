@@ -297,7 +297,7 @@ On a plugin:
 Planned work, roughly in order. When an item is finished, move it out of this list and update the file map above in the same change.
 
 ### Plugin direction
-- The built-in KNG stock effects stay. Revamp each one so it looks and feels more premium.
+- Stock effect faces: done. Every stock effect has its own face. Only revisit one if it looks off.
 - The KNG Vox plugins (KngPlugins repo: Vox Comp, Vox DeEss, Vox Void, Vox EQ) are the premium line, possibly sold later. They stay standalone VST3s and are not ported into the built-ins.
 - Confirm the Vox VST3s scan, load in a track slot, save and reload with the project, and show up in the Plugin Browser.
 - KngSat stays a single-band saturator. Multiband saturation is a new premium plugin in the Vox line (KNG Vox Sat), built in the KngPlugins repo.
@@ -311,7 +311,7 @@ Planned work, roughly in order. When an item is finished, move it out of this li
 - Track widener (built into the inspector and mixer strips, not yet tested): a stereo width control on every track.
 
 ### Vocals
-- Vocal chain template (built into the inspector and mixer "+ FX" menus, not yet tested; the EQ is added flat and still needs a high-pass): one click adds a ready vocal chain (De-Ess, EQ, Comp, Air, Gate) to a track, built on the existing effect chain templates and master chain code.
+- Vocal chain template (built into the inspector and mixer "+ FX" menus, not yet tested; the EQ has a low cut at 80 Hz and the rest is flat): one click adds a ready vocal chain (De-Ess, EQ, Comp, Air, Gate) to a track, built on the existing effect chain templates and master chain code.
 
 ### Audio and editing
 - Gain envelopes: draw volume points inside an audio clip. Clip fades and per-clip gain already exist (TrackLane), and track volume automation exists (AutomationLane). Tracktion's clip-level volume is a ClipEffect that renders to a cache file, so it is slow to edit. Parked until we know the automation lanes are not enough.

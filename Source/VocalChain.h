@@ -17,7 +17,7 @@ namespace KngVocalChain
         return t;
     }
 
-    // Sets a knob by its name (used for KNG Comp)
+    // Sets a knob by its name (used for KNG Comp and KNG EQ)
     inline void setByName (tracktion::Plugin& plugin, const juce::String& name, float value)
     {
         for (auto* param : plugin.getAutomatableParameters())
@@ -84,8 +84,13 @@ namespace KngVocalChain
             g->getParam (KngGatePlugin::mode)->setParameter (1.0f, juce::sendNotification);
         }
 
-        // 2. EQ: added flat, ready for you
-        add (KngEqPlugin::xmlTypeName);
+        // 2. EQ: a low cut at 80 Hz clears rumble, everything else is flat for you
+        if (auto* e = add (KngEqPlugin::xmlTypeName))
+        {
+            setByName (*e, "Band 1 Freq", 80.0f);
+            setByName (*e, "Band 1 Slope", 1.0f);
+            setByName (*e, "Band 1 On", 1.0f);
+        }
 
         // 3. Comp: even out the level
         if (auto* c = add (KngCompPlugin::xmlTypeName))
