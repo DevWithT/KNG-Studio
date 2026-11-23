@@ -1,6 +1,7 @@
 #include "FxChainComponent.h"
 #include <map>
 #include "GenericPluginPanel.h"
+#include "SidechainMenu.h"
 
 namespace te = tracktion;
 
@@ -8,7 +9,7 @@ namespace te = tracktion;
 FxChainComponent::Row::Row (FxChainComponent& owner, te::Plugin& p)
     : plugin (&p)
 {
-    for (auto* c : std::initializer_list<juce::Component*> { &name, &openButton, &enabledButton,
+    for (auto* c : std::initializer_list<juce::Component*> { &name, &openButton, &scButton, &enabledButton,
                                                              &upButton, &downButton, &removeButton })
         addAndMakeVisible (c);
 
@@ -33,6 +34,15 @@ FxChainComponent::Row::Row (FxChainComponent& owner, te::Plugin& p)
     upButton.onClick      = [s, l, ptr] { s->movePlugin (*l, ptr.get(), -1); };
     downButton.onClick    = [s, l, ptr] { s->movePlugin (*l, ptr.get(), 1); };
     removeButton.onClick  = [s, ptr] { s->removePlugin (ptr.get()); };
+
+    scButton.setTooltip ("Sidechain: pick the track that feeds this plugin's sidechain input");
+    scButton.setEnabled (p.canSidechain());
+    scButton.onClick = [this, s, ptr]
+    {
+        juce::PopupMenu menu;
+        KngSidechain::addMenu (menu, *s, *ptr);
+        menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&scButton));
+    };
 }
 
 void FxChainComponent::Row::resized()
@@ -48,6 +58,8 @@ void FxChainComponent::Row::resized()
     enabledButton.setBounds (r.removeFromRight (48));
     r.removeFromRight (3);
     openButton.setBounds (r.removeFromRight (50));
+    r.removeFromRight (3);
+    scButton.setBounds (r.removeFromRight (34));
     r.removeFromRight (6);
     name.setBounds (r);
 }
@@ -84,7 +96,16 @@ void FxChainComponent::timerCallback()
     }
 
     for (auto* row : rows)
+    {
         row->enabledButton.setToggleState (row->plugin->isEnabled(), juce::dontSendNotification);
+        row->scButton.setEnabled (row->plugin->canSidechain());
+
+        // Lit up when a track is feeding this plugin's sidechain
+        if (row->plugin->getSidechainSourceName().isNotEmpty())
+            row->scButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xffd8742a));
+        else
+            row->scButton.removeColour (juce::TextButton::buttonColourId);
+    }
 }
 
 void FxChainComponent::rebuild()

@@ -115,6 +115,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `KngLoudnessPlugin.cpp/.h`: invisible BS.1770 loudness meter at the end of the master chain.
 - `SendPopup.h`: small pop-up with one send level slider.
 - `FxChainComponent.cpp/.h`: a track's effect chain list with its add menu, and its window.
+- `SidechainMenu.h`: header-only: KngSidechain::addMenu adds a "Sidechain" source submenu to a plugin slot's menu.
 - `DockPanel.cpp/.h`: tabbed panel docked along the bottom, plus its resize divider.
 - `TrackInspector.cpp/.h`: right-side panel: selected track's volume, instrument, effects, sends.
 - `InspectorCards.cpp/.h`: KngIdentity (colour and chip per plugin, kngIdentityFor) and InstrumentCard.

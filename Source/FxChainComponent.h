@@ -22,6 +22,7 @@ private:
         tracktion::Plugin::Ptr plugin;
         juce::Label name;
         juce::TextButton openButton { "Open" }, upButton { "Up" }, downButton { "Down" }, removeButton { "X" };
+        juce::TextButton scButton { "SC" };
         juce::ToggleButton enabledButton { "On" };
     };
 

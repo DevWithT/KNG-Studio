@@ -3,6 +3,7 @@
 #include "PluginBrowser.h"
 #include "GenericPluginPanel.h"
 #include "InspectorCards.h"
+#include "SidechainMenu.h"
 #include <map>
 
 namespace te = tracktion;
@@ -46,7 +47,7 @@ void MixerStrip::rebuildInserts()
         b->setColour (juce::TextButton::buttonColourId, p->isEnabled() ? identity.accent.interpolatedWith (juce::Colour (0xff1e2124), 0.55f)
                                                                         : juce::Colour (0xff2b2f33));
         b->setColour (juce::TextButton::textColourOffId, juce::Colours::white.withAlpha (p->isEnabled() ? 0.95f : 0.4f));
-        b->setTooltip ("Click to open. Right-click to bypass or remove.");
+        b->setTooltip ("Click to open. Right-click to bypass, sidechain or remove.");
 
         te::Plugin::Ptr ptr (p);
         juce::Component::SafePointer<MixerStrip> safe (this);
@@ -61,6 +62,7 @@ void MixerStrip::rebuildInserts()
             auto* s = &safe->session;
             juce::PopupMenu menu;
             menu.addItem (ptr->isEnabled() ? "Bypass" : "Turn On", [ptr] { ptr->setEnabled (! ptr->isEnabled()); });
+            KngSidechain::addMenu (menu, *s, *ptr);
             menu.addItem ("Remove", [s, ptr] { juce::MessageManager::callAsync ([s, ptr] { s->removePlugin (ptr.get()); }); });
             menu.showMenuAsync ({});
         };
