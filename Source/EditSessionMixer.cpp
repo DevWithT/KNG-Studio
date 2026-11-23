@@ -10,7 +10,8 @@ static bool isUtilityPlugin (te::Plugin* p)
         || dynamic_cast<te::LevelMeterPlugin*> (p) != nullptr
         || dynamic_cast<te::AuxSendPlugin*> (p) != nullptr
         || dynamic_cast<te::AuxReturnPlugin*> (p) != nullptr
-        || dynamic_cast<KngLoudnessPlugin*> (p) != nullptr;
+        || dynamic_cast<KngLoudnessPlugin*> (p) != nullptr
+        || (bool) p->state.getProperty ("kngWidthStage", false);
 }
 
 //==============================================================================

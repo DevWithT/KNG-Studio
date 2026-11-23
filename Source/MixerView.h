@@ -26,8 +26,8 @@ private:
 
     juce::Label nameLabel;
     juce::TextButton fxButton { "FX" }, muteButton { "M" }, soloButton { "S" };
-    juce::Label sendLabel { {}, "Reverb" }, panLabel { {}, "Pan" };
-    juce::Slider sendKnob, panKnob, fader;
+    juce::Label sendLabel { {}, "Reverb" }, panLabel { {}, "Pan" }, widthLabel { {}, "Width" };
+    juce::Slider sendKnob, panKnob, widthKnob, fader;
     LevelMeter meter;
 
     struct InsertButton : public juce::TextButton

@@ -4,6 +4,7 @@
 #include "GenericPluginPanel.h"
 #include "KngTheme.h"
 #include "RouteMenu.h"
+#include "TrackWidth.h"
 #include <map>
 
 namespace te = tracktion;
@@ -16,7 +17,7 @@ MixerStrip::MixerStrip (EditSession& sessionToUse, int trackIndexToUse)
 
     for (auto* c : std::initializer_list<juce::Component*> { &nameLabel, &fxButton, &muteButton, &soloButton,
                                                              &sendLabel, &panLabel, &sendKnob, &panKnob,
-                                                             &fader, &meter, &outputButton })
+                                                             &fader, &meter, &outputButton, &widthLabel, &widthKnob })
         addAndMakeVisible (c);
 
     addAndMakeVisible (addFxButton);
@@ -50,7 +51,7 @@ MixerStrip::MixerStrip (EditSession& sessionToUse, int trackIndexToUse)
     nameLabel.setFont (juce::Font (juce::FontOptions (12.5f, juce::Font::bold)));
     nameLabel.setColour (juce::Label::textColourId, KngTheme::ink);
 
-    for (auto* l : { &sendLabel, &panLabel })
+    for (auto* l : { &sendLabel, &panLabel, &widthLabel })
     {
         l->setJustificationType (juce::Justification::centred);
         l->setFont (juce::Font (juce::FontOptions (11.0f)));
@@ -87,7 +88,7 @@ MixerStrip::MixerStrip (EditSession& sessionToUse, int trackIndexToUse)
     };
 
     // Knobs
-    for (auto* k : { &sendKnob, &panKnob })
+    for (auto* k : { &sendKnob, &panKnob, &widthKnob })
     {
         k->setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
         k->setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
@@ -118,6 +119,17 @@ MixerStrip::MixerStrip (EditSession& sessionToUse, int trackIndexToUse)
                 vp->setPan ((float) panKnob.getValue());
     };
 
+    widthKnob.setRange (0.0, 2.0, 0.01);
+    widthKnob.setDoubleClickReturnValue (true, 1.0);
+    widthKnob.textFromValueFunction = [] (double v) { return juce::String (juce::roundToInt (v * 100.0)) + "%"; };
+    widthKnob.onDragStart   = [this] { session.beginEdit(); };
+    widthKnob.onValueChange = [this]
+    {
+        if (auto* t = session.getTrack (trackIndex))
+            KngTrackWidth::set (session, *t, (float) widthKnob.getValue());
+    };
+    widthKnob.onDragEnd     = [this] { session.save(); };
+
     // Fader
     fader.setSliderStyle (juce::Slider::LinearVertical);
     fader.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 60, 18);
@@ -143,6 +155,8 @@ MixerStrip::MixerStrip (EditSession& sessionToUse, int trackIndexToUse)
         panKnob.setVisible (false);
         panLabel.setVisible (false);
         outputButton.setVisible (false);
+        widthKnob.setVisible (false);
+        widthLabel.setVisible (false);
         meter.attachTo (session.getMasterMeterPlugin());
     }
     else if (auto* t = session.getTrack (trackIndex))
@@ -207,6 +221,9 @@ void MixerStrip::timerCallback()
             panKnob.setValue (vp->getPan(), juce::dontSendNotification);
     }
 
+    if (! widthKnob.isMouseButtonDown())
+        widthKnob.setValue (KngTrackWidth::get (*t), juce::dontSendNotification);
+
     if (! isBus && ! sendKnob.isMouseButtonDown())
         sendKnob.setValue (session.getBusNumbers().isEmpty() ? session.getSendDb (trackIndex)
                                                              : session.getSendToBusDb (trackIndex, sendBus),
@@ -267,8 +284,11 @@ void MixerStrip::resized()
     sendKnob.setBounds (sendArea.withSizeKeepingCentre (38, 38));
 
     auto panArea = r.removeFromTop (50);
+    auto widthArea = panArea.removeFromRight (panArea.getWidth() / 2);
     panLabel.setBounds (panArea.removeFromTop (14));
-    panKnob.setBounds (panArea.withSizeKeepingCentre (36, 36));
+    panKnob.setBounds (panArea.withSizeKeepingCentre (32, 32));
+    widthLabel.setBounds (widthArea.removeFromTop (14));
+    widthKnob.setBounds (widthArea.withSizeKeepingCentre (32, 32));
 
     outputButton.setBounds (r.removeFromTop (20).reduced (2, 0));
     r.removeFromTop (4);

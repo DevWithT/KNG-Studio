@@ -117,6 +117,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `FxChainComponent.cpp/.h`: a track's effect chain list with its add menu, and its window.
 - `SidechainMenu.h`: header-only: KngSidechain::addMenu adds a "Sidechain" source submenu to a plugin slot's menu.
 - `RouteMenu.h`: header-only: KngRoute::addItems / addMenu list where a track's output can go (Master or another track), with loop protection.
+- `TrackWidth.h`: header-only: KngTrackWidth::get / set drive a hidden KNG Width stage after a track's volume (the Width control).
 - `DockPanel.cpp/.h`: tabbed panel docked along the bottom, plus its resize divider.
 - `TrackInspector.cpp/.h`: right-side panel: selected track's volume, instrument, effects, sends.
 - `InspectorCards.cpp/.h`: KngIdentity (colour and chip per plugin, kngIdentityFor) and InstrumentCard.
@@ -282,6 +283,7 @@ On a clip:
 On a plugin:
 - `kngBoost`: marks the hidden volume-boost plugin (skipped in effect lists).
 - `kngDuck`: marks a compressor added for sidechain ducking.
+- `kngWidthStage`: marks the hidden KNG Width stage behind a track's Width control (skipped in effect lists).
 - KNG Sampler: `kngFile`, `kngRoot`, `kngGain`, `kngAttack`, `kngRelease`, `kngGlide`, `kngMono`, `kngOneShot`, `kngLoop`, `kngLoopStart`, `kngLoopEnd`.
 
 ## 7. To do
@@ -297,7 +299,7 @@ Planned work, roughly in order. When an item is finished, move it out of this li
 - Sidechain (built into mixer inserts, FX chain rows and inspector rows, not yet tested): a "Sidechain: [track]" source choice on each plugin slot (FxChainComponent, MixerViewInserts, TrackInspector) so any plugin with a sidechain input can be fed by another track. Needed so KNG Vox EQ can duck a beat from the vocal. Today EditSessionRouting only adds a KNG Comp marked kngDuck. First check how Tracktion Engine exposes sidechain sources.
 - Buses: easier create, name, and manage.
 - Routes (Output menu built into the inspector and mixer strips, not yet tested): choose where a track's output goes (master, a bus, another track) from the mixer and inspector.
-- Track widener: a stereo width control on every track.
+- Track widener (built into the inspector and mixer strips, not yet tested): a stereo width control on every track.
 
 ### Vocals
 - Vocal chain template: one click adds a ready vocal chain (De-Ess, EQ, Comp, Air, Gate) to a track, built on the existing effect chain templates and master chain code.

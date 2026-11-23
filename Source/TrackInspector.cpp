@@ -6,6 +6,7 @@
 #include "KngSynthPlugin.h"
 #include "KngTheme.h"
 #include "RouteMenu.h"
+#include "TrackWidth.h"
 
 namespace te = tracktion;
 
@@ -21,10 +22,10 @@ TrackInspector::TrackInspector (EditSession& sessionToUse)
 {
     for (auto* c : std::initializer_list<juce::Component*> { &nameLabel, &hintLabel, &instHeading, &fxHeading, &sendHeading,
                                                              &instrumentButton, &openInstrumentButton, &addEffectButton,
-                                                             &newBusButton, &volumeSlider, &panSlider, &outputButton })
+                                                             &newBusButton, &volumeSlider, &panSlider, &outputButton, &widthLabel, &widthSlider })
         addAndMakeVisible (c);
 
-    for (auto* l : { &instHeading, &fxHeading, &sendHeading })
+    for (auto* l : { &instHeading, &fxHeading, &sendHeading, &widthLabel })
         styleHeading (*l);
 
     nameLabel.setFont (juce::Font (juce::FontOptions (16.0f, juce::Font::bold)));
@@ -59,6 +60,21 @@ TrackInspector::TrackInspector (EditSession& sessionToUse)
 
     volumeSlider.setTooltip ("Volume (double-click for 0 dB)");
     panSlider.setTooltip ("Pan (double-click to center)");
+
+    widthSlider.setSliderStyle (juce::Slider::LinearHorizontal);
+    widthSlider.setTextBoxStyle (juce::Slider::TextBoxRight, false, 56, 20);
+    widthSlider.setRange (0.0, 2.0, 0.01);
+    widthSlider.setDoubleClickReturnValue (true, 1.0);
+    widthSlider.textFromValueFunction = [] (double v) { return juce::String (juce::roundToInt (v * 100.0)) + "%"; };
+    widthSlider.valueFromTextFunction = [] (const juce::String& t) { return t.getDoubleValue() / 100.0; };
+    widthSlider.setTooltip ("Stereo width: 100% is untouched, 0% is mono, 200% is double (double-click to reset)");
+    widthSlider.onDragStart   = [this] { session.beginEdit(); };
+    widthSlider.onValueChange = [this]
+    {
+        if (auto* t = session.getTrack (trackIndex))
+            KngTrackWidth::set (session, *t, (float) widthSlider.getValue());
+    };
+    widthSlider.onDragEnd     = [this] { session.save(); };
     instrumentButton.setTooltip ("Choose or swap this track's instrument");
     openInstrumentButton.setTooltip ("Open the full instrument panel");
     addEffectButton.setTooltip ("Add an effect to this track");
@@ -115,7 +131,7 @@ void TrackInspector::rebuild()
 
     for (auto* c : std::initializer_list<juce::Component*> { &nameLabel, &instHeading, &fxHeading, &sendHeading,
                                                              &instrumentButton, &openInstrumentButton, &addEffectButton,
-                                                             &newBusButton, &volumeSlider, &panSlider, &outputButton })
+                                                             &newBusButton, &volumeSlider, &panSlider, &outputButton, &widthLabel, &widthSlider })
         c->setVisible (has);
 
     hintLabel.setVisible (! has);
@@ -130,6 +146,7 @@ void TrackInspector::rebuild()
 
     nameLabel.setText (t->getName(), juce::dontSendNotification);
     outputButton.setButtonText ("Output: " + KngRoute::currentName (*t));
+    widthSlider.setValue (KngTrackWidth::get (*t), juce::dontSendNotification);
 
     const bool midi = session.isMidiTrack (trackIndex);
     const bool drum = midi && session.isDrumTrack (trackIndex);
@@ -236,6 +253,9 @@ void TrackInspector::timerCallback()
         if (! panSlider.isMouseButtonDown())
             panSlider.setValue (vp->getPan(), juce::dontSendNotification);
     }
+
+    if (! widthSlider.isMouseButtonDown())
+        widthSlider.setValue (KngTrackWidth::get (*t), juce::dontSendNotification);
 
     for (int i = 0; i < sendSliders.size(); ++i)
     {
@@ -409,6 +429,11 @@ void TrackInspector::resized()
     volumeSlider.setBounds (volRow);
     r.removeFromTop (6);
     outputButton.setBounds (r.removeFromTop (24));
+    r.removeFromTop (6);
+
+    auto widthRow = r.removeFromTop (24);
+    widthLabel.setBounds (widthRow.removeFromLeft (52));
+    widthSlider.setBounds (widthRow);
     r.removeFromTop (14);
 
     instrumentCard = {};

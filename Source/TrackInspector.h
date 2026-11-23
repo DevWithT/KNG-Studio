@@ -35,7 +35,8 @@ private:
     juce::TextButton instrumentButton { "Choose instrument" }, openInstrumentButton { "Open" };
     juce::TextButton addEffectButton { "+ Add effect" }, newBusButton { "+ New bus" };
     juce::TextButton outputButton { "Output: Master" };
-    juce::Slider volumeSlider, panSlider;
+    juce::Label widthLabel { {}, "WIDTH" };
+    juce::Slider volumeSlider, panSlider, widthSlider;
 
     juce::OwnedArray<ParamKnob> knobs;
     juce::OwnedArray<EffectRow> effectRows;
