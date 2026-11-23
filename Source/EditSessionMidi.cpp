@@ -145,3 +145,34 @@ void EditSession::routeLiveMidi()
         [[maybe_unused]] auto result = instance->setTarget (track->itemID, true, nullptr, 0);
     }
 }
+
+//==============================================================================
+// Hotplug: Tracktion rescans MIDI devices every few seconds and broadcasts when the list changes.
+// MainComponent calls this on that broadcast so a keyboard or pad plugged in later just works.
+
+void EditSession::refreshMidiInputs()
+{
+    auto& dm = engine.getDeviceManager();
+    juce::StringArray present;
+
+    for (int i = 0; i < dm.getNumMidiInDevices(); ++i)
+    {
+        auto mid = dm.getMidiInDevice (i);
+
+        if (mid == nullptr)
+            continue;
+
+        const auto id = mid->getDeviceID();
+        present.add (id);
+
+        // Only a device we have not seen yet gets switched on, so one turned off in Settings stays off
+        if (! knownMidiInputs.contains (id))
+            mid->setEnabled (true);
+
+        if (mid->getMonitorMode() != te::InputDevice::MonitorMode::on)
+            mid->setMonitorMode (te::InputDevice::MonitorMode::on);
+    }
+
+    knownMidiInputs = present;
+    routeLiveMidi();
+}

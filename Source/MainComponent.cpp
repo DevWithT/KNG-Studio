@@ -98,6 +98,7 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
     addAndMakeVisible (tracksViewport);
 
     engine.getDeviceManager().deviceManager.addChangeListener (this);
+    engine.getDeviceManager().addChangeListener (this);
     updateDeviceLabel();
 
     loadProject (getLastProjectFile());
@@ -154,6 +155,7 @@ MainComponent::~MainComponent()
 {
     menuBar.setModel (nullptr);
     engine.getDeviceManager().deviceManager.removeChangeListener (this);
+    engine.getDeviceManager().removeChangeListener (this);
     closeProject();
 }
 
@@ -271,8 +273,17 @@ void MainComponent::mouseDown (const juce::MouseEvent&)
 }
 
 //==============================================================================
-void MainComponent::changeListenerCallback (juce::ChangeBroadcaster*)
+void MainComponent::changeListenerCallback (juce::ChangeBroadcaster* source)
 {
+    // Tracktion's own device list changed, for example a MIDI keyboard or pad was plugged in or out
+    if (source == &engine.getDeviceManager())
+    {
+        if (session != nullptr)
+            session->refreshMidiInputs();
+
+        return;
+    }
+
     const auto before = deviceLabel.getText();
     updateDeviceLabel();
 

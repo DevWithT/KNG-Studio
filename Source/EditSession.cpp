@@ -276,12 +276,14 @@ void EditSession::refreshInputs()
     }
 
     // MIDI keyboards are always heard through the selected instrument, armed or not
+    knownMidiInputs.clear();
     for (int i = 0; i < dm.getNumMidiInDevices(); ++i)
     {
         if (auto mid = dm.getMidiInDevice (i))
         {
             mid->setEnabled (true);
             mid->setMonitorMode (te::InputDevice::MonitorMode::on);
+            knownMidiInputs.addIfNotAlreadyThere (mid->getDeviceID());
         }
     }
 

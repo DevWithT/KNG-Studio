@@ -92,6 +92,8 @@ public:
     void removeInstrument (int trackIndex);
     /** The selected instrument track plays from any connected MIDI keyboard or pad, with no arming. */
     void routeLiveMidi();
+    /** Switches on and monitors any MIDI keyboard or pad plugged in while the Studio is open, then routes it. */
+    void refreshMidiInputs();
 
     // Lets the UI open a piano roll (MainComponent sets this)
     std::function<void (tracktion::MidiClip&)> onShowPianoRoll;
@@ -453,6 +455,7 @@ private:
 
     std::vector<int> trackInputs;
     std::vector<bool> trackArmed;
+    juce::StringArray knownMidiInputs;   // MIDI inputs seen at the last scan, so only new ones get switched on
 
     bool monitoringEnabled = true;
     tracktion::Clip::Ptr selectedClip;
