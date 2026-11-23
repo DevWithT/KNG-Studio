@@ -20,6 +20,7 @@
 #include "PluginWindow.h"
 #include "MidiMapDialog.h"
 #include "KngPopOut.h"
+#include "ProjectTemplates.h"
 
 //==============================================================================
 juce::File MainComponent::getProjectsRoot()
@@ -307,4 +308,70 @@ void MainComponent::setUpNewSong()
 
     session->save();
     resized();
+}
+
+void MainComponent::saveAsTemplate()
+{
+    if (session == nullptr || isBusyRecording())
+        return;
+
+    auto* w = new juce::AlertWindow ("Save as Template", "Name this template:", juce::MessageBoxIconType::NoIcon);
+    w->addTextEditor ("name", session->getProjectName(), "Name");
+    w->addButton ("Save", 1, juce::KeyPress (juce::KeyPress::returnKey));
+    w->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
+
+    w->enterModalState (true, juce::ModalCallbackFunction::create ([this, w] (int result)
+    {
+        const auto name = w->getTextEditorContents ("name").trim();
+
+        if (result != 1 || name.isEmpty() || session == nullptr)
+            return;
+
+        // The template is made from the saved song, so save first
+        session->save();
+
+        if (! KngProjectTemplates::save (session->getProjectFile(), name))
+            juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::WarningIcon, "Save as Template",
+                                                    "Couldn't save the template.");
+    }), true);
+}
+
+void MainComponent::newFromTemplate (const juce::String& templateName)
+{
+    if (isBusyRecording())
+        return;
+
+    const auto templateFile = KngProjectTemplates::getFile (templateName);
+
+    if (! templateFile.existsAsFile())
+        return;
+
+    auto* w = new juce::AlertWindow ("New Song From Template", "Name your song:", juce::MessageBoxIconType::NoIcon);
+    w->addTextEditor ("name", templateName, "Name");
+    w->addButton ("Create", 1, juce::KeyPress (juce::KeyPress::returnKey));
+    w->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
+
+    w->enterModalState (true, juce::ModalCallbackFunction::create ([this, w, templateFile] (int result)
+    {
+        if (result != 1)
+            return;
+
+        auto safeName = juce::File::createLegalFileName (w->getTextEditorContents ("name").trim());
+
+        if (safeName.isEmpty())
+            safeName = "Untitled";
+
+        auto folder = getProjectsRoot().getNonexistentChildFile (safeName, "", false);
+        folder.createDirectory();
+
+        // The template already has its tracks, tempo and effects, so no new-song setup runs
+        pendingStartMode = 0;
+        pendingBpm = 0.0;
+        pendingBeatFile = juce::File();
+
+        const auto newProjectFile = folder.getChildFile (folder.getFileName() + ".tracktionedit");
+
+        if (templateFile.copyFileTo (newProjectFile))
+            loadProject (newProjectFile);
+    }), true);
 }

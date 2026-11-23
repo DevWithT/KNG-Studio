@@ -55,6 +55,7 @@ juce::PopupMenu MainComponent::getMenuForIndex (int menuIndex, const juce::Strin
             add (cmdSave, "Save", "Ctrl+S", hasSession);
             add (cmdBackupNow, "Save Backup Now", {}, hasSession);
             add (cmdRestoreBackup, "Restore Backup...", {}, hasSession);
+            add (cmdSaveTemplate, "Save as Template...", {}, hasSession);
             m.addSeparator();
             add (cmdImport, "Import Audio...", {}, hasSession);
             add (cmdExport, "Export...", {}, hasSession);
@@ -152,6 +153,7 @@ void MainComponent::menuItemSelected (int id, int)
         case cmdSave:          saveProject(); break;
         case cmdBackupNow:     session->makeBackup(); break;
         case cmdRestoreBackup: restoreBackup(); break;
+        case cmdSaveTemplate:  saveAsTemplate(); break;
         case cmdImport:        if (transportBar != nullptr) transportBar->importBeat(); break;
         case cmdExport:        if (transportBar != nullptr) transportBar->showExportDialog(); break;
         case cmdLatency:       showLatencyDialog(); break;

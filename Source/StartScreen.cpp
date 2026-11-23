@@ -1,6 +1,7 @@
 #include "StartScreen.h"
 #include "KngTheme.h"
 #include "KngLogo.h"
+#include "ProjectTemplates.h"
 
 //==============================================================================
 StartScreen::Card::Card (const juce::String& t, const juce::String& s, juce::Colour a)
@@ -42,12 +43,27 @@ StartScreen::StartScreen()
     addAndMakeVisible (newVocalCard);
     addAndMakeVisible (continueButton);
     addAndMakeVisible (openOtherButton);
+    addAndMakeVisible (templatesButton);
     addAndMakeVisible (recentLabel);
 
     newBeatCard.onClick  = [this] { if (onNewBeat) onNewBeat(); };
     newVocalCard.onClick = [this] { if (onNewVocal) onNewVocal(); };
     continueButton.onClick  = [this] { if (onContinue) onContinue(); };
     openOtherButton.onClick = [this] { if (onOpenOther) onOpenOther(); };
+
+    templatesButton.onClick = [this]
+    {
+        juce::PopupMenu menu;
+        const auto names = KngProjectTemplates::getNames();
+
+        if (names.isEmpty())
+            menu.addItem ("No templates yet. Use File > Save as Template.", false, false, nullptr);
+
+        for (auto& n : names)
+            menu.addItem (n, [this, n] { if (onNewFromTemplate) onNewFromTemplate (n); });
+
+        menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&templatesButton));
+    };
 
     recentLabel.setFont (juce::Font (juce::FontOptions (13.0f, juce::Font::bold)));
     recentLabel.setColour (juce::Label::textColourId, KngTheme::muted);
@@ -153,6 +169,8 @@ void StartScreen::resized()
     }
 
     openOtherButton.setBounds (buttons.removeFromLeft (150));
+    buttons.removeFromLeft (10);
+    templatesButton.setBounds (buttons.removeFromLeft (170));
 
     r.removeFromTop (26);
     recentLabel.setBounds (r.removeFromTop (22));

@@ -120,6 +120,7 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
 
     // These finish later (a name prompt or file chooser), so loadProject() closes the start screen
     startScreen.onOpenOther = [this] { pendingStartMode = 0; pendingBeatFile = juce::File(); openProject(); };
+    startScreen.onNewFromTemplate = [this] (const juce::String& name) { pendingStartMode = 0; pendingBeatFile = juce::File(); newFromTemplate (name); };
     startScreen.onNewBeat = [this]
     {
         pendingBeatFile = juce::File();

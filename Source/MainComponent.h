@@ -48,7 +48,7 @@ private:
     enum CommandIDs
     {
         cmdNew = 1, cmdOpen, cmdSave, cmdImport, cmdExport, cmdSettings, cmdAudioSettings, cmdScanPlugins, cmdLatency, cmdExit,
-        cmdBackupNow, cmdRestoreBackup, cmdStartScreen,
+        cmdBackupNow, cmdRestoreBackup, cmdStartScreen, cmdSaveTemplate,
         cmdUndo = 100, cmdRedo, cmdCopy, cmdPaste, cmdDuplicate, cmdSplit, cmdDelete, cmdSelectAll,
         cmdAddAudioTrack = 200, cmdAddMidiTrack,
         cmdPlayStop = 300, cmdRecord, cmdRetake, cmdMidiLearn, cmdMidiMappings, cmdGoToStart, cmdLoop, cmdClick, cmdSnap, cmdMonitor, cmdAutoWrite, cmdPunch,
@@ -91,6 +91,8 @@ private:
     void openProject();
     void saveProject();
     void createProject (const juce::String& name);
+    void saveAsTemplate();
+    void newFromTemplate (const juce::String& templateName);
     bool isBusyRecording() const;
 
     static juce::File getProjectsRoot();

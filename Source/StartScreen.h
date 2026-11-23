@@ -17,6 +17,7 @@ public:
     std::function<void()> onOpenOther;
     std::function<void()> onContinue;
     std::function<void (const juce::File&)> onOpenProject;   // a .tracktionedit file
+    std::function<void (const juce::String&)> onNewFromTemplate;   // a template name
 
     void paint (juce::Graphics&) override;
     void resized() override;
@@ -43,7 +44,7 @@ private:
     Card newBeatCard { "New Song", "Make the beat and record on it, all in one place", juce::Colour (0xff3a8ee6) };
     Card newVocalCard { "Start From a Beat", "Bring in a beat file and record over it", juce::Colour (0xffe6a23a) };
 
-    juce::TextButton continueButton, openOtherButton { "Open Other..." };
+    juce::TextButton continueButton, openOtherButton { "Open Other..." }, templatesButton { "From Template..." };
     juce::Label recentLabel { {}, "Recent projects" };
     juce::OwnedArray<juce::TextButton> recentButtons;
     juce::File currentProject;

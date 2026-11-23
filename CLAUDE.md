@@ -17,11 +17,11 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 ### App shell and windows
 - `Main.cpp`: app entry point and main window.
 - `MainComponent.cpp/.h`: main window layout; registers the built-in plugin types with the engine.
-- `MainComponentProject.cpp`: project folders; open, close, new, save, restore backup, new-song setup.
+- `MainComponentProject.cpp`: project folders; open, close, new, save, restore backup, new-song setup, save as template, new song from template.
 - `MainComponentMenus.cpp`: menu bar names, contents and command handling.
 - `MainComponentKeys.cpp`: keyboard shortcuts, shortcuts help, play/stop and zoom to fit.
 - `MainComponentWindows.cpp`: dock panel openers and dialog windows.
-- `StartScreen.cpp/.h`: opening screen: start something new or reopen a song.
+- `StartScreen.cpp/.h`: opening screen: start something new, start from a template, or reopen a song.
 - `SettingsComponent.cpp/.h`: settings for audio, plugins, recording, folders and about.
 - `TransportBar.cpp/.h`: top bar with transport, tempo and song controls.
 - `ExportDialog.cpp/.h`: export dialog for the mix and stems.
@@ -119,6 +119,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `RouteMenu.h`: header-only: KngRoute::addItems / addMenu list where a track's output can go (Master or another track), with loop protection.
 - `TrackWidth.h`: header-only: KngTrackWidth::get / set drive a hidden KNG Width stage after a track's volume (the Width control).
 - `VocalChain.h`: header-only: KngVocalChain::apply puts the one-click vocal chain (Gate, EQ, Comp, De-Esser, Air) on a track.
+- `ProjectTemplates.h`: header-only: song templates (a saved song without its audio clips) in Documents\KNG Studio\ProjectTemplates as .kngtemplate files.
 - `DockPanel.cpp/.h`: tabbed panel docked along the bottom, plus its resize divider.
 - `TrackInspector.cpp/.h`: right-side panel: selected track's volume, instrument, effects, sends.
 - `InspectorCards.cpp/.h`: KngIdentity (colour and chip per plugin, kngIdentityFor) and InstrumentCard.
@@ -286,6 +287,7 @@ On a plugin:
 - `kngDuck`: marks a compressor added for sidechain ducking.
 - `kngWidthStage`: marks the hidden KNG Width stage behind a track's Width control (skipped in effect lists).
 - `kngVocalChain`: marks the plugins added by the Vocal Chain button (replaced when it is clicked again).
+(no new saved property for templates; they are .kngtemplate XML files, see ProjectTemplates.h)
 - KNG Sampler: `kngFile`, `kngRoot`, `kngGain`, `kngAttack`, `kngRelease`, `kngGlide`, `kngMono`, `kngOneShot`, `kngLoop`, `kngLoopStart`, `kngLoopEnd`.
 
 ## 7. To do
@@ -312,7 +314,7 @@ Planned work, roughly in order. When an item is finished, move it out of this li
 - Wav Converter: convert audio files to and from WAV (and other common formats).
 
 ### Project
-- Project templates: save a whole song setup (tracks, lanes, instruments, effects, tempo) as a template and start a new song from one on the Start Screen.
+- Project templates (built: File > Save as Template and the Start Screen "From Template..." button, not yet tested): save a whole song setup (tracks, lanes, instruments, effects, tempo) as a template and start a new song from one on the Start Screen.
 
 ### New effects (follow section 5 checklist)
 - Time shaper in the style of Gross Beat: tempo-locked stutter, gate, half-speed and reverse patterns.
