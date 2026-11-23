@@ -313,7 +313,8 @@ Planned work, roughly in order. When an item is finished, move it out of this li
 
 ### Audio and editing
 - Gain envelopes: draw volume points inside an audio clip. Clip fades and per-clip gain already exist (TrackLane), and track volume automation exists (AutomationLane). Tracktion's clip-level volume is a ClipEffect that renders to a cache file, so it is slow to edit. Parked until we know the automation lanes are not enough.
-- Audio to MIDI: turn an audio clip into MIDI notes. Also let notes be played and recorded from a MIDI keyboard or from the computer keyboard.
+- Play any sound from a MIDI keyboard or the computer keyboard: whichever track or Rack row is selected plays from the controller with no setup (no arming and no picking an input), and can record notes into the piano roll or pattern.
+- Audio to MIDI: right-click an audio clip > Convert to MIDI. A single-voice pitch tracker (a hummed or sung melody, a bass line) makes a MIDI clip on a new track. Not for chords or full mixes.
 - Wav Converter (built: right-click a pattern block in a lane > Convert to WAV, saves to the song's Loops folder, not yet tested): turn a pattern into a WAV loop. Could later also appear in the Sounds browser.
 
 ### Project
