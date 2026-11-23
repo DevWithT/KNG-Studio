@@ -281,3 +281,35 @@ On a plugin:
 - `kngBoost`: marks the hidden volume-boost plugin (skipped in effect lists).
 - `kngDuck`: marks a compressor added for sidechain ducking.
 - KNG Sampler: `kngFile`, `kngRoot`, `kngGain`, `kngAttack`, `kngRelease`, `kngGlide`, `kngMono`, `kngOneShot`, `kngLoop`, `kngLoopStart`, `kngLoopEnd`.
+
+## 7. To do
+Planned work, roughly in order. When an item is finished, move it out of this list and update the file map above in the same change.
+
+### Plugin direction
+- The built-in KNG stock effects stay. Revamp each one so it looks and feels more premium.
+- The KNG Vox plugins (KngPlugins repo: Vox Comp, Vox DeEss, Vox Void, Vox EQ) are the premium line, possibly sold later. They stay standalone VST3s and are not ported into the built-ins.
+- Confirm the Vox VST3s scan, load in a track slot, save and reload with the project, and show up in the Plugin Browser.
+- KngSat stays a single-band saturator. Multiband saturation is a new premium plugin in the Vox line (KNG Vox Sat), built in the KngPlugins repo.
+
+### Mixing and routing
+- Sidechain: a "Sidechain: [track]" source choice on each plugin slot (FxChainComponent, MixerViewInserts, TrackInspector) so any plugin with a sidechain input can be fed by another track. Needed so KNG Vox EQ can duck a beat from the vocal. Today EditSessionRouting only adds a KNG Comp marked kngDuck. First check how Tracktion Engine exposes sidechain sources.
+- Buses: easier create, name, and manage.
+- Routes: choose where a track's output goes (master, a bus, another track) from the mixer and inspector.
+- Track pan: a pan control on every track, in the mixer strip and the inspector.
+- Track widener: a stereo width control on every track.
+
+### Vocals
+- Vocal chain template: one click adds a ready vocal chain (De-Ess, EQ, Comp, Air, Gate) to a track, built on the existing effect chain templates and master chain code.
+
+### Audio and editing
+- Clip fades: draggable fade in and fade out handles on audio clips.
+- Gain envelopes: draw volume points inside an audio clip.
+- Audio to MIDI: turn an audio clip into MIDI notes. Also let notes be played and recorded from a MIDI keyboard or from the computer keyboard.
+- Wav Converter: convert audio files to and from WAV (and other common formats).
+
+### Project
+- Project templates: save a whole song setup (tracks, lanes, instruments, effects, tempo) as a template and start a new song from one on the Start Screen.
+
+### New effects (follow section 5 checklist)
+- Time shaper in the style of Gross Beat: tempo-locked stutter, gate, half-speed and reverse patterns.
+- Transient widener: widens the stereo image of transients and sustain separately. Separate from KNG Width and KNG Transient.
