@@ -1,5 +1,6 @@
 #include "TracksView.h"
 #include "PluginBrowser.h"
+#include "KitBrowser.h"
 #include "KngTheme.h"
 #include "KngLogo.h"
 
@@ -275,10 +276,24 @@ int TracksView::trackAtY (int y) const
     return -1;
 }
 
+// A sound dragged out of the Sounds browser: the audio file it stands for, or an empty File
+static juce::File soundFromDrag (const juce::DragAndDropTarget::SourceDetails& details)
+{
+    juce::File f;
+
+    if (! KitBrowser::getDraggedFile (details.description, f))
+        if (auto* tree = dynamic_cast<juce::FileTreeComponent*> (details.sourceComponent.get()))
+            if (tree->getNumSelectedFiles() == 1)
+                f = tree->getSelectedFile();
+
+    return f.hasFileExtension ("wav;mp3;aif;aiff;flac;ogg") ? f : juce::File();
+}
+
 bool TracksView::isInterestedInDragSource (const SourceDetails& details)
 {
     PluginBrowser::Entry e;
-    return details.description.toString().startsWith ("kngpattern|")
+    return soundFromDrag (details) != juce::File()
+        || details.description.toString().startsWith ("kngpattern|")
         || PluginBrowser::parseDrag (details.description, e);
 }
 
@@ -286,6 +301,26 @@ void TracksView::itemDropped (const SourceDetails& details)
 {
     hoverY = -1;
     repaint();
+
+    // A sound from the Sounds browser: audio on the lane it was dropped on (below the lanes: a new lane)
+    if (const auto sound = soundFromDrag (details); sound != juce::File())
+    {
+        int soundLane = trackAtY (details.localPosition.y);
+
+        if (soundLane < 0 || ! session.isLaneTrack (soundLane))
+        {
+            session.addTrack();
+            soundLane = session.getNumTracks() - 1;
+        }
+
+        const int soundLaneWidth = juce::jmax (1, getWidth() - headerWidth - gap);
+        const double soundTime = juce::jmax (0.0, session.xToTime (details.localPosition.x - (headerWidth + gap), soundLaneWidth));
+
+        // Snap off or Alt held: right where you let go
+        const bool soundSnap = session.isSnapEnabled() && ! juce::ModifierKeys::currentModifiers.isAltDown();
+        session.importAudioFileAt (sound, soundLane, soundSnap ? session.snapTime (soundTime) : soundTime);
+        return;
+    }
 
     const auto text = details.description.toString();
 

@@ -321,3 +321,7 @@ Planned work, roughly in order. When an item is finished, move it out of this li
 
 ### Project
 - Project templates (built: File > Save as Template and the Start Screen "From Template..." button, not yet tested): save a whole song setup (tracks, lanes, instruments, effects, tempo) as a template and start a new song from one on the Start Screen.
+- Drag sounds from the Sounds browser onto Playlist lanes: built (audio lands on the lane at the drop point, below the lanes makes a new lane), not yet tested.
+- Reorder effects by dragging them (mixer inserts, track inspector list, FX chain window). Right-click Move Up / Move Down and the arrow buttons on the inspector rows exist today.
+- Playlist scroll bar for more bars, FL style: bars past the end of the song are greyed out until something is placed there.
+- Snap on and off in every area. The Playlist follows the Snap button already, the piano roll has its own grid box with Grid Off. Check drops and anywhere else that ignores it.
