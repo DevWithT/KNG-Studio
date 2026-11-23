@@ -303,8 +303,7 @@ Planned work, roughly in order. When an item is finished, move it out of this li
 - Vocal chain template: one click adds a ready vocal chain (De-Ess, EQ, Comp, Air, Gate) to a track, built on the existing effect chain templates and master chain code.
 
 ### Audio and editing
-- Clip fades: draggable fade in and fade out handles on audio clips.
-- Gain envelopes: draw volume points inside an audio clip.
+- Gain envelopes: draw volume points inside an audio clip. Clip fades and per-clip gain already exist (TrackLane), and track volume automation exists (AutomationLane). Tracktion's clip-level volume is a ClipEffect that renders to a cache file, so it is slow to edit. Parked until we know the automation lanes are not enough.
 - Audio to MIDI: turn an audio clip into MIDI notes. Also let notes be played and recorded from a MIDI keyboard or from the computer keyboard.
 - Wav Converter: convert audio files to and from WAV (and other common formats).
 
