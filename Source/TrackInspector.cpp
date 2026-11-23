@@ -7,6 +7,7 @@
 #include "KngTheme.h"
 #include "RouteMenu.h"
 #include "TrackWidth.h"
+#include "VocalChain.h"
 
 namespace te = tracktion;
 
@@ -334,6 +335,9 @@ void TrackInspector::showAddEffectMenu()
     auto* s = &session;
     const int idx = trackIndex;
     juce::PopupMenu menu;
+    menu.addItem ("Vocal Chain (Gate, EQ, Comp, De-Ess, Air)", [s, idx] { KngVocalChain::apply (*s, idx); });
+    menu.addSeparator();
+
     std::map<juce::String, juce::PopupMenu> byMaker;
 
     for (auto& e : PluginBrowser::buildEntries (session.getEdit().engine))

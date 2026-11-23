@@ -4,6 +4,7 @@
 #include "GenericPluginPanel.h"
 #include "InspectorCards.h"
 #include "SidechainMenu.h"
+#include "VocalChain.h"
 #include <map>
 
 namespace te = tracktion;
@@ -137,6 +138,13 @@ void MixerStrip::showAddFxMenu()
 {
     juce::Component::SafePointer<MixerStrip> safe (this);
     juce::PopupMenu menu;
+
+    if (! isMaster())
+    {
+        menu.addItem ("Vocal Chain (Gate, EQ, Comp, De-Ess, Air)", [safe] { if (safe != nullptr) KngVocalChain::apply (safe->session, safe->trackIndex); });
+        menu.addSeparator();
+    }
+
     std::map<juce::String, juce::PopupMenu> byMaker;
 
     for (auto& e : PluginBrowser::buildEntries (session.getEdit().engine))

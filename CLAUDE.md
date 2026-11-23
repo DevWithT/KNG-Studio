@@ -118,6 +118,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `SidechainMenu.h`: header-only: KngSidechain::addMenu adds a "Sidechain" source submenu to a plugin slot's menu.
 - `RouteMenu.h`: header-only: KngRoute::addItems / addMenu list where a track's output can go (Master or another track), with loop protection.
 - `TrackWidth.h`: header-only: KngTrackWidth::get / set drive a hidden KNG Width stage after a track's volume (the Width control).
+- `VocalChain.h`: header-only: KngVocalChain::apply puts the one-click vocal chain (Gate, EQ, Comp, De-Esser, Air) on a track.
 - `DockPanel.cpp/.h`: tabbed panel docked along the bottom, plus its resize divider.
 - `TrackInspector.cpp/.h`: right-side panel: selected track's volume, instrument, effects, sends.
 - `InspectorCards.cpp/.h`: KngIdentity (colour and chip per plugin, kngIdentityFor) and InstrumentCard.
@@ -284,6 +285,7 @@ On a plugin:
 - `kngBoost`: marks the hidden volume-boost plugin (skipped in effect lists).
 - `kngDuck`: marks a compressor added for sidechain ducking.
 - `kngWidthStage`: marks the hidden KNG Width stage behind a track's Width control (skipped in effect lists).
+- `kngVocalChain`: marks the plugins added by the Vocal Chain button (replaced when it is clicked again).
 - KNG Sampler: `kngFile`, `kngRoot`, `kngGain`, `kngAttack`, `kngRelease`, `kngGlide`, `kngMono`, `kngOneShot`, `kngLoop`, `kngLoopStart`, `kngLoopEnd`.
 
 ## 7. To do
@@ -302,7 +304,7 @@ Planned work, roughly in order. When an item is finished, move it out of this li
 - Track widener (built into the inspector and mixer strips, not yet tested): a stereo width control on every track.
 
 ### Vocals
-- Vocal chain template: one click adds a ready vocal chain (De-Ess, EQ, Comp, Air, Gate) to a track, built on the existing effect chain templates and master chain code.
+- Vocal chain template (built into the inspector and mixer "+ FX" menus, not yet tested; the EQ is added flat and still needs a high-pass): one click adds a ready vocal chain (De-Ess, EQ, Comp, Air, Gate) to a track, built on the existing effect chain templates and master chain code.
 
 ### Audio and editing
 - Gain envelopes: draw volume points inside an audio clip. Clip fades and per-clip gain already exist (TrackLane), and track volume automation exists (AutomationLane). Tracktion's clip-level volume is a ClipEffect that renders to a cache file, so it is slow to edit. Parked until we know the automation lanes are not enough.
