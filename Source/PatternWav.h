@@ -2,13 +2,14 @@
 
 #include "EditSession.h"
 
-// Renders one pattern block to a WAV loop in the song's Loops folder.
+// Renders one pattern block to a WAV loop in the Kits folder (My Loops), named with the song's tempo
+// so the Sounds browser shows it and previews it in time.
 // Only the sounds that play in the block are rendered (plus the buses they feed), without the master chain.
 namespace KngPatternWav
 {
-    inline juce::File getLoopsFolder (EditSession& session)
+    inline juce::File getLoopsFolder ([[maybe_unused]] EditSession& session)
     {
-        auto folder = session.getProjectFile().getParentDirectory().getChildFile ("Loops");
+        auto folder = EditSession::getKitsFolder().getChildFile ("My Loops");
         folder.createDirectory();
         return folder;
     }
@@ -58,7 +59,13 @@ namespace KngPatternWav
         if (safeName.isEmpty())
             safeName = "Loop";
 
-        const auto dest = getLoopsFolder (session).getNonexistentChildFile (safeName, ".wav", false);
+        // "Hats 140bpm.wav": the Sounds browser reads the tempo from the name
+        const auto bpmText = juce::String (juce::roundToInt (session.getBpmAt (block.start))) + "bpm";
+        const auto loopsFolder = getLoopsFolder (session);
+        auto dest = loopsFolder.getChildFile (safeName + " " + bpmText + ".wav");
+
+        for (int n = 2; dest.exists(); ++n)
+            dest = loopsFolder.getChildFile (safeName + " " + juce::String (n) + " " + bpmText + ".wav");
 
         auto format = std::make_shared<juce::WavAudioFormat>();
 

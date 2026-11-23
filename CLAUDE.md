@@ -78,7 +78,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `TrackLaneMouse.cpp`: TrackLane hit testing and the click, drag, release path.
 - `TrackLaneMouseActions.cpp`: TrackLane scroll wheel, keys, clip menu, audio file drops, double-click.
 - `BlockLayer.cpp/.h`: sits over one lane and draws its pattern blocks.
-- `PatternWav.h`: header-only: KngPatternWav::render bakes one pattern block to a WAV loop in the song's Loops folder (block menu: Convert to WAV).
+- `PatternWav.h`: header-only: KngPatternWav::render renders a pattern block to a WAV loop in the Kits folder under My Loops, named like "Hats 140bpm.wav" (block menu: Convert to WAV).
 - `PitchTracker.h` (header only): finds the notes in one melody line (YIN pitch guesses every 10 ms, steady stretches become notes). One note at a time, no chords. Used by Convert to MIDI.
 - `AudioToMidi.h` (header only): Convert to MIDI. Runs the pitch tracker on an audio clip and puts the notes in a MIDI clip on a new KNG Synth track.
 - `AutomationLane.cpp/.h`: automation row: AutomationHeader (pick target) and the curve.
@@ -317,7 +317,7 @@ Planned work, roughly in order. When an item is finished, move it out of this li
 - Gain envelopes: draw volume points inside an audio clip. Clip fades and per-clip gain already exist (TrackLane), and track volume automation exists (AutomationLane). Tracktion's clip-level volume is a ClipEffect that renders to a cache file, so it is slow to edit. Parked until we know the automation lanes are not enough.
 - Play any sound from a MIDI keyboard or the computer keyboard (MIDI keyboard and pad part built (picks up a device plugged in while the Studio is open), not yet tested; computer keyboard piano built (Ctrl+K, Up/Down for octave, not recorded into clips yet), not yet tested): whichever track or Rack row is selected plays from the controller with no setup (no arming and no picking an input), and can record notes into the piano roll or pattern.
 - Audio to MIDI: right-click an audio clip > Convert to MIDI. A single-voice pitch tracker (a hummed or sung melody, a bass line) makes a MIDI clip on a new track. Not for chords or full mixes. Built: right-click an audio clip, Convert to MIDI (one voice or melody only, makes a new KNG Synth track). Not yet tested.
-- Wav Converter (built: right-click a pattern block in a lane > Convert to WAV, saves to the song's Loops folder, not yet tested): turn a pattern into a WAV loop. Could later also appear in the Sounds browser.
+- Wav Converter (built: right-click a pattern block in a lane > Convert to WAV, saves to Kits, My Loops, so the loops show up in the Sounds browser, not yet tested): turn a pattern into a WAV loop.
 
 ### Project
 - Project templates (built: File > Save as Template and the Start Screen "From Template..." button, not yet tested): save a whole song setup (tracks, lanes, instruments, effects, tempo) as a template and start a new song from one on the Start Screen.
