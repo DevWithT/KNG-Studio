@@ -65,7 +65,7 @@ RackView::RackView (EditSession& sessionToUse)
     addRowButton.setTooltip ("Add a sample or an instrument as a new row. You can also drag samples in from the Browser.");
 
     viewport.setViewedComponent (&content, false);
-    viewport.setScrollBarsShown (true, false);
+    viewport.setScrollBarsShown (true, true);
 
     rebuild();
     syncToolbar();
@@ -159,6 +159,8 @@ void RackView::timerCallback()
     for (auto* row : rows)
         sig << row->getIdealHeight() << ",";
 
+    sig << session.getPatternSteps (session.getCurrentPattern());
+
     if (sig != lastLayoutSignature)
         layoutRows();
 
@@ -183,7 +185,13 @@ void RackView::rebuild()
 
 void RackView::layoutRows()
 {
-    const int width = juce::jmax (0, viewport.getWidth() - viewport.getScrollBarThickness());
+    const int viewWidth = juce::jmax (0, viewport.getWidth() - viewport.getScrollBarThickness());
+
+    // Steps keep a readable size: a long pattern is wider than the panel and scrolls sideways
+    constexpr int headerSpace = 340;   // a row's controls on the left, with a little to spare
+    constexpr int minStepWidth = 20;
+    const int patternSteps = session.getPatternSteps (session.getCurrentPattern());
+    const int width = juce::jmax (viewWidth, headerSpace + patternSteps * minStepWidth);
     int y = 0;
     juce::String sig;
 
@@ -199,6 +207,7 @@ void RackView::layoutRows()
     addRowButton.setBounds (0, y, width, addRowHeight);
     y += addRowHeight;
 
+    sig << session.getPatternSteps (session.getCurrentPattern());
     lastLayoutSignature = sig;
     content.setSize (width, juce::jmax (y, 1));
 }

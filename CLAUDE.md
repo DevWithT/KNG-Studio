@@ -92,7 +92,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `CompView.cpp/.h`: take comping for an audio clip, and its window.
 
 ### Rack and patterns
-- `RackView.cpp/.h`: every sound and instrument in one place, editing the current pattern.
+- `RackView.cpp/.h`: every sound and instrument in one place, editing the current pattern. Steps keep a minimum width of 20 px and long patterns scroll sideways.
 - `RackRow.cpp/.h`: one sound in the Rack: controls on the left, its pattern right.
 - `RackRowPaint.cpp`: RackRow painting (drum rows, mini piano roll) and header layout.
 - `RackRowMouse.cpp`: RackRow mouse: row clicks, step painting, dragging the pattern out.
