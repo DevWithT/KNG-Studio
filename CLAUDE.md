@@ -300,6 +300,7 @@ Planned work, roughly in order. When an item is finished, move it out of this li
 - Confirm the Vox VST3s scan, load in a track slot, save and reload with the project, and show up in the Plugin Browser.
 - KngSat stays a single-band saturator. Multiband saturation is a new premium plugin in the Vox line (KNG Vox Sat), built in the KngPlugins repo.
 - Gross Beat style time shaper (tempo-locked stutter, gate, half-speed and reverse patterns) is a premium plugin in the KngPlugins repo, not a Studio built-in. KNG Pump stays as the Studio's stock version of the idea.
+- Transient widener (widens the stereo image of hits and sustain separately) is also a premium plugin in the KngPlugins repo, not a Studio built-in. KNG Width and KNG Transient stay as the stock versions.
 
 ### Mixing and routing
 - Sidechain (built into mixer inserts, FX chain rows and inspector rows, not yet tested): a "Sidechain: [track]" source choice on each plugin slot (FxChainComponent, MixerViewInserts, TrackInspector) so any plugin with a sidechain input can be fed by another track. Needed so KNG Vox EQ can duck a beat from the vocal. Today EditSessionRouting only adds a KNG Comp marked kngDuck. First check how Tracktion Engine exposes sidechain sources.
@@ -317,6 +318,3 @@ Planned work, roughly in order. When an item is finished, move it out of this li
 
 ### Project
 - Project templates (built: File > Save as Template and the Start Screen "From Template..." button, not yet tested): save a whole song setup (tracks, lanes, instruments, effects, tempo) as a template and start a new song from one on the Start Screen.
-
-### New effects (follow section 5 checklist)
-- Transient widener: widens the stereo image of transients and sustain separately. Separate from KNG Width and KNG Transient.
