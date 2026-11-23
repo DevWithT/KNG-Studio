@@ -24,6 +24,7 @@ private:
     void showInstrumentMenu();
     void showAddEffectMenu();
     void newBus();
+    void showOutputMenu();
 
     EditSession& session;
     int trackIndex = -1;
@@ -33,6 +34,7 @@ private:
     juce::Label instHeading { {}, "INSTRUMENT" }, fxHeading { {}, "EFFECTS" }, sendHeading { {}, "SENDS" };
     juce::TextButton instrumentButton { "Choose instrument" }, openInstrumentButton { "Open" };
     juce::TextButton addEffectButton { "+ Add effect" }, newBusButton { "+ New bus" };
+    juce::TextButton outputButton { "Output: Master" };
     juce::Slider volumeSlider, panSlider;
 
     juce::OwnedArray<ParamKnob> knobs;

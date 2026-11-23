@@ -5,6 +5,7 @@
 #include "KngSamplerPlugin.h"
 #include "KngSynthPlugin.h"
 #include "KngTheme.h"
+#include "RouteMenu.h"
 
 namespace te = tracktion;
 
@@ -20,7 +21,7 @@ TrackInspector::TrackInspector (EditSession& sessionToUse)
 {
     for (auto* c : std::initializer_list<juce::Component*> { &nameLabel, &hintLabel, &instHeading, &fxHeading, &sendHeading,
                                                              &instrumentButton, &openInstrumentButton, &addEffectButton,
-                                                             &newBusButton, &volumeSlider, &panSlider })
+                                                             &newBusButton, &volumeSlider, &panSlider, &outputButton })
         addAndMakeVisible (c);
 
     for (auto* l : { &instHeading, &fxHeading, &sendHeading })
@@ -54,6 +55,7 @@ TrackInspector::TrackInspector (EditSession& sessionToUse)
     openInstrumentButton.onClick = [this] { openInstrument(); };
     addEffectButton.onClick      = [this] { showAddEffectMenu(); };
     newBusButton.onClick         = [this] { newBus(); };
+    outputButton.onClick         = [this] { showOutputMenu(); };
 
     volumeSlider.setTooltip ("Volume (double-click for 0 dB)");
     panSlider.setTooltip ("Pan (double-click to center)");
@@ -61,6 +63,7 @@ TrackInspector::TrackInspector (EditSession& sessionToUse)
     openInstrumentButton.setTooltip ("Open the full instrument panel");
     addEffectButton.setTooltip ("Add an effect to this track");
     newBusButton.setTooltip ("Make a new bus (like a Delay Bus) and send this track to it");
+    outputButton.setTooltip ("Where this track's sound goes: Master, or another track such as a bus");
 
     rebuild();
     startTimerHz (5);
@@ -81,6 +84,7 @@ juce::String TrackInspector::getSignature()
     if (auto* t = session.getTrack (idx))
     {
         sig << t->itemID.toString() << ";";
+        sig << KngRoute::currentName (*t) << ";";
 
         if (session.isMidiTrack (idx))
             if (auto* inst = session.getInstrument (idx))
@@ -111,7 +115,7 @@ void TrackInspector::rebuild()
 
     for (auto* c : std::initializer_list<juce::Component*> { &nameLabel, &instHeading, &fxHeading, &sendHeading,
                                                              &instrumentButton, &openInstrumentButton, &addEffectButton,
-                                                             &newBusButton, &volumeSlider, &panSlider })
+                                                             &newBusButton, &volumeSlider, &panSlider, &outputButton })
         c->setVisible (has);
 
     hintLabel.setVisible (! has);
@@ -125,6 +129,7 @@ void TrackInspector::rebuild()
     }
 
     nameLabel.setText (t->getName(), juce::dontSendNotification);
+    outputButton.setButtonText ("Output: " + KngRoute::currentName (*t));
 
     const bool midi = session.isMidiTrack (trackIndex);
     const bool drum = midi && session.isDrumTrack (trackIndex);
@@ -360,6 +365,18 @@ void TrackInspector::newBus()
     }), true);
 }
 
+void TrackInspector::showOutputMenu()
+{
+    auto* t = session.getTrack (trackIndex);
+
+    if (t == nullptr)
+        return;
+
+    juce::PopupMenu menu;
+    KngRoute::addItems (menu, session, *t);
+    menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&outputButton));
+}
+
 //==============================================================================
 void TrackInspector::paint (juce::Graphics& g)
 {
@@ -390,6 +407,8 @@ void TrackInspector::resized()
     panSlider.setBounds (volRow.removeFromRight (70));
     volRow.removeFromRight (6);
     volumeSlider.setBounds (volRow);
+    r.removeFromTop (6);
+    outputButton.setBounds (r.removeFromTop (24));
     r.removeFromTop (14);
 
     instrumentCard = {};
