@@ -68,6 +68,14 @@ void EditSession::setPatternBars (int pattern, int bars)
     beginEdit();
     edit->state.setProperty ("kngPatternBars" + juce::String (pattern), bars, nullptr);
 
+    // If this pattern is looping right now, stretch or trim the loop with it, or playback keeps the old length
+    {
+        const double home = getPatternHome (pattern);
+
+        if (isLooping() && std::abs (getLoopStart() - home) < 0.01)
+            setLoopRange (home, barsAfter (home, bars));
+    }
+
     // Resize every copy of the pattern
     for (int i = 0; i < getNumTracks(); ++i)
         if (auto* t = getTrack (i))
