@@ -94,6 +94,7 @@ void MainComponent::closeProject()
     inspector = nullptr;
     patternList = nullptr;
     playlistToolbar = nullptr;
+    playlistScroll = nullptr;
     session = nullptr;   // saves on the way out
 }
 
@@ -136,6 +137,9 @@ void MainComponent::loadProject (const juce::File& editFile)
 
     markerBar = std::make_unique<MarkerBar> (*session);
     addAndMakeVisible (*markerBar);
+
+    playlistScroll = std::make_unique<PlaylistScrollBar> (*session);
+    addAndMakeVisible (*playlistScroll);
 
     masterStrip = std::make_unique<MasterStrip> (*session);
     addAndMakeVisible (*masterStrip);

@@ -81,6 +81,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `PatternWav.h`: header-only: KngPatternWav::render renders a pattern block to a WAV loop in the Kits folder under My Loops, named like "Hats 140bpm.wav" (block menu: Convert to WAV).
 - `PitchTracker.h` (header only): finds the notes in one melody line (YIN pitch guesses every 10 ms, steady stretches become notes). One note at a time, no chords. Used by Convert to MIDI.
 - `AudioToMidi.h` (header only): Convert to MIDI. Runs the pitch tracker on an audio clip and puts the notes in a MIDI clip on a new KNG Synth track.
+- `PlaylistScrollBar.h` (header only): the horizontal scroll bar under the Playlist lanes. It covers the song plus one screen of empty bars.
 - `AutomationLane.cpp/.h`: automation row: AutomationHeader (pick target) and the curve.
 - `FolderHeader.cpp/.h`: bar above a folder's tracks: collapse, name, mute, solo.
 - `TimelineRuler.cpp/.h`: the bar.beat ruler above the lanes.
@@ -243,7 +244,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `EditSessionTools.cpp`: getBuiltInEffects, addBuiltInPlugin, bounceTrackInPlace, movePatternBlock
 - `EditSessionTracks.cpp`: moveTrack, duplicateSelectedClip, copySelectedClip, pasteClip
 - `EditSessionTransport.cpp`: play, record, stop, setBpm, getBpm, setClickEnabled, isClickEnabled, setCountInBars, getCountInBars, setLooping, isLooping, setLoopRange, getLoopStart, getLoopEnd, undo, redo, retake
-- `EditSessionView.cpp`: setView, zoomAround, scrollBy, xToTime, timeToX, snapTime, getSnapGrid, setSnapGrid, beginEdit, splitSelectedClipAtPlayhead
+- `EditSessionView.cpp`: setView, zoomAround, scrollBy, xToTime, timeToX, snapTime, getSnapGrid, setSnapGrid, beginEdit, splitSelectedClipAtPlayhead, getPlaylistEnd
 - `EditSessionVocalAlign.cpp`: alignClipToTrack
 - `EditSessionVolume.cpp`: getTrackVolumeDb, setTrackVolumeDb, getMasterVolumeDb, setMasterVolumeDb
 
@@ -323,5 +324,6 @@ Planned work, roughly in order. When an item is finished, move it out of this li
 - Project templates (built: File > Save as Template and the Start Screen "From Template..." button, not yet tested): save a whole song setup (tracks, lanes, instruments, effects, tempo) as a template and start a new song from one on the Start Screen.
 - Drag sounds from the Sounds browser onto Playlist lanes: built (audio lands on the lane at the drop point, below the lanes makes a new lane), not yet tested.
 - Reorder effects by dragging them (mixer inserts, track inspector list, FX chain window). Right-click Move Up / Move Down and the arrow buttons on the inspector rows exist today.
-- Playlist scroll bar for more bars, FL style: bars past the end of the song are greyed out until something is placed there.
+- Playlist scroll bar for more bars: bar built (covers the song plus one empty screen), not yet tested.
+- Dim the bars past the end of the song until something is placed there (next step after the scroll bar).
 - Snap on and off in every area. The Playlist follows the Snap button already, the piano roll has its own grid box with Grid Off. Check drops and anywhere else that ignores it.

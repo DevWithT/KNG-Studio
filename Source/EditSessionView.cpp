@@ -121,3 +121,21 @@ void EditSession::splitSelectedClipAtPlayhead()
 
     save();
 }
+
+//==============================================================================
+double EditSession::getPlaylistEnd()
+{
+    // Worked out at most four times a second, since every lane asks every frame
+    const auto now = juce::Time::getMillisecondCounter();
+
+    if (now - playlistEndStamp < 250 && playlistEndCache > 0.0)
+        return playlistEndCache;
+
+    // The last bar with anything in it, but never less than the first 16 bars of a song
+    const double end = juce::jmax (getSongEnd(), barsAfter (0.0, 16));
+    const double bar = barStartAt (end);
+
+    playlistEndCache = bar < end - 1.0e-6 ? barsAfter (bar, 1) : bar;
+    playlistEndStamp = now;
+    return playlistEndCache;
+}

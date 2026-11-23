@@ -303,6 +303,8 @@ public:
     double getBankStart();
     /** Where the song ends, not counting the bank. */
     double getSongEnd();
+    /** The end of the live part of the Playlist: the last bar with anything in it, or the first 16 bars of a new song. */
+    double getPlaylistEnd();
 
     // The Playlist: lanes are the audio tracks, and pattern blocks sit in a lane
     bool isLaneTrack (int trackIndex);
@@ -468,6 +470,8 @@ private:
     double viewStart = 0.0;
     double viewLength = 60.0;
     bool snapEnabled = true;
+    double playlistEndCache = 0.0;
+    juce::uint32 playlistEndStamp = 0;
     bool recoveredFromCrash = false;
     juce::Time lastBackupTime;
     int currentPattern = 1;

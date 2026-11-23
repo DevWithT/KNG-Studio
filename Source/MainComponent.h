@@ -24,6 +24,7 @@
 #include "TrackInspector.h"
 #include "PatternListPanel.h"
 #include "PlaylistToolbar.h"
+#include "PlaylistScrollBar.h"
 
 class MainComponent : public juce::Component,
                       public juce::MenuBarModel,
@@ -121,6 +122,7 @@ private:
     std::unique_ptr<PatternListPanel> patternList;
     bool patternsVisible = true;
     std::unique_ptr<PlaylistToolbar> playlistToolbar;
+    std::unique_ptr<PlaylistScrollBar> playlistScroll;
     std::unique_ptr<TimelineRuler> ruler;
     std::unique_ptr<MarkerBar> markerBar;
     std::unique_ptr<MasterStrip> masterStrip;

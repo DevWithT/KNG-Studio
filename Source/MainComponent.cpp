@@ -266,6 +266,13 @@ void MainComponent::resized()
         ruler->setBounds (rulerRow.withTrimmedLeft (laneOffset)
                                   .withTrimmedRight (tracksViewport.getScrollBarThickness()));
 
+    // A bar under the lanes to scroll through the song and the empty bars after it
+    auto scrollRow = area.removeFromBottom (14);
+
+    if (playlistScroll != nullptr)
+        playlistScroll->setBounds (scrollRow.withTrimmedLeft (laneOffset)
+                                            .withTrimmedRight (tracksViewport.getScrollBarThickness()));
+
     tracksViewport.setBounds (area);
 
     // At least as tall as the view, so the empty space below the tracks takes drops
