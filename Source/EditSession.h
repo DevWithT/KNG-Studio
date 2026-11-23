@@ -32,7 +32,7 @@ public:
     bool isMidiLearn();
 
     /** The track the inspector on the right is showing (-1 if none). */
-    void selectTrack (int trackIndex)          { selectedTrackPtr = getTrack (trackIndex); }
+    void selectTrack (int trackIndex)          { selectedTrackPtr = getTrack (trackIndex); routeLiveMidi(); }
 
     int getSelectedTrackIndex()
     {
@@ -90,6 +90,8 @@ public:
     void setInstrument (int trackIndex, const juce::PluginDescription& desc);
     tracktion::Plugin* getInstrument (int trackIndex);
     void removeInstrument (int trackIndex);
+    /** The selected instrument track plays from any connected MIDI keyboard or pad, with no arming. */
+    void routeLiveMidi();
 
     // Lets the UI open a piano roll (MainComponent sets this)
     std::function<void (tracktion::MidiClip&)> onShowPianoRoll;

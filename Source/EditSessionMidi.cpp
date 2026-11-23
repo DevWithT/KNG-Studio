@@ -95,3 +95,53 @@ void EditSession::removeInstrument (int trackIndex)
         save();
     }
 }
+
+//==============================================================================
+// Live MIDI: the selected instrument track plays from any connected MIDI keyboard or pad.
+// Arming a track to record works as before and keeps its keyboard.
+
+void EditSession::routeLiveMidi()
+{
+    auto* track = dynamic_cast<te::AudioTrack*> (selectedTrackPtr.get());
+
+    if (track == nullptr || getTransport().isRecording())
+        return;
+
+    // Only tracks that make sound from notes
+    bool hasInstrument = false;
+
+    for (auto* p : track->pluginList)
+    {
+        if (p->isSynth())
+        {
+            hasInstrument = true;
+            break;
+        }
+    }
+
+    if (! hasInstrument)
+        return;
+
+    for (auto instance : edit->getAllInputDevices())
+    {
+        if (instance->getInputDevice().getDeviceType() != te::InputDevice::physicalMidiDevice)
+            continue;
+
+        // Already feeding this track
+        const auto targets = instance->getTargets();
+
+        if (targets.size() == 1 && targets[0] == track->itemID)
+            continue;
+
+        // A track armed to record keeps its keyboard
+        bool armed = false;
+
+        for (auto id : targets)
+            armed = armed || instance->isRecordingEnabled (id);
+
+        if (armed)
+            continue;
+
+        [[maybe_unused]] auto result = instance->setTarget (track->itemID, true, nullptr, 0);
+    }
+}

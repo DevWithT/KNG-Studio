@@ -275,13 +275,13 @@ void EditSession::refreshInputs()
         }
     }
 
-    // MIDI keyboards always monitor when armed, so you hear the instrument while you play
+    // MIDI keyboards are always heard through the selected instrument, armed or not
     for (int i = 0; i < dm.getNumMidiInDevices(); ++i)
     {
         if (auto mid = dm.getMidiInDevice (i))
         {
             mid->setEnabled (true);
-            mid->setMonitorMode (te::InputDevice::MonitorMode::automatic);
+            mid->setMonitorMode (te::InputDevice::MonitorMode::on);
         }
     }
 
