@@ -144,6 +144,15 @@ void TrackLane::paint (juce::Graphics& g)
     }
 
     drawGrid (g);
+
+    // Bars past the end of the song are dimmed until something is placed there
+    const int endX = juce::jmax (0, timeToX (session.getPlaylistEnd()));
+
+    if (endX < getWidth())
+    {
+        g.setColour (juce::Colours::black.withAlpha (0.3f));
+        g.fillRect (endX, 0, getWidth() - endX, getHeight());
+    }
     drawClips (g);
     drawRecording (g);
     drawBox (g);

@@ -325,5 +325,5 @@ Planned work, roughly in order. When an item is finished, move it out of this li
 - Drag sounds from the Sounds browser onto Playlist lanes: built (audio lands on the lane at the drop point, below the lanes makes a new lane), not yet tested.
 - Reorder effects by dragging them (mixer inserts, track inspector list, FX chain window). Right-click Move Up / Move Down and the arrow buttons on the inspector rows exist today.
 - Playlist scroll bar for more bars: bar built (covers the song plus one empty screen), not yet tested.
-- Dim the bars past the end of the song until something is placed there (next step after the scroll bar).
+- Bars past the end of the song are dimmed in the Playlist lanes until something is placed there: built, not yet tested.
 - Snap on and off in every area. The Playlist follows the Snap button already, the piano roll has its own grid box with Grid Off. Check drops and anywhere else that ignores it.
