@@ -78,6 +78,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `TrackLaneMouse.cpp`: TrackLane hit testing and the click, drag, release path.
 - `TrackLaneMouseActions.cpp`: TrackLane scroll wheel, keys, clip menu, audio file drops, double-click.
 - `BlockLayer.cpp/.h`: sits over one lane and draws its pattern blocks.
+- `PatternWav.h`: header-only: KngPatternWav::render bakes one pattern block to a WAV loop in the song's Loops folder (block menu: Convert to WAV).
 - `AutomationLane.cpp/.h`: automation row: AutomationHeader (pick target) and the curve.
 - `FolderHeader.cpp/.h`: bar above a folder's tracks: collapse, name, mute, solo.
 - `TimelineRuler.cpp/.h`: the bar.beat ruler above the lanes.
@@ -311,7 +312,7 @@ Planned work, roughly in order. When an item is finished, move it out of this li
 ### Audio and editing
 - Gain envelopes: draw volume points inside an audio clip. Clip fades and per-clip gain already exist (TrackLane), and track volume automation exists (AutomationLane). Tracktion's clip-level volume is a ClipEffect that renders to a cache file, so it is slow to edit. Parked until we know the automation lanes are not enough.
 - Audio to MIDI: turn an audio clip into MIDI notes. Also let notes be played and recorded from a MIDI keyboard or from the computer keyboard.
-- Wav Converter: convert audio files to and from WAV (and other common formats).
+- Wav Converter (built: right-click a pattern block in a lane > Convert to WAV, saves to the song's Loops folder, not yet tested): turn a pattern into a WAV loop. Could later also appear in the Sounds browser.
 
 ### Project
 - Project templates (built: File > Save as Template and the Start Screen "From Template..." button, not yet tested): save a whole song setup (tracks, lanes, instruments, effects, tempo) as a template and start a new song from one on the Start Screen.

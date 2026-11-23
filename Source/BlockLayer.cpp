@@ -1,5 +1,6 @@
 #include "BlockLayer.h"
 #include "KngTheme.h"
+#include "PatternWav.h"
 
 namespace te = tracktion;
 
@@ -289,6 +290,19 @@ void BlockLayer::showMenu (EditSession::PatternBlock block)
     });
 
     menu.addSeparator();
+
+    menu.addItem ("Convert to WAV", [s, block]
+    {
+        KngPatternWav::render (*s, block, [] (const juce::File& file, const juce::String& error)
+        {
+            if (error.isNotEmpty())
+                juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::WarningIcon, "Convert to WAV",
+                                                        "Couldn't render this pattern: " + error);
+            else
+                file.revealToUser();
+        });
+    });
+
     menu.addItem ("Delete", [s, block] { juce::MessageManager::callAsync ([s, block] { s->deleteBlock (block); }); });
     menu.showMenuAsync ({});
 }
