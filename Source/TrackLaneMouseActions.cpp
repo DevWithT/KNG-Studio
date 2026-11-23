@@ -1,5 +1,6 @@
 #include "TrackLane.h"
 #include "SliceEditorView.h"
+#include "AudioToMidi.h"
 
 namespace te = tracktion;
 
@@ -142,6 +143,19 @@ void TrackLane::showClipMenu (te::Clip* clip)
 
         chop.addItem ("At markers", [s, acbPtr] { s->chopClipToPads (*acbPtr, 16, true); });
         menu.addSubMenu ("Chop to Pads", chop);
+
+        menu.addItem ("Convert to MIDI (one voice or melody)", [s, acbPtr]
+        {
+            const int made = KngAudioToMidi::convert (*s, *acbPtr);
+
+            if (made == 0)
+                juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::InfoIcon, "No notes found",
+                                                        "Convert to MIDI needs one voice or one melody line, one note at a time. "
+                                                        "Chords and full mixes will not work.");
+            else if (made < 0)
+                juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::WarningIcon, "Couldn't convert",
+                                                        "This clip could not be read.");
+        });
 
         menu.addItem ("Tune with KngTune", [s, idx = trackIndex]
         {

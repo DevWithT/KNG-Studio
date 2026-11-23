@@ -316,7 +316,7 @@ Planned work, roughly in order. When an item is finished, move it out of this li
 ### Audio and editing
 - Gain envelopes: draw volume points inside an audio clip. Clip fades and per-clip gain already exist (TrackLane), and track volume automation exists (AutomationLane). Tracktion's clip-level volume is a ClipEffect that renders to a cache file, so it is slow to edit. Parked until we know the automation lanes are not enough.
 - Play any sound from a MIDI keyboard or the computer keyboard (MIDI keyboard and pad part built (picks up a device plugged in while the Studio is open), not yet tested; computer keyboard piano built (Ctrl+K, Up/Down for octave, not recorded into clips yet), not yet tested): whichever track or Rack row is selected plays from the controller with no setup (no arming and no picking an input), and can record notes into the piano roll or pattern.
-- Audio to MIDI: right-click an audio clip > Convert to MIDI. A single-voice pitch tracker (a hummed or sung melody, a bass line) makes a MIDI clip on a new track. Not for chords or full mixes.
+- Audio to MIDI: right-click an audio clip > Convert to MIDI. A single-voice pitch tracker (a hummed or sung melody, a bass line) makes a MIDI clip on a new track. Not for chords or full mixes. Built: right-click an audio clip, Convert to MIDI (one voice or melody only, makes a new KNG Synth track). Not yet tested.
 - Wav Converter (built: right-click a pattern block in a lane > Convert to WAV, saves to the song's Loops folder, not yet tested): turn a pattern into a WAV loop. Could later also appear in the Sounds browser.
 
 ### Project
