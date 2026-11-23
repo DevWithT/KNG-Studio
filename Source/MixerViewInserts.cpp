@@ -48,7 +48,7 @@ void MixerStrip::rebuildInserts()
         b->setColour (juce::TextButton::buttonColourId, p->isEnabled() ? identity.accent.interpolatedWith (juce::Colour (0xff1e2124), 0.55f)
                                                                         : juce::Colour (0xff2b2f33));
         b->setColour (juce::TextButton::textColourOffId, juce::Colours::white.withAlpha (p->isEnabled() ? 0.95f : 0.4f));
-        b->setTooltip ("Click to open. Right-click to bypass, sidechain or remove.");
+        b->setTooltip ("Click to open. Right-click to bypass, move, sidechain or remove.");
 
         te::Plugin::Ptr ptr (p);
         juce::Component::SafePointer<MixerStrip> safe (this);
@@ -63,6 +63,13 @@ void MixerStrip::rebuildInserts()
             auto* s = &safe->session;
             juce::PopupMenu menu;
             menu.addItem (ptr->isEnabled() ? "Bypass" : "Turn On", [ptr] { ptr->setEnabled (! ptr->isEnabled()); });
+
+            // Reorder: earlier in the chain is higher in the strip
+            auto* list = safe->getPluginList();
+            const int at = list != nullptr ? s->getFxPlugins (*list).indexOf (ptr.get()) : -1;
+            const int count = list != nullptr ? s->getFxPlugins (*list).size() : 0;
+            menu.addItem ("Move Up", at > 0, false, [s, list, ptr] { s->movePlugin (*list, ptr.get(), -1); });
+            menu.addItem ("Move Down", at >= 0 && at < count - 1, false, [s, list, ptr] { s->movePlugin (*list, ptr.get(), 1); });
             KngSidechain::addMenu (menu, *s, *ptr);
             menu.addItem ("Remove", [s, ptr] { juce::MessageManager::callAsync ([s, ptr] { s->removePlugin (ptr.get()); }); });
             menu.showMenuAsync ({});
