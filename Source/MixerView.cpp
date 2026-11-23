@@ -24,6 +24,10 @@ MixerStrip::MixerStrip (EditSession& sessionToUse, int trackIndexToUse)
     addFxButton.setTooltip ("Add an effect to this channel");
     addFxButton.onClick = [this] { showAddFxMenu(); };
 
+    addChildComponent (moreFxButton);
+    moreFxButton.setTooltip ("More effects on this channel");
+    moreFxButton.onClick = [this] { showMoreMenu(); };
+
     outputButton.setTooltip ("Where this channel's sound goes: Master, or another track such as a bus");
     outputButton.onClick = [this]
     {
@@ -264,18 +268,29 @@ void MixerStrip::resized()
     nameLabel.setBounds (r.removeFromTop (20));
     r.removeFromTop (2);
 
-    // Inserts: the first four, then + FX
+    // Inserts: the first four, then + FX. With more than four, the fourth slot becomes "+N more".
+    const int shown = insertButtons.size() > 4 ? 3 : insertButtons.size();
     for (int i = 0; i < insertButtons.size(); ++i)
     {
-        insertButtons[i]->setVisible (i < 4);
-        insertButtons[i]->slotsUp = juce::jmin (i, 3);
-        insertButtons[i]->slotsDown = juce::jmax (0, juce::jmin (insertButtons.size(), 4) - 1 - i);
+        insertButtons[i]->setVisible (i < shown);
+        insertButtons[i]->slotsUp = juce::jmin (i, juce::jmax (0, shown - 1));
+        insertButtons[i]->slotsDown = juce::jmax (0, shown - 1 - i);
 
-        if (i < 4)
+        if (i < shown)
         {
             insertButtons[i]->setBounds (r.removeFromTop (18).reduced (2, 0));
             r.removeFromTop (2);
         }
+    }
+
+    // The effects that did not fit sit behind one button
+    moreFxButton.setVisible (insertButtons.size() > 4);
+
+    if (insertButtons.size() > 4)
+    {
+        moreFxButton.setButtonText ("+" + juce::String (insertButtons.size() - shown) + " more");
+        moreFxButton.setBounds (r.removeFromTop (18).reduced (2, 0));
+        r.removeFromTop (2);
     }
 
     addFxButton.setBounds (r.removeFromTop (20).reduced (2, 0));

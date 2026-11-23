@@ -92,6 +92,7 @@ private:
 
     juce::OwnedArray<InsertButton> insertButtons;
     juce::TextButton addFxButton { "+ FX" };
+    juce::TextButton moreFxButton;
     juce::TextButton outputButton { "Out: Master" };
     juce::ComboBox sendBusBox;
     juce::String lastInsertSignature, lastBusSignature;
@@ -104,6 +105,7 @@ private:
     void showAddFxMenu();
     void addEffect (const juce::String& id);
     void moveInsert (tracktion::Plugin& plugin, int slots);
+    void showMoreMenu();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MixerStrip)
 };

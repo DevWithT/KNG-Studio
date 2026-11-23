@@ -192,3 +192,40 @@ void MixerStrip::moveInsert (te::Plugin& plugin, int slots)
     for (int i = 0; i < std::abs (slots); ++i)
         session.movePlugin (*list, &plugin, slots > 0 ? 1 : -1);
 }
+
+void MixerStrip::showMoreMenu()
+{
+    auto* list = getPluginList();
+
+    if (list == nullptr)
+        return;
+
+    auto fx = session.getFxPlugins (*list);
+    juce::Component::SafePointer<MixerStrip> safe (this);
+    juce::PopupMenu menu;
+
+    // The strip shows the first three when there are more than four, so the rest start at 3
+    for (int i = 3; i < fx.size(); ++i)
+    {
+        te::Plugin::Ptr ptr (fx[i]);
+        juce::PopupMenu sub;
+
+        sub.addItem ("Open", [safe, ptr] { if (safe != nullptr) safe->openPlugin (*ptr, safe->moreFxButton); });
+        sub.addItem (ptr->isEnabled() ? "Bypass" : "Turn On", [ptr] { ptr->setEnabled (! ptr->isEnabled()); });
+        KngSidechain::addMenu (sub, session, *ptr);
+        sub.addItem ("Move Up", true, false, [safe, ptr] { if (safe != nullptr) safe->moveInsert (*ptr, -1); });
+        sub.addItem ("Move Down", i < fx.size() - 1, false, [safe, ptr] { if (safe != nullptr) safe->moveInsert (*ptr, 1); });
+        sub.addItem ("Remove", [safe, ptr]
+        {
+            juce::MessageManager::callAsync ([safe, ptr]
+            {
+                if (safe != nullptr)
+                    safe->session.removePlugin (ptr.get());
+            });
+        });
+
+        menu.addSubMenu (ptr->getName(), sub);
+    }
+
+    menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&moreFxButton));
+}
