@@ -92,6 +92,8 @@ public:
     void removeInstrument (int trackIndex);
     /** The selected instrument track plays from any connected MIDI keyboard or pad, with no arming. */
     void routeLiveMidi();
+    /** Plays or releases a note on the selected instrument track (the computer keyboard piano). */
+    void playLiveNote (int note, bool down);
     /** Switches on and monitors any MIDI keyboard or pad plugged in while the Studio is open, then routes it. */
     void refreshMidiInputs();
 

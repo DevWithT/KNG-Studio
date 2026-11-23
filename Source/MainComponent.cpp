@@ -170,6 +170,15 @@ void MainComponent::paint (juce::Graphics& g)
     g.fillRect (status);
     g.setColour (KngTheme::line);
     g.drawHorizontalLine (status.getY(), 0.0f, (float) getWidth());
+
+    // Computer keyboard piano marker
+    if (pianoKeysOn)
+    {
+        g.setColour (juce::Colour (0xffd8742a));
+        g.setFont (13.0f);
+        g.drawText ("KEYS  C" + juce::String (pianoBase / 12 - 1) + "  (Up / Down: octave)",
+                    status.reduced (340, 0), juce::Justification::centred);
+    }
 }
 
 void MainComponent::resized()

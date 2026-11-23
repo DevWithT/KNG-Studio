@@ -176,3 +176,34 @@ void EditSession::refreshMidiInputs()
     knownMidiInputs = present;
     routeLiveMidi();
 }
+
+//==============================================================================
+// Computer keyboard piano: a note on or off sent straight to the selected instrument track.
+
+void EditSession::playLiveNote (int note, bool down)
+{
+    auto* track = dynamic_cast<te::AudioTrack*> (selectedTrackPtr.get());
+
+    if (track == nullptr)
+        return;
+
+    // Only tracks that make sound from notes
+    bool hasInstrument = false;
+
+    for (auto* p : track->pluginList)
+    {
+        if (p->isSynth())
+        {
+            hasInstrument = true;
+            break;
+        }
+    }
+
+    if (! hasInstrument)
+        return;
+
+    const auto message = down ? juce::MidiMessage::noteOn (1, note, (juce::uint8) 100)
+                              : juce::MidiMessage::noteOff (1, note);
+
+    track->injectLiveMidiMessage (message, {});
+}

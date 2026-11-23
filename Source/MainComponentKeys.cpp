@@ -58,6 +58,8 @@ void MainComponent::showShortcuts()
         "Ctrl+D\tDuplicate clip\n"
         "Ctrl+R\tRe-take (while recording)\n"
         "Ctrl+L\tMIDI Learn on / off\n"
+        "Ctrl+K\tComputer keyboard piano on / off\n"
+        "Up / Down\tOctave (while the piano is on)\n"
         "Ctrl+N / O / S\tNew / Open / Save\n"
         "Ctrl+Scroll\tZoom\n"
         "Shift+Scroll\tScroll sideways\n"
@@ -80,6 +82,10 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
 
     const auto mods = key.getModifiers();
     const int code  = key.getKeyCode();
+
+    // Piano on: letter and number keys play notes instead of triggering shortcuts
+    if (pianoKeysOn && ! mods.isAnyModifierKeyDown() && handlePianoKey (key))
+        return true;
 
     // Left / Right move the playhead a beat (Ctrl: a bar). Hold to skim.
     if (session != nullptr && (key.isKeyCode (juce::KeyPress::leftKey) || key.isKeyCode (juce::KeyPress::rightKey)))
@@ -122,6 +128,7 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
         if (code == 'R' || code == 'r')  { session->retake();                return true; }
         if (code == 'L' || code == 'l')  { session->setMidiLearn (! session->isMidiLearn()); return true; }
         if (code == ',')                 { showSettings();                   return true; }
+        if (code == 'K' || code == 'k')  { setPianoKeys (! pianoKeysOn);     return true; }
 
         if (code == '=' || code == '+')
         {
@@ -211,4 +218,98 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
     }
 
     return false;
+}
+
+//==============================================================================
+// Computer keyboard piano
+
+namespace
+{
+    // Two rows laid out like a piano. The Z row is the lower octave, the Q row the upper one.
+    const juce::String pianoLowerRow = "ZSXDCVGBHNJM,";
+    const juce::String pianoUpperRow = "Q2W3ER5T6Y7UI";
+}
+
+int MainComponent::pianoNoteFor (const juce::KeyPress& key) const
+{
+    const auto c = juce::CharacterFunctions::toUpperCase (key.getTextCharacter());
+
+    int i = pianoLowerRow.indexOfChar (c);
+
+    if (i >= 0)
+        return pianoBase + i;
+
+    i = pianoUpperRow.indexOfChar (c);
+
+    if (i >= 0)
+        return pianoBase + 12 + i;
+
+    return -1;
+}
+
+void MainComponent::setPianoKeys (bool on)
+{
+    releasePianoKeys();
+    pianoKeysOn = on;
+    repaint (0, getHeight() - statusHeight, getWidth(), statusHeight);
+}
+
+void MainComponent::releasePianoKeys()
+{
+    if (session != nullptr)
+        for (auto& held : heldPianoKeys)
+            session->playLiveNote (held.second, false);
+
+    heldPianoKeys.clear();
+}
+
+bool MainComponent::handlePianoKey (const juce::KeyPress& key)
+{
+    if (key.isKeyCode (juce::KeyPress::upKey) || key.isKeyCode (juce::KeyPress::downKey))
+    {
+        releasePianoKeys();
+        pianoBase = juce::jlimit (0, 96, pianoBase + (key.isKeyCode (juce::KeyPress::upKey) ? 12 : -12));
+        repaint (0, getHeight() - statusHeight, getWidth(), statusHeight);
+        return true;
+    }
+
+    const int note = pianoNoteFor (key);
+
+    if (note < 0 || note > 127)
+        return false;
+
+    // Holding a key repeats keyPressed, so only the first press plays the note
+    if (heldPianoKeys.find (key.getKeyCode()) == heldPianoKeys.end())
+    {
+        heldPianoKeys[key.getKeyCode()] = note;
+        session->playLiveNote (note, true);
+    }
+
+    return true;
+}
+
+bool MainComponent::keyStateChanged (bool)
+{
+    if (heldPianoKeys.empty())
+        return false;
+
+    bool released = false;
+
+    for (auto it = heldPianoKeys.begin(); it != heldPianoKeys.end();)
+    {
+        if (! juce::KeyPress::isKeyCurrentlyDown (it->first))
+        {
+            if (session != nullptr)
+                session->playLiveNote (it->second, false);
+
+            it = heldPianoKeys.erase (it);
+            released = true;
+        }
+        else
+        {
+            ++it;
+        }
+    }
+
+    return released;
 }

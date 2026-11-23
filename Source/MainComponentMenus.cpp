@@ -110,6 +110,7 @@ juce::PopupMenu MainComponent::getMenuForIndex (int menuIndex, const juce::Strin
             add (cmdMixer, "Mixer", "M", hasSession, dockVisible && dock.getCurrentTab() == DockPanel::mixerTab);
             add (cmdDock, "Dock", "D", true, dockVisible);
             add (cmdBrowser, "Browser", "B", true, browserVisible);
+            add (cmdPianoKeys, "Computer Keyboard Piano", "Ctrl+K", hasSession, pianoKeysOn);
             m.addSeparator();
             add (cmdZoomIn, "Zoom In", "Ctrl+=", hasSession);
             add (cmdZoomOut, "Zoom Out", "Ctrl+-", hasSession);
@@ -190,6 +191,7 @@ void MainComponent::menuItemSelected (int id, int)
         case cmdZoomIn:        session->zoomAround (session->getViewStart() + session->getViewLength() * 0.5, 0.8); break;
         case cmdZoomOut:       session->zoomAround (session->getViewStart() + session->getViewLength() * 0.5, 1.25); break;
         case cmdZoomFit:       zoomToFit(); break;
+        case cmdPianoKeys:     setPianoKeys (! pianoKeysOn); break;
 
         default: break;
     }

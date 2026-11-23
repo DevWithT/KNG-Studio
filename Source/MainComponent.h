@@ -38,6 +38,7 @@ public:
     void resized() override;
     void mouseDown (const juce::MouseEvent&) override;
     bool keyPressed (const juce::KeyPress&) override;
+    bool keyStateChanged (bool isKeyDown) override;
 
     // Menu bar
     juce::StringArray getMenuBarNames() override;
@@ -53,7 +54,7 @@ private:
         cmdAddAudioTrack = 200, cmdAddMidiTrack,
         cmdPlayStop = 300, cmdRecord, cmdRetake, cmdMidiLearn, cmdMidiMappings, cmdGoToStart, cmdLoop, cmdClick, cmdSnap, cmdMonitor, cmdAutoWrite, cmdPunch,
         cmdAddMarker, cmdPrevMarker, cmdNextMarker,
-        cmdMixer = 400, cmdZoomIn, cmdZoomOut, cmdZoomFit, cmdBrowser, cmdDock,
+        cmdMixer = 400, cmdZoomIn, cmdZoomOut, cmdZoomFit, cmdBrowser, cmdDock, cmdPianoKeys,
         cmdShortcuts = 500
     };
 
@@ -83,6 +84,15 @@ private:
     void togglePlayStop();
     void zoomToFit();
     void updateDeviceLabel();
+
+    // Computer keyboard piano
+    void setPianoKeys (bool on);
+    void releasePianoKeys();
+    bool handlePianoKey (const juce::KeyPress&);
+    int pianoNoteFor (const juce::KeyPress&) const;
+    bool pianoKeysOn = false;
+    int pianoBase = 48;                   // note of the lowest key (C3)
+    std::map<int, int> heldPianoKeys;     // key code -> note being held
 
     // Projects
     void loadProject (const juce::File& editFile);

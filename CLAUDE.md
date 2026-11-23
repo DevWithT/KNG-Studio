@@ -19,7 +19,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `MainComponent.cpp/.h`: main window layout; registers the built-in plugin types with the engine.
 - `MainComponentProject.cpp`: project folders; open, close, new, save, restore backup, new-song setup, save as template, new song from template.
 - `MainComponentMenus.cpp`: menu bar names, contents and command handling.
-- `MainComponentKeys.cpp`: keyboard shortcuts, shortcuts help, play/stop and zoom to fit.
+- `MainComponentKeys.cpp`: keyboard shortcuts, shortcuts help, play/stop, zoom to fit and the computer keyboard piano (Ctrl+K, letter keys play the selected instrument, Up/Down change octave).
 - `MainComponentWindows.cpp`: dock panel openers and dialog windows.
 - `StartScreen.cpp/.h`: opening screen: start something new, start from a template, or reopen a song.
 - `SettingsComponent.cpp/.h`: settings for audio, plugins, recording, folders and about.
@@ -46,7 +46,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `EditSessionInstruments.cpp`: puts a built-in instrument on a track.
 - `EditSessionLatency.cpp`: recording latency offset.
 - `EditSessionMasterChain.cpp`: one-click master chain (Width, Comp, Air, Limiter)
-- `EditSessionMidi.cpp`: MIDI tracks, MIDI clips, VST instruments, and live MIDI routing (the selected instrument track plays from a MIDI keyboard or pad, including one plugged in while the Studio is open).
+- `EditSessionMidi.cpp`: MIDI tracks, MIDI clips, VST instruments, and live MIDI routing (the selected instrument track plays from a MIDI keyboard or pad, including one plugged in while the Studio is open, and playLiveNote for the computer keyboard piano).
 - `EditSessionMixer.cpp`: effect list add/move/remove, reverb send and bus, master meters.
 - `EditSessionNoteTools.cpp`: humanize, arpeggiate chords and note length for a pattern.
 - `EditSessionPatternDelete.cpp`: deletes a pattern and renumbers the ones after it.
@@ -220,7 +220,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `EditSessionInstruments.cpp`: setBuiltInInstrument
 - `EditSessionLatency.cpp`: getLatencyOffsetMs, setLatencyOffsetMs
 - `EditSessionMasterChain.cpp`: applyMasterChain
-- `EditSessionMidi.cpp`: addMidiTrack, isMidiTrack, createMidiClip, setInstrument, getInstrument, removeInstrument, routeLiveMidi, refreshMidiInputs
+- `EditSessionMidi.cpp`: addMidiTrack, isMidiTrack, createMidiClip, setInstrument, getInstrument, removeInstrument, routeLiveMidi, refreshMidiInputs, playLiveNote
 - `EditSessionMixer.cpp`: getFxPlugins, addPlugin, movePlugin, removePlugin, findSend, isReverbBus, getSendDb, setSendDb, ensureReverbBus, getMasterMeterPlugin, getLoudnessMeter
 - `EditSessionNoteTools.cpp`: humanizePattern, arpeggiatePattern, setPatternNoteLength, humanizeClip, arpeggiateClip, setClipNoteLength
 - `EditSessionPatternDelete.cpp`: deletePattern
@@ -313,7 +313,7 @@ Planned work, roughly in order. When an item is finished, move it out of this li
 
 ### Audio and editing
 - Gain envelopes: draw volume points inside an audio clip. Clip fades and per-clip gain already exist (TrackLane), and track volume automation exists (AutomationLane). Tracktion's clip-level volume is a ClipEffect that renders to a cache file, so it is slow to edit. Parked until we know the automation lanes are not enough.
-- Play any sound from a MIDI keyboard or the computer keyboard (MIDI keyboard and pad part built (picks up a device plugged in while the Studio is open), not yet tested; computer keyboard part still to do): whichever track or Rack row is selected plays from the controller with no setup (no arming and no picking an input), and can record notes into the piano roll or pattern.
+- Play any sound from a MIDI keyboard or the computer keyboard (MIDI keyboard and pad part built (picks up a device plugged in while the Studio is open), not yet tested; computer keyboard piano built (Ctrl+K, Up/Down for octave, not recorded into clips yet), not yet tested): whichever track or Rack row is selected plays from the controller with no setup (no arming and no picking an input), and can record notes into the piano roll or pattern.
 - Audio to MIDI: right-click an audio clip > Convert to MIDI. A single-voice pitch tracker (a hummed or sung melody, a bass line) makes a MIDI clip on a new track. Not for chords or full mixes.
 - Wav Converter (built: right-click a pattern block in a lane > Convert to WAV, saves to the song's Loops folder, not yet tested): turn a pattern into a WAV loop. Could later also appear in the Sounds browser.
 
