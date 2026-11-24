@@ -6,6 +6,7 @@
 #include "KngSynthPlugin.h"
 #include "KngTheme.h"
 #include "RouteMenu.h"
+#include "RoutePopup.h"
 #include "TrackWidth.h"
 #include "VocalChain.h"
 
@@ -23,7 +24,7 @@ TrackInspector::TrackInspector (EditSession& sessionToUse)
 {
     for (auto* c : std::initializer_list<juce::Component*> { &nameLabel, &hintLabel, &instHeading, &fxHeading, &sendHeading,
                                                              &instrumentButton, &openInstrumentButton, &addEffectButton,
-                                                             &newBusButton, &volumeSlider, &panSlider, &outputButton, &widthLabel, &widthSlider })
+                                                             &sendsButton, &volumeSlider, &panSlider, &outputButton, &widthLabel, &widthSlider })
         addAndMakeVisible (c);
 
     for (auto* l : { &instHeading, &fxHeading, &sendHeading, &widthLabel })
@@ -56,7 +57,7 @@ TrackInspector::TrackInspector (EditSession& sessionToUse)
     instrumentButton.onClick     = [this] { showInstrumentMenu(); };
     openInstrumentButton.onClick = [this] { openInstrument(); };
     addEffectButton.onClick      = [this] { showAddEffectMenu(); };
-    newBusButton.onClick         = [this] { newBus(); };
+    sendsButton.onClick          = [this] { RoutePopup::show (session, trackIndex, sendsButton); };
     outputButton.onClick         = [this] { showOutputMenu(); };
 
     volumeSlider.setTooltip ("Volume (double-click for 0 dB)");
@@ -79,7 +80,7 @@ TrackInspector::TrackInspector (EditSession& sessionToUse)
     instrumentButton.setTooltip ("Choose or swap this track's instrument");
     openInstrumentButton.setTooltip ("Open the full instrument panel");
     addEffectButton.setTooltip ("Add an effect to this track");
-    newBusButton.setTooltip ("Make a new bus (like a Delay Bus) and send this track to it");
+    sendsButton.setTooltip ("Reverb, delay or headphone sends, and where this track's sound goes");
     outputButton.setTooltip ("Where this track's sound goes: Master, or another track such as a bus");
 
     rebuild();
@@ -110,8 +111,7 @@ juce::String TrackInspector::getSignature()
         for (auto* p : session.getFxPlugins (t->pluginList))
             sig << p->itemID.toString() << ",";
 
-        for (int bus : session.getBusNumbers())
-            sig << "b" << bus << session.getBusName (bus);
+        sig << "s" << session.getSendBuses (idx).size();
     }
 
     return sig;
@@ -122,9 +122,6 @@ void TrackInspector::rebuild()
     card = nullptr;
     knobs.clear();
     effectRows.clear();
-    sendLabels.clear();
-    sendSliders.clear();
-    sendBuses.clear();
 
     trackIndex = session.getSelectedTrackIndex();
     auto* t = session.getTrack (trackIndex);
@@ -132,7 +129,7 @@ void TrackInspector::rebuild()
 
     for (auto* c : std::initializer_list<juce::Component*> { &nameLabel, &instHeading, &fxHeading, &sendHeading,
                                                              &instrumentButton, &openInstrumentButton, &addEffectButton,
-                                                             &newBusButton, &volumeSlider, &panSlider, &outputButton, &widthLabel, &widthSlider })
+                                                             &sendsButton, &volumeSlider, &panSlider, &outputButton, &widthLabel, &widthSlider })
         c->setVisible (has);
 
     hintLabel.setVisible (! has);
@@ -182,42 +179,14 @@ void TrackInspector::rebuild()
         addAndMakeVisible (effectRows.add (new EffectRow (session, *p)));
     }
 
-    // Sends (a bus doesn't send to itself)
+    // Sends and routing (a bus doesn't send to itself)
     sendHeading.setVisible (! bus);
-    newBusButton.setVisible (! bus);
+    sendsButton.setVisible (! bus);
 
-    if (! bus)
     {
-        const auto buses = session.getBusNumbers();
-
-        if (buses.isEmpty())
-            sendBuses.add (-1);
-        else
-            sendBuses = buses;
-
-        for (int b : sendBuses)
-        {
-            auto* label = sendLabels.add (new juce::Label());
-            label->setText (b < 0 ? juce::String ("Reverb") : session.getBusName (b), juce::dontSendNotification);
-            label->setFont (juce::Font (juce::FontOptions (12.0f)));
-            addAndMakeVisible (label);
-
-            auto* slider = sendSliders.add (new juce::Slider());
-            slider->setSliderStyle (juce::Slider::LinearHorizontal);
-            slider->setTextBoxStyle (juce::Slider::TextBoxRight, false, 56, 20);
-            slider->setRange (-60.0, 0.0, 0.1);
-            slider->setDoubleClickReturnValue (true, -60.0);
-            slider->textFromValueFunction = [] (double v) { return v <= -60.0 ? juce::String ("Off") : juce::String (v, 1) + " dB"; };
-            slider->setValue (b < 0 ? session.getSendDb (trackIndex) : session.getSendToBusDb (trackIndex, b), juce::dontSendNotification);
-            slider->onValueChange = [this, slider, b]
-            {
-                if (b < 0)
-                    session.setSendDb (trackIndex, (float) slider->getValue());
-                else
-                    session.setSendToBusDb (trackIndex, b, (float) slider->getValue());
-            };
-            addAndMakeVisible (slider);
-        }
+        const int numSends = session.getSendBuses (trackIndex).size();
+        sendsButton.setButtonText (numSends > 0 ? "Sends and routing (" + juce::String (numSends) + ")..."
+                                                : juce::String ("Sends and routing..."));
     }
 
     if (auto* vp = t->getVolumePlugin())
@@ -257,15 +226,6 @@ void TrackInspector::timerCallback()
 
     if (! widthSlider.isMouseButtonDown())
         widthSlider.setValue (KngTrackWidth::get (*t), juce::dontSendNotification);
-
-    for (int i = 0; i < sendSliders.size(); ++i)
-    {
-        const int b = sendBuses[i];
-
-        if (! sendSliders[i]->isMouseButtonDown())
-            sendSliders[i]->setValue (b < 0 ? session.getSendDb (trackIndex) : session.getSendToBusDb (trackIndex, b),
-                                      juce::dontSendNotification);
-    }
 }
 
 //==============================================================================
@@ -365,30 +325,6 @@ void TrackInspector::showAddEffectMenu()
     menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&addEffectButton));
 }
 
-void TrackInspector::newBus()
-{
-    auto* s = &session;
-    const int idx = trackIndex;
-
-    auto* w = new juce::AlertWindow ("New Bus", "Name this bus:", juce::MessageBoxIconType::NoIcon);
-    w->addTextEditor ("name", "Delay Bus");
-    w->addButton ("Create", 1, juce::KeyPress (juce::KeyPress::returnKey));
-    w->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
-
-    w->enterModalState (true, juce::ModalCallbackFunction::create ([s, idx, w] (int result)
-    {
-        const auto name = w->getTextEditorContents ("name").trim();
-
-        if (result == 1 && name.isNotEmpty())
-        {
-            const int bus = s->addBus (name);
-
-            if (bus >= 0)
-                s->setSendToBusDb (idx, bus, -6.0f);
-        }
-    }), true);
-}
-
 void TrackInspector::showOutputMenu()
 {
     auto* t = session.getTrack (trackIndex);
@@ -486,14 +422,6 @@ void TrackInspector::resized()
         sendHeading.setBounds (r.removeFromTop (16));
         r.removeFromTop (4);
 
-        for (int i = 0; i < sendSliders.size(); ++i)
-        {
-            auto row = r.removeFromTop (24);
-            sendLabels[i]->setBounds (row.removeFromLeft (84));
-            sendSliders[i]->setBounds (row);
-            r.removeFromTop (4);
-        }
-
-        newBusButton.setBounds (r.removeFromTop (26).removeFromLeft (110));
+        sendsButton.setBounds (r.removeFromTop (28));
     }
 }

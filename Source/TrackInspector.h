@@ -23,7 +23,6 @@ private:
     void openInstrument();
     void showInstrumentMenu();
     void showAddEffectMenu();
-    void newBus();
     void showOutputMenu();
 
     EditSession& session;
@@ -33,16 +32,13 @@ private:
     juce::Label nameLabel, hintLabel;
     juce::Label instHeading { {}, "INSTRUMENT" }, fxHeading { {}, "EFFECTS" }, sendHeading { {}, "SENDS" };
     juce::TextButton instrumentButton { "Choose instrument" }, openInstrumentButton { "Open" };
-    juce::TextButton addEffectButton { "+ Add effect" }, newBusButton { "+ New bus" };
+    juce::TextButton addEffectButton { "+ Add effect" }, sendsButton { "Sends and routing..." };
     juce::TextButton outputButton { "Output: Master" };
     juce::Label widthLabel { {}, "WIDTH" };
     juce::Slider volumeSlider, panSlider, widthSlider;
 
     juce::OwnedArray<ParamKnob> knobs;
     juce::OwnedArray<EffectRow> effectRows;
-    juce::OwnedArray<juce::Label> sendLabels;
-    juce::OwnedArray<juce::Slider> sendSliders;
-    juce::Array<int> sendBuses;   // -1 means the single Reverb send used before any bus exists
     juce::Rectangle<int> instrumentCard;
     std::unique_ptr<InstrumentCard> card;   // the instrument's own card, when it has an instrument
 

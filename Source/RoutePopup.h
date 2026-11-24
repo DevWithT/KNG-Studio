@@ -246,7 +246,7 @@ private:
             auto* s = &session;
             const int idx = trackIndex;
             auto* w = new juce::AlertWindow ("New Bus", "Name this bus:", juce::MessageBoxIconType::NoIcon);
-            w->addTextEditor ("name", "New Bus");
+            w->addTextEditor ("name", s->getBusNumbers().isEmpty() ? "Reverb Bus" : "New Bus");
             w->addButton ("Create", 1, juce::KeyPress (juce::KeyPress::returnKey));
             w->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
 
