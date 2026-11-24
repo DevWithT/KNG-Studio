@@ -93,7 +93,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 
 ### Rack and patterns
 - `RackView.cpp/.h`: every sound and instrument in one place, editing the current pattern. Steps keep a minimum width of 20 px and long patterns scroll sideways. The Bars dropdown is gone: the pattern grows when a step is placed in a locked bar, and the Trim button shortens it.
-- `RackRow.cpp/.h`: one sound in the Rack: controls on the left, its pattern right. The Rack draws the pattern's bars plus 2 locked bars (RackRow::displaySteps), dimmed. Placing a step in a locked bar grows the pattern (RackRow::growToStep). Erasing steps shrinks the pattern back (RackRow::trimToContent).
+- `RackRow.cpp/.h`: one sound in the Rack: controls on the left, its pattern right. Every bar with no step or note is dimmed (bar 1 never is), and dimmed bars past the pattern's end are locked. Placing a step in a locked bar grows the pattern (RackRow::growToStep). Erasing steps shrinks the pattern back (RackRow::trimToContent).
 - `RackRowPaint.cpp`: RackRow painting (drum rows, mini piano roll) and header layout.
 - `RackRowMouse.cpp`: RackRow mouse: row clicks, step painting, dragging the pattern out.
 - `RackRowActions.cpp`: RackRow's actions and menus.
@@ -262,7 +262,7 @@ ValueTree properties the code saves. `<n>` is a pattern number.
 On the edit (song):
 - `kngPatternCount`: how many patterns the song has.
 - `kngPatternName<n>`, `kngPatternColour<n>`: pattern n's name and colour.
-- `kngPatternBars<n>`: pattern n's length in bars (1 to 32, new patterns start at 2). Bank slots are 32 bars apart; older projects are moved to the 32 bar slots once (flag `kngBankSlotBars`).
+- `kngPatternBars<n>`: pattern n's length in bars (1 to 32, new patterns start at 1). Bank slots are 32 bars apart; older projects are moved to the 32 bar slots once (flag `kngBankSlotBars`).
 - `kngPatternSwing<n>`: pattern n's swing, in percent.
 - `kngPatternHome<n>`: pattern n's home position, in seconds.
 - `kngSnapGrid`: snap grid size, in grid lines per beat.

@@ -9,6 +9,30 @@
 namespace te = tracktion;
 
 //==============================================================================
+// For each bar of the current pattern: does any sound have a step or note in it?
+static std::vector<bool> getLitBars (EditSession& session, int pattern, int perBar)
+{
+    std::vector<bool> lit (32, false);
+
+    for (int i = 0; i < session.getNumTracks(); ++i)
+    {
+        if (auto* clip = session.getPatternClip (i, pattern, false))
+        {
+            const double start = PatternGrid::clipStartBeat (*clip);
+
+            for (auto* n : clip->getSequence().getNotes())
+            {
+                const int bar = PatternGrid::beatToStep (n->getStartBeat().inBeats() - start) / perBar;
+
+                if (juce::isPositiveAndBelow (bar, 32))
+                    lit[(size_t) bar] = true;
+            }
+        }
+    }
+
+    return lit;
+}
+
 void RackRow::paint (juce::Graphics& g)
 {
     auto r = getLocalBounds().toFloat();
@@ -49,30 +73,37 @@ void RackRow::paint (juce::Graphics& g)
 
     paintGraph (g, clip);
 
-    // Bars after the pattern are locked: dimmed, with their bar number, until a step is placed in one
+    // A bar with no step or note is dimmed (bar 1 never is). Dimmed bars past the pattern's end are locked: a step placed in one unlocks it.
     {
         const int pattern = session.getCurrentPattern();
         const int live = session.getPatternSteps (pattern);
         const int shown = getNumSteps();
+        const int perBar = juce::jmax (1, live / juce::jmax (1, session.getPatternBars (pattern)));
+        const auto lit = getLitBars (session, pattern, perBar);
+        auto lane = getLaneArea();
 
-        if (live < shown)
+        g.setFont (juce::Font (juce::FontOptions (10.0f)));
+
+        for (int s = 0, bar = 0; s < shown; s += perBar, ++bar)
         {
-            auto lane = getLaneArea();
-            const int perBar = juce::jmax (1, live / juce::jmax (1, session.getPatternBars (pattern)));
-            const int lockX = lane.getX() + live * lane.getWidth() / shown;
+            if (bar == 0 || (bar < (int) lit.size() && lit[(size_t) bar]))
+                continue;
+
+            const int x1 = lane.getX() + s * lane.getWidth() / shown;
+            const int x2 = lane.getX() + juce::jmin (shown, s + perBar) * lane.getWidth() / shown;
 
             g.setColour (KngTheme::panel.withAlpha (0.65f));
-            g.fillRect (lockX, 0, lane.getRight() - lockX, getHeight());
+            g.fillRect (x1, 0, x2 - x1, getHeight());
 
-            g.setColour (KngTheme::line2);
-            g.fillRect (lockX, 4, 1, getHeight() - 8);
-
-            g.setFont (juce::Font (juce::FontOptions (10.0f)));
             g.setColour (KngTheme::muted);
+            g.drawText (juce::String (bar + 1), x1 + 4, 1, 28, 12, juce::Justification::centredLeft, false);
+        }
 
-            for (int s = live; s < shown; s += perBar)
-                g.drawText (juce::String (s / perBar + 1), lane.getX() + s * lane.getWidth() / shown + 4, 1, 28, 12,
-                            juce::Justification::centredLeft, false);
+        // A thin line where the pattern ends
+        if (live < shown)
+        {
+            g.setColour (KngTheme::line2);
+            g.fillRect (lane.getX() + live * lane.getWidth() / shown, 4, 1, getHeight() - 8);
         }
     }
 }

@@ -53,7 +53,7 @@ RackView::RackView (EditSession& sessionToUse)
 
     // Tooltips
     patternBox.setTooltip ("Which pattern the Rack is editing. Also: New pattern, Place at Playhead, Loop Pattern.");
-    trimButton.setTooltip ("Shorten the pattern to the last bar that has a step or note in it (never under 2 bars)");
+    trimButton.setTooltip ("Shorten the pattern to the last bar that has a step or note in it (never under 1 bar)");
     swingSlider.setTooltip ("Push every other 16th late for groove (drum and sound rows only)");
     addRowButton.setTooltip ("Add a sample or an instrument as a new row. You can also drag samples in from the Browser.");
 
@@ -241,7 +241,7 @@ void RackView::syncToolbar()
         patternBox.setSelectedId (current, juce::dontSendNotification);
 
     if (! trimButton.isMouseButtonDown())
-        trimButton.setEnabled (session.getPatternBars (current) > 2);
+        trimButton.setEnabled (session.getPatternBars (current) > 1);
 
     if (! swingSlider.isMouseButtonDown())
         swingSlider.setValue (session.getPatternSwing (current), juce::dontSendNotification);

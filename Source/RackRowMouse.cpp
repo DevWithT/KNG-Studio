@@ -130,7 +130,7 @@ void RackRow::growToStep (int step)
         onLayoutChanged();
 }
 
-// Shorten the current pattern to its last bar with a step or note on any sound (never under 2 bars)
+// Shorten the current pattern to its last bar with a step or note on any sound (never under 1 bar)
 void RackRow::trimToContent (EditSession& session)
 {
     const int pattern = session.getCurrentPattern();
@@ -149,7 +149,7 @@ void RackRow::trimToContent (EditSession& session)
         }
     }
 
-    const int wanted = juce::jmax (2, lastStep / perBar + 1);
+    const int wanted = juce::jmax (1, lastStep / perBar + 1);
 
     if (wanted < bars)
         session.setPatternBars (pattern, wanted);
