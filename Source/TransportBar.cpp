@@ -7,7 +7,7 @@ TransportBar::TransportBar (EditSession& sessionToUse)
 {
     for (auto* c : std::initializer_list<juce::Component*> { &playButton, &stopButton, &recordButton, &timeLabel,
                                                              &tempoSlider, &countInBox, &clickButton,
-                                                             &loopButton, &punchButton, &snapButton, &monitorButton, &writeButton })
+                                                             &loopButton, &punchButton, &snapButton, &writeButton })
         addAndMakeVisible (c);
 
     // Transport
@@ -67,7 +67,7 @@ TransportBar::TransportBar (EditSession& sessionToUse)
     countInBox.onChange = [this] { session.setCountInBars (countInBox.getSelectedId() - 1); };
 
     // Toggles: flat buttons that stay lit while on
-    for (auto* b : { &clickButton, &loopButton, &punchButton, &snapButton, &monitorButton, &writeButton })
+    for (auto* b : { &clickButton, &loopButton, &punchButton, &snapButton, &writeButton })
     {
         b->setClickingTogglesState (true);
         b->setColour (juce::TextButton::buttonOnColourId, KngTheme::accentSoft);
@@ -77,7 +77,6 @@ TransportBar::TransportBar (EditSession& sessionToUse)
     loopButton.onClick    = [this] { session.setLooping (loopButton.getToggleState()); };
     punchButton.onClick   = [this] { session.setPunchEnabled (punchButton.getToggleState()); };
     snapButton.onClick    = [this] { session.setSnapEnabled (snapButton.getToggleState()); };
-    monitorButton.onClick = [this] { session.setMonitoring (monitorButton.getToggleState()); };
     writeButton.onClick   = [this] { session.setAutomationWrite (writeButton.getToggleState()); };
 
     addAndMakeVisible (learnButton);
@@ -132,7 +131,6 @@ TransportBar::TransportBar (EditSession& sessionToUse)
     loopButton.setTooltip ("Loop the region marked on the ruler");
     punchButton.setTooltip ("Only record between the loop markers");
     snapButton.setTooltip ("Snap blocks and loop markers to the grid size next to it (hold Alt to ignore)");
-    monitorButton.setTooltip ("Hear your inputs live while armed");
     writeButton.setTooltip ("Record fader and knob moves as automation while playing");
 
     timerCallback();
@@ -200,7 +198,6 @@ void TransportBar::timerCallback()
     loopButton.setToggleState (session.isLooping(), juce::dontSendNotification);
     punchButton.setToggleState (session.isPunchEnabled(), juce::dontSendNotification);
     snapButton.setToggleState (session.isSnapEnabled(), juce::dontSendNotification);
-    monitorButton.setToggleState (session.isMonitoring(), juce::dontSendNotification);
     writeButton.setToggleState (session.isAutomationWrite(), juce::dontSendNotification);
     learnButton.setToggleState (session.isMidiLearn(), juce::dontSendNotification);
     patternModeButton.setToggleState (session.isPatternMode(), juce::dontSendNotification);
@@ -332,7 +329,6 @@ void TransportBar::resized()
     place (gridBox, 72);
     divider();
 
-    place (monitorButton, 90);
     place (writeButton, 100);
     place (learnButton, 64);
     place (cpuLabel, 76);

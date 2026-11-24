@@ -96,6 +96,20 @@ TrackHeader::TrackHeader (EditSession& sessionToUse, int trackIndexToUse)
     soloButton.setColour (juce::TextButton::buttonOnColourId, juce::Colour (0xfff2f2f2));
     soloButton.setColour (juce::TextButton::textColourOnId, KngTheme::ink);
 
+    // Mon: hear this lane's input live while recording on it. Only shown while the lane is armed.
+    addChildComponent (monButton);
+    monButton.setClickingTogglesState (false);
+    monButton.setColour (juce::TextButton::buttonColourId, juce::Colours::black.withAlpha (0.2f));
+    monButton.setColour (juce::TextButton::textColourOffId, KngTheme::ink);
+    monButton.setColour (juce::TextButton::textColourOnId, juce::Colours::white);
+    monButton.setColour (juce::TextButton::buttonOnColourId, KngTheme::accent);
+    monButton.setTooltip ("Monitor: hear this input live while recording on this lane");
+    monButton.onClick = [this]
+    {
+        if (! session.getTransport().isRecording())
+            session.setTrackMonitor (trackIndex, ! session.isTrackMonitor (trackIndex));
+    };
+
     armButton.onClick = [this] { session.setArmed (trackIndex, ! session.isArmed (trackIndex)); };
 
     muteButton.onClick = [this]
@@ -174,6 +188,16 @@ void TrackHeader::timerCallback()
 
     armButton.setToggleState (session.isArmed (trackIndex), juce::dontSendNotification);
 
+    const bool showMon = session.isArmed (trackIndex) && ! isBus;
+
+    if (monButton.isVisible() != showMon)
+    {
+        monButton.setVisible (showMon);
+        resized();
+    }
+
+    monButton.setToggleState (session.isTrackMonitor (trackIndex), juce::dontSendNotification);
+
     if (auto* t = session.getTrack (trackIndex))
     {
         const bool muted = t->isMuted (false);
@@ -250,6 +274,12 @@ void TrackHeader::resized()
     muteButton.setBounds (row1.removeFromRight (24));
     row1.removeFromRight (2);
     armButton.setBounds (row1.removeFromRight (24));
+
+    if (monButton.isVisible())
+    {
+        row1.removeFromRight (2);
+        monButton.setBounds (row1.removeFromRight (34));
+    }
     row1.removeFromRight (6);
     nameLabel.setBounds (row1);
 

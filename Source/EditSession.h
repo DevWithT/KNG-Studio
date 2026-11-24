@@ -68,6 +68,10 @@ public:
     // Monitoring
     void setMonitoring (bool shouldMonitor);
     bool isMonitoring() const                   { return monitoringEnabled; }
+    /** Per-lane Mon button: hear this lane's input live while it is armed. Arming turns it on, disarming turns it off. */
+    void setTrackMonitor (int trackIndex, bool shouldMonitor);
+    bool isTrackMonitor (int trackIndex);
+    void updateMonitoring();
 
     // Clip selection and editing
     void selectClip (tracktion::Clip* clip);
@@ -461,7 +465,7 @@ private:
     std::vector<bool> trackArmed;
     juce::StringArray knownMidiInputs;   // MIDI inputs seen at the last scan, so only new ones get switched on
 
-    bool monitoringEnabled = true;
+    bool monitoringEnabled = false;
     tracktion::Clip::Ptr selectedClip;
     std::vector<tracktion::Clip::Ptr> copiedClips;
     std::vector<tracktion::Clip::Ptr> selection;

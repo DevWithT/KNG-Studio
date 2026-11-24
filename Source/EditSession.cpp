@@ -230,6 +230,20 @@ void EditSession::setArmed (int trackIndex, bool shouldBeArmed)
     }
 
     applyArm (trackIndex, shouldBeArmed);
+
+    // Arming turns Mon on, disarming turns it off (this also clears any lane disarmed above)
+    for (int j = 0; j < (int) trackArmed.size(); ++j)
+    {
+        if (auto* t = getTrack (j))
+        {
+            if (j == trackIndex && trackArmed[(size_t) j])
+                t->state.setProperty ("kngMonitor", true, nullptr);
+            else if (! trackArmed[(size_t) j])
+                t->state.setProperty ("kngMonitor", false, nullptr);
+        }
+    }
+
+    updateMonitoring();
 }
 
 void EditSession::applyArm (int trackIndex, bool shouldBeArmed)
@@ -317,6 +331,37 @@ void EditSession::setMonitoring (bool shouldMonitor)
 }
 
 //==============================================================================
+bool EditSession::isTrackMonitor (int trackIndex)
+{
+    if (auto* t = getTrack (trackIndex))
+        return (bool) t->state.getProperty ("kngMonitor", false);
+
+    return false;
+}
+
+void EditSession::setTrackMonitor (int trackIndex, bool shouldMonitor)
+{
+    if (auto* t = getTrack (trackIndex))
+        t->state.setProperty ("kngMonitor", shouldMonitor, nullptr);
+
+    updateMonitoring();
+}
+
+// The engine monitors per input device, not per lane: you hear your input while any armed lane has Mon on
+void EditSession::updateMonitoring()
+{
+    bool any = false;
+
+    for (int i = 0; i < getNumTracks(); ++i)
+        if (isArmed (i) && isTrackMonitor (i))
+            any = true;
+
+    if (any != monitoringEnabled)
+        setMonitoring (any);
+}
+
+//==============================================================================
+
 void EditSession::selectClip (te::Clip* clip)
 {
     selection.clear();

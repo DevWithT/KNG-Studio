@@ -73,7 +73,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 
 ### Playlist
 - `TracksView.cpp/.h`: the Playlist: one row per lane; handles plugin and pattern drops.
-- `TrackHeader.cpp/.h`: a lane's header: colour strip, name, R M S, meter, input.
+- `TrackHeader.cpp/.h`: a lane's header: colour strip, name, R M S (plus Mon while the lane is armed), meter, input.
 - `TrackLane.cpp/.h`: one lane's clip area.
 - `TrackLaneMouse.cpp`: TrackLane hit testing and the click, drag, release path.
 - `TrackLaneMouseActions.cpp`: TrackLane scroll wheel, keys, clip menu, audio file drops, double-click.
@@ -210,7 +210,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `KngSatDsp.h`: KNG Saturator parameters, the four shapes and presets.
 
 ## 4. Where EditSession functions live
-- `EditSession.cpp`: EditSession, ~EditSession, syncTrackState, getNumTracks, getTrack, addTrack, deleteTrack, getInputsFor, getInputNames, getTrackInput, setTrackInput, isArmed, isAnyTrackArmed, setArmed, applyArm, refreshInputs, setMonitoring, selectClip, deleteSelectedClip
+- `EditSession.cpp`: EditSession, ~EditSession, syncTrackState, getNumTracks, getTrack, addTrack, deleteTrack, getInputsFor, getInputNames, getTrackInput, setTrackInput, isArmed, isAnyTrackArmed, setArmed, applyArm, refreshInputs, setMonitoring, isTrackMonitor, setTrackMonitor, updateMonitoring, selectClip, deleteSelectedClip
 - `EditSessionAutomation.cpp`: getAutomationTargets, getAutomationParam, getAutomationParamId, setAutomationParamId, isAutomationShown, setAutomationShown, setAutomationWrite, isAutomationWrite
 - `EditSessionBackup.cpp`: getLockFile, getBackupsFolder, timerCallback, makeBackup, pruneBackups
 - `EditSessionChannels.cpp`: addSampleChannel
