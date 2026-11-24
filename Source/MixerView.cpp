@@ -4,6 +4,7 @@
 #include "GenericPluginPanel.h"
 #include "KngTheme.h"
 #include "RouteMenu.h"
+#include "RoutePopup.h"
 #include "TrackWidth.h"
 #include <map>
 
@@ -16,7 +17,7 @@ MixerStrip::MixerStrip (EditSession& sessionToUse, int trackIndexToUse)
     isBus = ! isMaster() && session.isReverbBus (trackIndex);
 
     for (auto* c : std::initializer_list<juce::Component*> { &nameLabel, &fxButton, &muteButton, &soloButton,
-                                                             &sendLabel, &panLabel, &sendKnob, &panKnob,
+                                                             &sendLabel, &panLabel, &panKnob,
                                                              &fader, &meter, &outputButton, &widthLabel, &widthKnob })
         addAndMakeVisible (c);
 
@@ -39,14 +40,11 @@ MixerStrip::MixerStrip (EditSession& sessionToUse, int trackIndexToUse)
         }
     };
 
-    addAndMakeVisible (sendBusBox);
-    sendBusBox.setTooltip ("Which bus the send knob below feeds");
-    sendBusBox.setTextWhenNoChoicesAvailable ("Reverb");
-    sendBusBox.onChange = [this]
-    {
-        if (sendBusBox.getSelectedId() > 0)
-            sendBus = sendBusBox.getSelectedId() - 1;
-    };
+    addAndMakeVisible (routeButton);
+    routeButton.setTooltip ("Sends and routing: reverb, delay or headphone sends, and where this channel's sound goes");
+    routeButton.setColour (juce::TextButton::buttonOnColourId, KngTheme::accentSoft);
+    routeButton.setColour (juce::TextButton::textColourOnId, KngTheme::text);
+    routeButton.onClick = [this] { RoutePopup::show (session, trackIndex, routeButton); };
 
     sendLabel.setVisible (false);
     fxButton.setVisible (false);
@@ -92,27 +90,12 @@ MixerStrip::MixerStrip (EditSession& sessionToUse, int trackIndexToUse)
     };
 
     // Knobs
-    for (auto* k : { &sendKnob, &panKnob, &widthKnob })
+    for (auto* k : { &panKnob, &widthKnob })
     {
         k->setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
         k->setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
         k->setPopupDisplayEnabled (true, true, this);
     }
-
-    sendKnob.setRange (-60.0, 0.0, 0.1);
-    sendKnob.setDoubleClickReturnValue (true, -60.0);
-    sendKnob.textFromValueFunction = [] (double v)
-    {
-        return v <= -60.0 ? juce::String ("Off") : juce::String (v, 1) + " dB";
-    };
-    sendKnob.onValueChange = [this]
-    {
-        // No buses yet: the first send makes the Reverb Bus, like before
-        if (session.getBusNumbers().isEmpty())
-            session.setSendDb (trackIndex, (float) sendKnob.getValue());
-        else
-            session.setSendToBusDb (trackIndex, sendBus, (float) sendKnob.getValue());
-    };
 
     panKnob.setRange (-1.0, 1.0, 0.01);
     panKnob.setDoubleClickReturnValue (true, 0.0);
@@ -170,9 +153,8 @@ MixerStrip::MixerStrip (EditSession& sessionToUse, int trackIndexToUse)
 
     if (isMaster() || isBus)
     {
-        sendKnob.setVisible (false);
         sendLabel.setVisible (false);
-        sendBusBox.setVisible (false);
+        routeButton.setVisible (false);
     }
 
     timerCallback();
@@ -187,9 +169,6 @@ MixerStrip::~MixerStrip()
 void MixerStrip::timerCallback()
 {
     rebuildInserts();
-
-    if (! isMaster() && ! isBus)
-        syncSendBuses();
 
     // Keep in step with the track headers and automation
     if (isMaster())
@@ -228,10 +207,16 @@ void MixerStrip::timerCallback()
     if (! widthKnob.isMouseButtonDown())
         widthKnob.setValue (KngTrackWidth::get (*t), juce::dontSendNotification);
 
-    if (! isBus && ! sendKnob.isMouseButtonDown())
-        sendKnob.setValue (session.getBusNumbers().isEmpty() ? session.getSendDb (trackIndex)
-                                                             : session.getSendToBusDb (trackIndex, sendBus),
-                           juce::dontSendNotification);
+    if (! isBus)
+    {
+        const int numSends = session.getSendBuses (trackIndex).size();
+        const auto sendsText = numSends > 0 ? "Sends " + juce::String (numSends) : juce::String ("Sends");
+
+        if (routeButton.getButtonText() != sendsText)
+            routeButton.setButtonText (sendsText);
+
+        routeButton.setToggleState (numSends > 0, juce::dontSendNotification);
+    }
 
     repaint();
 }
@@ -296,9 +281,8 @@ void MixerStrip::resized()
     addFxButton.setBounds (r.removeFromTop (20).reduced (2, 0));
     r.removeFromTop (6);
 
-    auto sendArea = r.removeFromTop (60);
-    sendBusBox.setBounds (sendArea.removeFromTop (20).reduced (2, 0));
-    sendKnob.setBounds (sendArea.withSizeKeepingCentre (38, 38));
+    routeButton.setBounds (r.removeFromTop (22).reduced (2, 0));
+    r.removeFromTop (6);
 
     auto panArea = r.removeFromTop (50);
     auto widthArea = panArea.removeFromRight (panArea.getWidth() / 2);

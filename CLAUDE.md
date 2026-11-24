@@ -112,7 +112,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 
 ### Mixer, dock and inspector
 - `MixerView.cpp/.h`: MixerStrip (one channel), MixerView (all strips) and MixerWindow.
-- `MixerViewInserts.cpp`: MixerStrip insert slots, send buses, opening plugins, add-effect menu.
+- `MixerViewInserts.cpp`: MixerStrip insert slots, opening plugins, add-effect menu.
 - `MasterStrip.cpp/.h`: the master channel strip.
 - `LevelMeter.cpp/.h`: level meter component.
 - `LoudnessDisplay.cpp/.h`: master loudness readout: momentary, short-term, integrated LUFS, peak.

@@ -83,29 +83,6 @@ void MixerStrip::rebuildInserts()
     resized();
 }
 
-void MixerStrip::syncSendBuses()
-{
-    const auto buses = session.getBusNumbers();
-    juce::String sig;
-
-    for (int bus : buses)
-        sig << bus << ":" << session.getBusName (bus) << ";";
-
-    if (sig == lastBusSignature)
-        return;
-
-    lastBusSignature = sig;
-    sendBusBox.clear (juce::dontSendNotification);
-
-    for (int bus : buses)
-        sendBusBox.addItem (session.getBusName (bus), bus + 1);
-
-    if (! buses.contains (sendBus) && ! buses.isEmpty())
-        sendBus = buses.getFirst();
-
-    sendBusBox.setSelectedId (sendBus + 1, juce::dontSendNotification);
-}
-
 void MixerStrip::openPlugin (te::Plugin& plugin, juce::Component& anchor)
 {
     if (dynamic_cast<te::ExternalPlugin*> (&plugin) != nullptr)

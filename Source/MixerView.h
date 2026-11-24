@@ -27,7 +27,7 @@ private:
     juce::Label nameLabel;
     juce::TextButton fxButton { "FX" }, muteButton { "M" }, soloButton { "S" };
     juce::Label sendLabel { {}, "Reverb" }, panLabel { {}, "Pan" }, widthLabel { {}, "Width" };
-    juce::Slider sendKnob, panKnob, widthKnob, fader;
+    juce::Slider panKnob, widthKnob, fader;
     LevelMeter meter;
 
     struct InsertButton : public juce::TextButton
@@ -94,13 +94,11 @@ private:
     juce::TextButton addFxButton { "+ FX" };
     juce::TextButton moreFxButton;
     juce::TextButton outputButton { "Out: Master" };
-    juce::ComboBox sendBusBox;
-    juce::String lastInsertSignature, lastBusSignature;
-    int sendBus = 0;
+    juce::TextButton routeButton { "Sends" };
+    juce::String lastInsertSignature;
 
     tracktion::PluginList* getPluginList();
     void rebuildInserts();
-    void syncSendBuses();
     void openPlugin (tracktion::Plugin& plugin, juce::Component& anchor);
     void showAddFxMenu();
     void addEffect (const juce::String& id);
