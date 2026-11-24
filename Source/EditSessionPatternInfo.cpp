@@ -3,9 +3,53 @@
 namespace te = tracktion;
 
 static constexpr int bankBar = 2000;      // the bank starts at this bar
-static constexpr int bankSlotBars = 8;    // room for each pattern (patterns are up to 4 bars)
+static constexpr int bankSlotBars = 32;    // room for each pattern (patterns are up to 32 bars)
 
 //==============================================================================
+// Projects saved before the slots grew kept patterns 8 bars apart. Move them to the 32 bar slots, once.
+static void moveOldBankSlots (EditSession& s)
+{
+    constexpr int oldSlotBars = 8;
+    auto& state = s.getEdit().state;
+
+    if ((int) state.getProperty ("kngBankSlotBars", oldSlotBars) == bankSlotBars)
+        return;
+
+    // Set first, so nothing below can run this twice
+    state.setProperty ("kngBankSlotBars", bankSlotBars, nullptr);
+
+    const double bankStart = s.barsAfter (0.0, bankBar) - 1.0;
+    juce::Array<te::Clip*> bankClips;
+
+    for (int i = 0; i < s.getNumTracks(); ++i)
+        if (auto* t = s.getTrack (i))
+            for (auto* c : t->getClips())
+                if ((int) c->state.getProperty ("kngPattern", 0) > 0 && c->getPosition().getStart().inSeconds() >= bankStart)
+                    bankClips.add (c);
+
+    for (auto* c : bankClips)
+    {
+        const int pattern = (int) c->state.getProperty ("kngPattern", 0);
+        double start = c->getPosition().getStart().inSeconds();
+
+        if (pattern >= 2)
+        {
+            const double oldHome = s.barsAfter (0.0, bankBar + (pattern - 1) * oldSlotBars);
+            const double newHome = s.barsAfter (0.0, bankBar + (pattern - 1) * bankSlotBars);
+            start = newHome + (start - oldHome);
+            c->setStart (te::TimePosition::fromSeconds (start), false, true);
+        }
+
+        // New patterns are 2 bars by default: an older 1 bar pattern grows to match
+        const double wanted = s.barsAfter (start, s.getPatternBars (pattern));
+
+        if (c->getPosition().getEnd().inSeconds() < wanted - 0.001)
+            c->setEnd (te::TimePosition::fromSeconds (wanted), true);
+    }
+
+    s.getEdit().getUndoManager().clearUndoHistory();
+}
+
 double EditSession::getBankStart()
 {
     return barsAfter (0.0, bankBar);
@@ -13,6 +57,8 @@ double EditSession::getBankStart()
 
 double EditSession::getPatternHome (int pattern)
 {
+    moveOldBankSlots (*this);
+
     // Every pattern has its own slot in the bank, so patterns never land on each other
     return barsAfter (0.0, bankBar + (juce::jmax (1, pattern) - 1) * bankSlotBars);
 }

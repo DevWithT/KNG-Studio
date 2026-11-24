@@ -44,8 +44,8 @@ int EditSession::newPattern()
 
 int EditSession::getPatternBars (int pattern)
 {
-    // Up to 8 bars: each pattern's bank slot is 8 bars long, so a longer one would run into the next pattern
-    return juce::jlimit (1, 8, (int) edit->state.getProperty ("kngPatternBars" + juce::String (pattern), 1));
+    // Up to 32 bars: each pattern's bank slot is 32 bars long, so a longer one would run into the next pattern
+    return juce::jlimit (1, 32, (int) edit->state.getProperty ("kngPatternBars" + juce::String (pattern), 2));
 }
 
 int EditSession::getPatternSteps (int pattern)
@@ -58,12 +58,12 @@ int EditSession::getPatternSteps (int pattern)
     const double beats = ts.toBeats (te::TimePosition::fromSeconds (end)).inBeats()
                        - ts.toBeats (te::TimePosition::fromSeconds (home)).inBeats();
 
-    return juce::jlimit (1, 128, juce::roundToInt (beats / 0.25));
+    return juce::jlimit (1, 512, juce::roundToInt (beats / 0.25));
 }
 
 void EditSession::setPatternBars (int pattern, int bars)
 {
-    bars = juce::jlimit (1, 8, bars);
+    bars = juce::jlimit (1, 32, bars);
 
     beginEdit();
     edit->state.setProperty ("kngPatternBars" + juce::String (pattern), bars, nullptr);

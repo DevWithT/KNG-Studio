@@ -262,7 +262,7 @@ ValueTree properties the code saves. `<n>` is a pattern number.
 On the edit (song):
 - `kngPatternCount`: how many patterns the song has.
 - `kngPatternName<n>`, `kngPatternColour<n>`: pattern n's name and colour.
-- `kngPatternBars<n>`: pattern n's length in bars (1 to 8).
+- `kngPatternBars<n>`: pattern n's length in bars (1 to 32, new patterns start at 2). Bank slots are 32 bars apart; older projects are moved to the 32 bar slots once (flag `kngBankSlotBars`).
 - `kngPatternSwing<n>`: pattern n's swing, in percent.
 - `kngPatternHome<n>`: pattern n's home position, in seconds.
 - `kngSnapGrid`: snap grid size, in grid lines per beat.
