@@ -18,9 +18,10 @@ EditSession::EditSession (te::Engine& engineToUse, const juce::File& editFileToU
     edit->playInStopEnabled = true;
     edit->alwaysUseRelativePaths = true;
 
-    // Restore this project's zoom
+    // Restore this project's zoom (a new project starts with 8 bars across)
+    const double barSeconds = 4.0 * 60.0 / juce::jmax (1.0, edit->tempoSequence.getBpmAt (te::TimePosition()));
     viewStart  = juce::jmax (0.0, (double) edit->state.getProperty ("kngViewStart", 0.0));
-    viewLength = juce::jlimit (1.0, 600.0, (double) edit->state.getProperty ("kngViewLength", 60.0));
+    viewLength = juce::jlimit (1.0, 600.0, (double) edit->state.getProperty ("kngViewLength", barSeconds * 8.0));
 
     edit->ensureNumberOfAudioTracks (1);
 
