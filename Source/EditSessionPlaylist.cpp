@@ -76,7 +76,7 @@ void EditSession::placePatternInLane (int pattern, double atSeconds, const juce:
     if (getTransport().isRecording())
         return;
 
-    const double start = barStartAt (juce::jmax (0.0, snapTime (atSeconds)));   // blocks always start on a bar: the Snap grid picks which one
+    const double start = juce::jmax (0.0, atSeconds);   // the caller passes the final spot: snapped to the grid, or exactly where you let go
 
     // A copy already here (in any lane) would play twice
     for (auto& b : getPatternBlocks())
@@ -120,7 +120,7 @@ void EditSession::moveBlock (const PatternBlock& block, double toSeconds, const 
     if (getTransport().isRecording())
         return;
 
-    const double to = barStartAt (juce::jmax (0.0, toSeconds));
+    const double to = juce::jmax (0.0, toSeconds);
     const bool samePlace = std::abs (to - block.start) < 0.001 && toLane == block.lane;
 
     if (samePlace)

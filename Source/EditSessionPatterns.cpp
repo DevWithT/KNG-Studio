@@ -15,6 +15,14 @@ static int patternOf (te::Clip& c)
 }
 
 //==============================================================================
+// Where a copy of the pattern that starts here ends. A copy can start anywhere, so count the pattern's length in beats on the tempo map.
+static double endOfCopy (EditSession& s, int pattern, double start)
+{
+    auto& ts = s.getEdit().tempoSequence;
+    const double startBeat = ts.toBeats (te::TimePosition::fromSeconds (start)).inBeats();
+    return ts.toTime (te::BeatPosition::fromBeats (startBeat + s.getPatternSteps (pattern) * 0.25)).inSeconds();
+}
+
 double EditSession::getBarSeconds()
 {
     // Length of the bar under the playhead (bars can change length with the tempo map)
@@ -82,7 +90,7 @@ void EditSession::setPatternBars (int pattern, int bars)
             for (auto* c : t->getClips())
                 if (auto* mc = dynamic_cast<te::MidiClip*> (c))
                     if (patternOf (*mc) == pattern)
-                        mc->setEnd (te::TimePosition::fromSeconds (barsAfter (mc->getPosition().getStart().inSeconds(), bars)), true);
+                        mc->setEnd (te::TimePosition::fromSeconds (endOfCopy (*this, pattern, mc->getPosition().getStart().inSeconds())), true);
 
     save();
 }
@@ -160,7 +168,7 @@ void EditSession::placePattern (int pattern, double atSeconds)
     if (getTransport().isRecording())
         return;
 
-    const double start = barStartAt (atSeconds);
+    const double start = juce::jmax (0.0, atSeconds);
 
     beginEdit();
 
@@ -191,7 +199,7 @@ void EditSession::placePattern (int pattern, double atSeconds)
                 if (restored->getLinkGroupID().isEmpty())
                     restored->setLinkGroupID (linkIdFor (pattern, *track));
 
-                restored->setEnd (te::TimePosition::fromSeconds (barsAfter (start, getPatternBars (pattern))), true);
+                restored->setEnd (te::TimePosition::fromSeconds (endOfCopy (*this, pattern, start)), true);
             }
 
             continue;
@@ -205,7 +213,7 @@ void EditSession::placePattern (int pattern, double atSeconds)
         if (auto copy = te::duplicateClip (*master))
         {
             copy->setStart (te::TimePosition::fromSeconds (start), false, true);
-            copy->setEnd (te::TimePosition::fromSeconds (barsAfter (start, getPatternBars (pattern))), true);
+            copy->setEnd (te::TimePosition::fromSeconds (endOfCopy (*this, pattern, start)), true);
         }
     }
 

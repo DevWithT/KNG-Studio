@@ -27,7 +27,7 @@ RackView::RackView (EditSession& sessionToUse)
         if (id == 1000)
             session.newPattern();
         else if (id == 1001)
-            session.placePattern (current, session.getTransport().getPosition().inSeconds());
+            session.placePattern (current, session.snapTime (session.getTransport().getPosition().inSeconds()));
         else if (id == 1002)
             session.loopPattern (current);
         else if (id > 0)

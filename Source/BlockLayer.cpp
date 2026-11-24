@@ -247,7 +247,9 @@ void BlockLayer::paintAt (int x)
     lastPaintBar = start;
 
     const int pattern = session.getCurrentPattern();
-    const double end = session.barsAfter (start, session.getPatternBars (pattern));
+    auto& tempo = session.getEdit().tempoSequence;
+    const double end = tempo.toTime (te::BeatPosition::fromBeats (tempo.toBeats (te::TimePosition::fromSeconds (start)).inBeats()
+                                                                  + session.getPatternSteps (pattern) * 0.25)).inSeconds();
 
     for (auto& b : myBlocks())
         if (b.start < end - 0.001 && b.end > start + 0.001)

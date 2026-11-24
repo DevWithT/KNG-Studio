@@ -173,6 +173,21 @@ void TimelineRuler::mouseDown (const juce::MouseEvent& e)
     const int bar = s->barNumberAt (t);
     juce::PopupMenu menu;
 
+    // Take the loop highlight off the ruler
+    if (s->getLoopEnd() > s->getLoopStart())
+    {
+        menu.addItem ("Clear Loop", [s]
+        {
+            if (s->isPatternMode())
+                s->setPatternMode (false);
+
+            s->setLoopRange (0.0, 0.0);
+            s->setLooping (false);
+        });
+
+        menu.addSeparator();
+    }
+
     menu.addItem ("Add Tempo Change at Bar " + juce::String (bar) + "...", [s, t]
     {
         auto* w = new juce::AlertWindow ("Tempo Change", "New tempo from this bar (BPM):", juce::MessageBoxIconType::NoIcon);
