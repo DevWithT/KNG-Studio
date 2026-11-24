@@ -297,6 +297,61 @@ On a plugin:
 ## 7. To do
 Planned work, roughly in order. When an item is finished, move it out of this list and update the file map above in the same change.
 
+### Test first
+- Build and test the Monitor, Automate and Routing batch: Mon turns on when a lane is armed; the Automate submenu, the x button and Delete this automation; the Routing pop-up from the lane, Mixer and Inspector; Output and loop prevention; moving a routed lane up or down, then playing.
+- Run git rm Source/SendPopup.h (the file is no longer used).
+- Test the computer keyboard piano (Ctrl+K) and a MIDI keyboard. Both are built and untested.
+
+### Immediate, easiest to hardest
+Small:
+1. Tempo tap: a Tap button by the tempo display.
+2. Count-in dropdown next to the metronome. EditSessionTransport already has setCountInBars and getCountInBars; add the dropdown in TransportBar if it is missing.
+3. Record quantization chooser: pick a grid that recorded MIDI notes snap to.
+4. Undo history list: a panel of undo steps; click one to step back to it.
+5. Punch in/out: setPunchEnabled exists (EditSessionExtras); add draggable in and out points on the ruler.
+6. Audio settings extras: buffer size, recording latency offset (EditSessionLatency and LatencyDialog exist), record folder and bit depth. Add whichever are missing to SettingsComponent.
+
+Medium:
+7. Info panel: a hint bar at the bottom of the window first, then a floating hover box.
+8. Make Unique and Group Clips for Playlist clips (patterns already have makePatternUnique).
+9. Routing matrix: a grid of what feeds what (getBusTargets and canFeed already hold the data).
+10. Per-plugin CPU monitor: double-click the CPU meter. Check first what the engine reports per plugin.
+11. Saved window layouts.
+12. Stem export per lane: ExportDialog, exportStem and exportTracks exist. Make sure one click exports every lane.
+13. Slice Editor, first part: Grid cuts (with triplets), Split into N, tap-in cuts during playback, and per-slice reverse, pitch and volume.
+
+Large:
+14. Master output panel: LoudnessDisplay already shows LUFS and peak. Add a scope and a spectrum.
+15. Sections: song markers exist (MarkerBar, getMarkers, addMarkerAt, jumpToMarker). Make them draggable named blocks with a length. Moving a block moves everything under it. One feature, not two.
+16. Collect and Save: importAudioFile and copyIntoProject already copy imports into the project. Extend it to Sounds browser files, KNG Sampler files and Kit samples, with a File menu item.
+17. Slice Editor, second part: tempo match before cutting, Rearrange on Playlist (slices become clips), Snap to key (KngTune and the theory settings), and opening the editor from a lane.
+
+### Waiting on a decision
+- Comping: CompView exists. Decide on take lanes under the lane and pitch scoring with KngTune.
+- Clip gain line with Auto Ride (per-clip gain exists; the line is the parked Gain envelopes item below).
+- Clean Takes: strip silence that keeps breaths.
+- Capture: an always-listening buffer for audio and MIDI, per lane.
+- Stem separation (needs a model licence check first).
+- Warp markers with three plainly named modes (tempo follow already exists).
+- Scratch Pads and Swap Clips.
+- Edit menu: Cut Clip, Select None, Invert Selection. File menu: Recent Projects, Project Settings. Fold Audio Settings, Scan Plugins and Latency Check into tabs inside Settings.
+- Duplicate Lane. Unified search across plugins, samples and projects.
+
+### Earlier ideas still open
+- Sends chips row in the lane header on tall lanes (about 82 px and up).
+- Thin out automation points after a Write pass.
+- Learn moved to a right-click on knobs.
+- Per-lane automation mode (check the engine API first).
+- Output menu for instrument tracks in the Rack.
+- Inspector plugin colour chip: keep it or switch to a tick.
+- Playhead follow on long Rack patterns; pin Rack row controls while scrolling.
+- Piano roll rows that auto-grow; piano roll following the transport Snap button.
+- Known quirks: hiding an automation row with x leaves the curve playing; each lane automates one parameter at a time; the Write switch is global; a new song has no bus until "New bus..." is used.
+
+### Parked
+- KNG Vox Sat, time shaper and transient widener (premium plugins in the KngPlugins repo).
+- AI chat helpers, Link Audio, ARA 2 and Session-style clip launching.
+
 ### Plugin direction
 - Stock effect faces: done. Every stock effect has its own face. Only revisit one if it looks off.
 - The KNG Vox plugins (KngPlugins repo: Vox Comp, Vox DeEss, Vox Void, Vox EQ) are the premium line, possibly sold later. They stay standalone VST3s and are not ported into the built-ins.
@@ -307,8 +362,8 @@ Planned work, roughly in order. When an item is finished, move it out of this li
 
 ### Mixing and routing
 - Sidechain (built into mixer inserts, FX chain rows and inspector rows, not yet tested): a "Sidechain: [track]" source choice on each plugin slot (FxChainComponent, MixerViewInserts, TrackInspector) so any plugin with a sidechain input can be fed by another track. Needed so KNG Vox EQ can duck a beat from the vocal. Today EditSessionRouting only adds a KNG Comp marked kngDuck. First check how Tracktion Engine exposes sidechain sources.
-- Buses: easier create, name, and manage.
-- Routes (Output menu built into the inspector and mixer strips, not yet tested): choose where a track's output goes (master, a bus, another track) from the mixer and inspector.
+- Buses and routes: built (RoutePopup opens from the lane header Route button, the Mixer strip Sends button and the Inspector; Output goes through KngRoute), not yet tested.
+- Output menu: built into the inspector, the mixer strips and the Routing pop-up, not yet tested. Moving a routed lane up or down, then playing, must be tested.
 - Track widener (built into the inspector and mixer strips, not yet tested): a stereo width control on every track.
 
 ### Vocals
