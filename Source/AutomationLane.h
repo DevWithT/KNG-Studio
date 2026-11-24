@@ -22,9 +22,10 @@ private:
     EditSession& session;
     const int trackIndex;
 
-    juce::Label label { {}, "Automation" };
+    juce::Label label { {}, "Auto" };
     juce::ComboBox paramBox;
     juce::TextButton clearButton { "Clear" };
+    juce::TextButton writeButton { "Write" };
     juce::StringArray lastIds;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AutomationHeader)

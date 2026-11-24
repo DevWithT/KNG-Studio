@@ -20,6 +20,16 @@ AutomationHeader::AutomationHeader (EditSession& sessionToUse, int trackIndexToU
     };
 
     addAndMakeVisible (clearButton);
+
+    addAndMakeVisible (writeButton);
+    writeButton.setColour (juce::TextButton::buttonOnColourId, KngTheme::rec);
+    writeButton.setColour (juce::TextButton::textColourOnId, juce::Colours::white);
+    writeButton.setTooltip ("Write: record knob and fader moves as automation while the song plays. This switch is shared by every lane.");
+    writeButton.onClick = [this]
+    {
+        session.setAutomationWrite (! session.isAutomationWrite());
+        writeButton.setToggleState (session.isAutomationWrite(), juce::dontSendNotification);
+    };
     clearButton.onClick = [this]
     {
         if (auto* param = session.getAutomationParam (trackIndex))
@@ -49,6 +59,7 @@ void AutomationHeader::refreshList()
         ids.add (t.id);
 
     const auto currentId = session.getAutomationParamId (trackIndex);
+    writeButton.setToggleState (session.isAutomationWrite(), juce::dontSendNotification);
 
     if (ids != lastIds)
     {
@@ -77,7 +88,9 @@ void AutomationHeader::resized()
     auto r = getLocalBounds().reduced (6);
 
     auto top = r.removeFromTop (18);
-    clearButton.setBounds (top.removeFromRight (50));
+    clearButton.setBounds (top.removeFromRight (46));
+    top.removeFromRight (3);
+    writeButton.setBounds (top.removeFromRight (46));
     label.setBounds (top);
 
     r.removeFromTop (4);

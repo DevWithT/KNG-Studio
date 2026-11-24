@@ -7,7 +7,7 @@ TransportBar::TransportBar (EditSession& sessionToUse)
 {
     for (auto* c : std::initializer_list<juce::Component*> { &playButton, &stopButton, &recordButton, &timeLabel,
                                                              &tempoSlider, &countInBox, &clickButton,
-                                                             &loopButton, &punchButton, &snapButton, &writeButton })
+                                                             &loopButton, &punchButton, &snapButton })
         addAndMakeVisible (c);
 
     // Transport
@@ -67,7 +67,7 @@ TransportBar::TransportBar (EditSession& sessionToUse)
     countInBox.onChange = [this] { session.setCountInBars (countInBox.getSelectedId() - 1); };
 
     // Toggles: flat buttons that stay lit while on
-    for (auto* b : { &clickButton, &loopButton, &punchButton, &snapButton, &writeButton })
+    for (auto* b : { &clickButton, &loopButton, &punchButton, &snapButton })
     {
         b->setClickingTogglesState (true);
         b->setColour (juce::TextButton::buttonOnColourId, KngTheme::accentSoft);
@@ -77,7 +77,6 @@ TransportBar::TransportBar (EditSession& sessionToUse)
     loopButton.onClick    = [this] { session.setLooping (loopButton.getToggleState()); };
     punchButton.onClick   = [this] { session.setPunchEnabled (punchButton.getToggleState()); };
     snapButton.onClick    = [this] { session.setSnapEnabled (snapButton.getToggleState()); };
-    writeButton.onClick   = [this] { session.setAutomationWrite (writeButton.getToggleState()); };
 
     addAndMakeVisible (learnButton);
     learnButton.setClickingTogglesState (false);
@@ -131,7 +130,6 @@ TransportBar::TransportBar (EditSession& sessionToUse)
     loopButton.setTooltip ("Loop the region marked on the ruler");
     punchButton.setTooltip ("Only record between the loop markers");
     snapButton.setTooltip ("Snap blocks and loop markers to the grid size next to it (hold Alt to ignore)");
-    writeButton.setTooltip ("Record fader and knob moves as automation while playing");
 
     timerCallback();
     startTimerHz (30);
@@ -198,7 +196,6 @@ void TransportBar::timerCallback()
     loopButton.setToggleState (session.isLooping(), juce::dontSendNotification);
     punchButton.setToggleState (session.isPunchEnabled(), juce::dontSendNotification);
     snapButton.setToggleState (session.isSnapEnabled(), juce::dontSendNotification);
-    writeButton.setToggleState (session.isAutomationWrite(), juce::dontSendNotification);
     learnButton.setToggleState (session.isMidiLearn(), juce::dontSendNotification);
     patternModeButton.setToggleState (session.isPatternMode(), juce::dontSendNotification);
     songModeButton.setToggleState (! session.isPatternMode(), juce::dontSendNotification);
@@ -329,7 +326,6 @@ void TransportBar::resized()
     place (gridBox, 72);
     divider();
 
-    place (writeButton, 100);
     place (learnButton, 64);
     place (cpuLabel, 76);
 }

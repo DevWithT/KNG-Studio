@@ -348,6 +348,60 @@ void TrackHeader::mouseDown (const juce::MouseEvent& e)
             menu.addSubMenu ("Input", inputs);
     }
 
+    // Automate: pick what to automate and the lane opens on it, ready to draw
+    {
+        const auto targets = session.getAutomationTargets (idx);
+        const auto current = session.getAutomationParamId (idx);
+        const bool shown = session.isAutomationShown (idx);
+
+        juce::PopupMenu automate;
+        juce::StringArray pluginKeys, pluginNames;
+        std::vector<juce::PopupMenu> pluginMenus;
+
+        for (auto& tg : targets)
+        {
+            const juce::String id = tg.id;
+
+            auto pick = [s, idx, id]
+            {
+                s->setAutomationParamId (idx, id);
+                s->setAutomationShown (idx, true);
+            };
+
+            if (! id.startsWith ("p:"))
+            {
+                automate.addItem (tg.name, true, shown && id == current, pick);
+                continue;
+            }
+
+            const auto key = id.upToLastOccurrenceOf (":", false, false);
+            const int colon = tg.name.indexOf (": ");
+            const auto pluginName = colon > 0 ? tg.name.substring (0, colon) : tg.name;
+            const auto paramName = colon > 0 ? tg.name.substring (colon + 2) : tg.name;
+
+            int slot = pluginKeys.indexOf (key);
+
+            if (slot < 0)
+            {
+                pluginKeys.add (key);
+                pluginNames.add (pluginName);
+                pluginMenus.emplace_back();
+                slot = pluginKeys.size() - 1;
+            }
+
+            pluginMenus[(size_t) slot].addItem (paramName, true, shown && id == current, pick);
+        }
+
+        if (! pluginKeys.isEmpty())
+            automate.addSeparator();
+
+        for (int k = 0; k < pluginKeys.size(); ++k)
+            automate.addSubMenu (pluginNames[k], pluginMenus[(size_t) k]);
+
+        if (! targets.empty())
+            menu.addSubMenu ("Automate", automate);
+    }
+
     menu.addItem (session.isAutomationShown (idx) ? "Hide Automation" : "Show Automation",
                   [s, idx] { s->setAutomationShown (idx, ! s->isAutomationShown (idx)); });
 
