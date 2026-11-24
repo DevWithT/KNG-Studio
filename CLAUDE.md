@@ -58,7 +58,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `EditSessionPlaylistEdit.cpp`: cut and resize blocks; tidy the Playlist; separate overlaps.
 - `EditSessionPlugins.cpp`: adds instruments and effects by id (built-in or VST).
 - `EditSessionProject.cpp`: save, import audio, copy files into the project.
-- `EditSessionRouting.cpp`: buses, sends to a bus, sidechain ducking.
+- `EditSessionRouting.cpp`: buses, sends to a bus (level, pre/post fader, mute, remove), lane outputs (Master or a bus), loop-safe targets, sidechain ducking.
 - `EditSessionSampler.cpp`: KNG Sampler settings, chop a clip to pads, open the piano roll.
 - `EditSessionSelection.cpp`: multi-clip selection.
 - `EditSessionSlices.cpp`: Slices: findHits (finds hits in a clip), writeSliceFile, chopClipAtCuts (Rack rows plus Chops), slicesToPads (Drum Kit pads)
@@ -118,6 +118,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `LoudnessDisplay.cpp/.h`: master loudness readout: momentary, short-term, integrated LUFS, peak.
 - `KngLoudnessPlugin.cpp/.h`: invisible BS.1770 loudness meter at the end of the master chain.
 - `SendPopup.h`: small pop-up with one send level slider.
+- `RoutePopup.h`: Routing pop-up for a lane: Output (Master or a bus), and its sends with level, Pre/Post fader, mute, remove.
 - `FxChainComponent.cpp/.h`: a track's effect chain list with its add menu, and its window.
 - `SidechainMenu.h`: header-only: KngSidechain::addMenu adds a "Sidechain" source submenu to a plugin slot's menu.
 - `RouteMenu.h`: header-only: KngRoute::addItems / addMenu list where a track's output can go (Master or another track), with loop protection.
@@ -235,7 +236,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `EditSessionPlaylistEdit.cpp`: cutBlock, resizeBlock, tidyPlaylist, separateOverlappingBlocks
 - `EditSessionPlugins.cpp`: setInstrumentById, addInstrumentTrack, addEffectById
 - `EditSessionProject.cpp`: save, importAudioFile, copyIntoProject, importAudioFileAt
-- `EditSessionRouting.cpp`: getBusNumbers, getBusName, addBus, getSendToBusDb, setSendToBusDb, duckFromTrack, removeDucking, getDuckSource
+- `EditSessionRouting.cpp`: getBusNumbers, getBusName, addBus, getSendToBusDb, setSendToBusDb, duckFromTrack, removeDucking, getDuckSource, getTrackOutputBus, setTrackOutputBus, getSendBuses, isSendPreFader, setSendPreFader, isSendMuted, setSendMuted, removeSend, getBusTargets, getBusSources
 - `EditSessionSampler.cpp`: getKngSampler, setBuiltInSampler, setSamplerSample, getSamplerSampleName, getSamplerRoot, setSamplerRoot, getSamplerGain, setSamplerGain, getSamplerOneShot, setSamplerOneShot, chopClipToPads, openPianoRollForTrack
 - `EditSessionSelection.cpp`: clearSelection, toggleClipSelection, addClipsToSelection, isClipSelected, getSelectedClips, selectAllClips
 - Slice functions (findHits, chopClipAtCuts, slicesToPads, writeSliceFile): EditSessionSlices.cpp. chopClipToPads (EditSessionSampler.cpp) now only builds the cut list and calls chopClipAtCuts.

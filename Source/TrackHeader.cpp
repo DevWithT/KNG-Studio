@@ -1,5 +1,6 @@
 #include "TrackHeader.h"
 #include "SendPopup.h"
+#include "RoutePopup.h"
 #include "KngTheme.h"
 
 namespace te = tracktion;
@@ -104,6 +105,17 @@ TrackHeader::TrackHeader (EditSession& sessionToUse, int trackIndexToUse)
     monButton.setColour (juce::TextButton::textColourOnId, juce::Colours::white);
     monButton.setColour (juce::TextButton::buttonOnColourId, KngTheme::accent);
     monButton.setTooltip ("Monitor: hear this input live while recording on this lane");
+
+    // Route: opens the Routing pop-up (output and sends)
+    addChildComponent (routeButton);
+    routeButton.setClickingTogglesState (false);
+    routeButton.setColour (juce::TextButton::buttonColourId, juce::Colours::black.withAlpha (0.2f));
+    routeButton.setColour (juce::TextButton::textColourOffId, KngTheme::ink);
+    routeButton.setColour (juce::TextButton::buttonOnColourId, KngTheme::accentSoft);
+    routeButton.setColour (juce::TextButton::textColourOnId, KngTheme::text);
+    routeButton.setTooltip ("Routing: where this lane's sound goes, and its sends");
+    routeButton.onClick = [this] { RoutePopup::show (session, trackIndex, routeButton); };
+
     monButton.onClick = [this]
     {
         if (! session.getTransport().isRecording())
@@ -198,6 +210,16 @@ void TrackHeader::timerCallback()
 
     monButton.setToggleState (session.isTrackMonitor (trackIndex), juce::dontSendNotification);
 
+    // Route lights up when this lane has sends or outputs to a bus
+    const int numSends = session.getSendBuses (trackIndex).size();
+    const bool toBus = session.getTrackOutputBus (trackIndex) >= 0;
+    const auto routeText = juce::String ("Route") + (numSends > 0 ? " " + juce::String (numSends) : juce::String());
+
+    if (routeButton.getButtonText() != routeText)
+        routeButton.setButtonText (routeText);
+
+    routeButton.setToggleState (numSends > 0 || toBus, juce::dontSendNotification);
+
     if (auto* t = session.getTrack (trackIndex))
     {
         const bool muted = t->isMuted (false);
@@ -284,11 +306,15 @@ void TrackHeader::resized()
     nameLabel.setBounds (row1);
 
     inputBox.setVisible (roomForInput);
+    routeButton.setVisible (roomForInput);
 
     if (roomForInput)
     {
         r.removeFromTop (4);
-        inputBox.setBounds (r.removeFromTop (22));
+        auto row2 = r.removeFromTop (22);
+        routeButton.setBounds (row2.removeFromRight (66));
+        row2.removeFromRight (4);
+        inputBox.setBounds (row2);
     }
 }
 
@@ -412,47 +438,13 @@ void TrackHeader::mouseDown (const juce::MouseEvent& e)
                                                     "Put KngTune in your VST3 folder, then use File > Scan Plugins.");
     });
 
-    // Sends to buses
+    // Routing: output and sends
     if (! isBus)
-    {
-        juce::PopupMenu sends;
-
-        for (int bus : session.getBusNumbers())
+        menu.addItem ("Routing...", [s, idx, safe]
         {
-            const float db = session.getSendToBusDb (idx, bus);
-            const auto level = db > -60.0f ? "   (" + juce::String (db, 1) + " dB)" : juce::String();
-
-            sends.addItem (session.getBusName (bus) + level, [s, idx, bus, safe]
-            {
-                if (safe != nullptr)
-                    SendPopup::show (*s, idx, bus, *safe.getComponent());
-            });
-        }
-
-        sends.addSeparator();
-        sends.addItem ("New Bus...", [s, idx]
-        {
-            auto* w = new juce::AlertWindow ("New Bus", "Name this bus:", juce::MessageBoxIconType::NoIcon);
-            w->addTextEditor ("name", "Delay Bus");
-            w->addButton ("Create", 1, juce::KeyPress (juce::KeyPress::returnKey));
-            w->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
-
-            w->enterModalState (true, juce::ModalCallbackFunction::create ([s, idx, w] (int result)
-            {
-                const auto name = w->getTextEditorContents ("name").trim();
-
-                if (result == 1 && name.isNotEmpty())
-                {
-                    const int bus = s->addBus (name);
-
-                    if (bus >= 0)
-                        s->setSendToBusDb (idx, bus, -6.0f);
-                }
-            }), true);
+            if (safe != nullptr)
+                RoutePopup::show (*s, idx, *safe.getComponent());
         });
-
-        menu.addSubMenu ("Sends", sends);
-    }
 
     // Sidechain ducking: this lane gets quieter when the picked track plays
     juce::PopupMenu duck;

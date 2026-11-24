@@ -31,6 +31,7 @@ private:
     juce::Label nameLabel;
     juce::TextButton armButton { "R" }, muteButton { "M" }, soloButton { "S" };
     juce::TextButton monButton { "Mon" };
+    juce::TextButton routeButton { "Route" };
     juce::ComboBox inputBox;
     LevelMeter meter;
 

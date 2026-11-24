@@ -46,6 +46,48 @@ static int firstUtilityIndex (te::PluginList& list)
 //==============================================================================
 // Buses and sends
 
+static te::AudioTrack* findBusTrack (EditSession& s, int bus)
+{
+    for (int i = 0; i < s.getNumTracks(); ++i)
+        if (auto* t = s.getTrack (i))
+            if (auto* r = findReturn (*t))
+                if (r->busNumber.get() == bus)
+                    return t;
+
+    return nullptr;
+}
+
+// True if sound from `from` ends up in `to`, by its output or by any send
+static bool reaches (EditSession& s, te::AudioTrack& from, te::AudioTrack& to, int depth)
+{
+    if (&from == &to)
+        return true;
+
+    if (depth > 16)
+        return true;   // a runaway chain counts as a loop
+
+    if (auto* dest = from.getOutput().getDestinationTrack())
+        if (reaches (s, *dest, to, depth + 1))
+            return true;
+
+    for (auto* p : from.pluginList)
+        if (auto* send = dynamic_cast<te::AuxSendPlugin*> (p))
+            if (auto* busTrack = findBusTrack (s, send->busNumber.get()))
+                if (reaches (s, *busTrack, to, depth + 1))
+                    return true;
+
+    return false;
+}
+
+static int indexInList (te::PluginList& list, te::Plugin* plugin)
+{
+    for (int i = 0; i < list.size(); ++i)
+        if (list[i] == plugin)
+            return i;
+
+    return -1;
+}
+
 juce::Array<int> EditSession::getBusNumbers()
 {
     juce::Array<int> buses;
@@ -114,6 +156,11 @@ void EditSession::setSendToBusDb (int trackIndex, int bus, float db)
 
     if (track == nullptr)
         return;
+
+    // Never make a loop (A to B and B back to A)
+    if (auto* dest = findBusTrack (*this, bus))
+        if (dest == track || reaches (*this, *dest, *track, 0))
+            return;
 
     // A bus can't send to itself
     if (auto* r = findReturn (*track))
@@ -214,4 +261,178 @@ int EditSession::getDuckSource (int targetIndex)
                 return i;
 
     return -1;
+}
+
+//==============================================================================
+// Output routing and send controls
+
+int EditSession::getTrackOutputBus (int trackIndex)
+{
+    if (auto* t = getTrack (trackIndex))
+        if (auto* dest = t->getOutput().getDestinationTrack())
+            if (auto* r = findReturn (*dest))
+                return r->busNumber.get();
+
+    return -1;
+}
+
+bool EditSession::setTrackOutputBus (int trackIndex, int bus)
+{
+    auto* track = getTrack (trackIndex);
+
+    if (track == nullptr)
+        return false;
+
+    if (bus >= 0)
+    {
+        auto* dest = findBusTrack (*this, bus);
+
+        if (dest == nullptr || dest == track || reaches (*this, *dest, *track, 0))
+            return false;
+
+        beginEdit();
+        track->getOutput().setOutputToTrack (dest);
+    }
+    else
+    {
+        beginEdit();
+        track->getOutput().setOutputToDefaultDevice (false);
+    }
+
+    edit->restartPlayback();
+    save();
+    return true;
+}
+
+juce::Array<int> EditSession::getSendBuses (int trackIndex)
+{
+    juce::Array<int> result;
+
+    if (auto* t = getTrack (trackIndex))
+        for (auto* p : t->pluginList)
+            if (auto* send = dynamic_cast<te::AuxSendPlugin*> (p))
+                result.addIfNotAlreadyThere (send->busNumber.get());
+
+    return result;
+}
+
+bool EditSession::isSendPreFader (int trackIndex, int bus)
+{
+    if (auto* t = getTrack (trackIndex))
+        if (auto* send = findSendTo (*t, bus))
+            if (auto* vp = t->getVolumePlugin())
+                return indexInList (t->pluginList, send) < indexInList (t->pluginList, vp);
+
+    return false;
+}
+
+void EditSession::setSendPreFader (int trackIndex, int bus, bool preFader)
+{
+    auto* t = getTrack (trackIndex);
+
+    if (t == nullptr)
+        return;
+
+    auto* send = findSendTo (*t, bus);
+    auto* vp = t->getVolumePlugin();
+
+    if (send == nullptr || vp == nullptr || isSendPreFader (trackIndex, bus) == preFader)
+        return;
+
+    auto& list = t->pluginList;
+    const int from = list.state.indexOf (send->state);
+    const int volumeIndex = list.state.indexOf (vp->state);
+
+    if (from < 0 || volumeIndex < 0)
+        return;
+
+    beginEdit();
+
+    // A send taps the sound where it sits in the chain: before the volume = pre-fader, at the end = post-fader
+    if (preFader)
+        list.state.moveChild (from, volumeIndex, &edit->getUndoManager());
+    else
+        list.state.moveChild (from, -1, &edit->getUndoManager());
+
+    save();
+}
+
+bool EditSession::isSendMuted (int trackIndex, int bus)
+{
+    if (auto* t = getTrack (trackIndex))
+        if (auto* send = findSendTo (*t, bus))
+            return ! send->isEnabled();
+
+    return false;
+}
+
+void EditSession::setSendMuted (int trackIndex, int bus, bool shouldMute)
+{
+    if (auto* t = getTrack (trackIndex))
+    {
+        if (auto* send = findSendTo (*t, bus))
+        {
+            beginEdit();
+            send->setEnabled (! shouldMute);
+            save();
+        }
+    }
+}
+
+void EditSession::removeSend (int trackIndex, int bus)
+{
+    if (auto* t = getTrack (trackIndex))
+    {
+        if (auto* send = findSendTo (*t, bus))
+        {
+            beginEdit();
+            send->deleteFromParent();
+            save();
+        }
+    }
+}
+
+juce::Array<int> EditSession::getBusTargets (int trackIndex)
+{
+    juce::Array<int> result;
+    auto* track = getTrack (trackIndex);
+
+    if (track == nullptr)
+        return result;
+
+    for (int bus : getBusNumbers())
+        if (auto* dest = findBusTrack (*this, bus))
+            if (dest != track && ! reaches (*this, *dest, *track, 0))
+                result.add (bus);
+
+    return result;
+}
+
+juce::StringArray EditSession::getBusSources (int bus)
+{
+    juce::StringArray names;
+    auto* busTrack = findBusTrack (*this, bus);
+
+    if (busTrack == nullptr)
+        return names;
+
+    for (int i = 0; i < getNumTracks(); ++i)
+    {
+        auto* t = getTrack (i);
+
+        if (t == nullptr || t == busTrack)
+            continue;
+
+        bool feeds = t->getOutput().getDestinationTrack() == busTrack;
+
+        for (auto* p : t->pluginList)
+            if (auto* send = dynamic_cast<te::AuxSendPlugin*> (p))
+                if (send->busNumber.get() == bus)
+                    feeds = true;
+
+        if (feeds)
+            names.addIfNotAlreadyThere (t->getName());
+    }
+
+    return names;
 }

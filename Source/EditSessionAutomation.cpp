@@ -17,8 +17,14 @@ std::vector<EditSession::AutomationTarget> EditSession::getAutomationTargets (in
         result.push_back ({ "pan", "Pan", vp->panParam.get() });
     }
 
-    if (auto* send = findSend (*t))
-        result.push_back ({ "send", "Reverb Send", send->gain.get() });
+    for (auto* p : t->pluginList)
+        if (auto* send = dynamic_cast<te::AuxSendPlugin*> (p))
+        {
+            const int bus = send->busNumber.get();
+            result.push_back ({ bus == 0 ? juce::String ("send") : "send" + juce::String (bus),
+                                "Send: " + getBusName (bus),
+                                send->gain.get() });
+        }
 
     // Every parameter on the track's instrument and FX (capped so huge plugins stay usable)
     for (auto* p : getFxPlugins (t->pluginList))
