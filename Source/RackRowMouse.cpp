@@ -130,6 +130,31 @@ void RackRow::growToStep (int step)
         onLayoutChanged();
 }
 
+// Shorten the current pattern to its last bar with a step or note on any sound (never under 2 bars)
+void RackRow::trimToContent (EditSession& session)
+{
+    const int pattern = session.getCurrentPattern();
+    const int bars = session.getPatternBars (pattern);
+    const int perBar = juce::jmax (1, session.getPatternSteps (pattern) / juce::jmax (1, bars));
+    int lastStep = 0;
+
+    for (int i = 0; i < session.getNumTracks(); ++i)
+    {
+        if (auto* clip = session.getPatternClip (i, pattern, false))
+        {
+            const double start = PatternGrid::clipStartBeat (*clip);
+
+            for (auto* n : clip->getSequence().getNotes())
+                lastStep = juce::jmax (lastStep, PatternGrid::beatToStep (n->getStartBeat().inBeats() - start));
+        }
+    }
+
+    const int wanted = juce::jmax (2, lastStep / perBar + 1);
+
+    if (wanted < bars)
+        session.setPatternBars (pattern, wanted);
+}
+
 void RackRow::mouseDrag (const juce::MouseEvent& e)
 {
     if (graphEditing)
@@ -193,6 +218,15 @@ void RackRow::mouseUp (const juce::MouseEvent&)
         return;
 
     painting = false;
+
+    // Erasing steps can empty the last bars: the pattern shrinks back and they lock again
+    if (! paintOn)
+    {
+        trimToContent (session);
+
+        if (onLayoutChanged)
+            onLayoutChanged();
+    }
 
     if (auto* clip = getClip (false))
     {

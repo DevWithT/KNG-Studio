@@ -19,6 +19,7 @@ public:
     /** The Rack draws the pattern's own steps plus a few locked bars after them, dimmed until a step is placed in one. */
     static constexpr int maxSteps   = 512;   // 32 bars of 16 steps
     static constexpr int lockedBars = 2;
+    static void trimToContent (EditSession& session);   // shorten the current pattern to its last bar with a step or note (never under 2 bars)
     static int displaySteps (int liveSteps)   { return juce::jmin (maxSteps, liveSteps + lockedBars * 16); }
 
     /** Called when the row grows or shrinks (a drum row opens or closes). */

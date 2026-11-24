@@ -208,23 +208,7 @@ void RackView::layoutRows()
 // Shorten the pattern to the last bar that has anything in it, on any sound
 void RackView::trimPattern()
 {
-    const int pattern = session.getCurrentPattern();
-    const int live = session.getPatternSteps (pattern);
-    const int perBar = juce::jmax (1, live / juce::jmax (1, session.getPatternBars (pattern)));
-    int lastStep = 0;
-
-    for (int i = 0; i < session.getNumTracks(); ++i)
-    {
-        if (auto* clip = session.getPatternClip (i, pattern, false))
-        {
-            const double start = PatternGrid::clipStartBeat (*clip);
-
-            for (auto* n : clip->getSequence().getNotes())
-                lastStep = juce::jmax (lastStep, PatternGrid::beatToStep (n->getStartBeat().inBeats() - start));
-        }
-    }
-
-    session.setPatternBars (pattern, juce::jmax (2, lastStep / perBar + 1));
+    RackRow::trimToContent (session);
     layoutRows();
 }
 

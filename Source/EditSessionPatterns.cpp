@@ -66,7 +66,7 @@ void EditSession::setPatternBars (int pattern, int bars)
     bars = juce::jlimit (1, 32, bars);
 
     beginEdit();
-    edit->state.setProperty ("kngPatternBars" + juce::String (pattern), bars, nullptr);
+    edit->state.setProperty ("kngPatternBars" + juce::String (pattern), bars, &edit->getUndoManager());
 
     // If this pattern is looping right now, stretch or trim the loop with it, or playback keeps the old length
     {

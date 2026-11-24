@@ -93,7 +93,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 
 ### Rack and patterns
 - `RackView.cpp/.h`: every sound and instrument in one place, editing the current pattern. Steps keep a minimum width of 20 px and long patterns scroll sideways. The Bars dropdown is gone: the pattern grows when a step is placed in a locked bar, and the Trim button shortens it.
-- `RackRow.cpp/.h`: one sound in the Rack: controls on the left, its pattern right. The Rack draws the pattern's bars plus 2 locked bars (RackRow::displaySteps), dimmed. Placing a step in a locked bar grows the pattern (RackRow::growToStep).
+- `RackRow.cpp/.h`: one sound in the Rack: controls on the left, its pattern right. The Rack draws the pattern's bars plus 2 locked bars (RackRow::displaySteps), dimmed. Placing a step in a locked bar grows the pattern (RackRow::growToStep). Erasing steps shrinks the pattern back (RackRow::trimToContent).
 - `RackRowPaint.cpp`: RackRow painting (drum rows, mini piano roll) and header layout.
 - `RackRowMouse.cpp`: RackRow mouse: row clicks, step painting, dragging the pattern out.
 - `RackRowActions.cpp`: RackRow's actions and menus.
