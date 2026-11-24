@@ -244,8 +244,8 @@ void TimelineRuler::mouseUp (const juce::MouseEvent&)
 
 void TimelineRuler::mouseWheelMove (const juce::MouseEvent& e, const juce::MouseWheelDetails& wheel)
 {
-    // Ctrl+scroll zooms, anything else scrolls sideways
-    if (e.mods.isCommandDown())
+    // Scroll (or Ctrl+scroll) zooms around the mouse. Shift+scroll or a sideways swipe scrolls the timeline.
+    if (! e.mods.isShiftDown() && std::abs (wheel.deltaX) <= std::abs (wheel.deltaY))
     {
         if (wheel.deltaY != 0.0f)
             session.zoomAround (xToTime (e.x), wheel.deltaY > 0.0f ? 0.8 : 1.25);

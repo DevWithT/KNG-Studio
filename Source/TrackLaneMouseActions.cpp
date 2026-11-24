@@ -7,8 +7,8 @@ namespace te = tracktion;
 //==============================================================================
 void TrackLane::mouseWheelMove (const juce::MouseEvent& e, const juce::MouseWheelDetails& wheel)
 {
-    // Ctrl+scroll zooms around the mouse
-    if (e.mods.isCommandDown())
+    // Scroll (or Ctrl+scroll) zooms around the mouse. Shift+scroll scrolls sideways, Alt+scroll scrolls the lanes up and down.
+    if (e.mods.isCommandDown() || (! e.mods.isShiftDown() && ! e.mods.isAltDown() && std::abs (wheel.deltaX) <= std::abs (wheel.deltaY)))
     {
         if (wheel.deltaY != 0.0f)
             session.zoomAround (xToTime (e.x), wheel.deltaY > 0.0f ? 0.8 : 1.25);
@@ -24,7 +24,7 @@ void TrackLane::mouseWheelMove (const juce::MouseEvent& e, const juce::MouseWhee
         return;
     }
 
-    // Plain scroll goes up to the viewport so tracks scroll vertically
+    // Alt+scroll goes up to the viewport so the lanes scroll vertically
     juce::Component::mouseWheelMove (e, wheel);
 }
 

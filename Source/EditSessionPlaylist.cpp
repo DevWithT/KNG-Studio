@@ -76,7 +76,7 @@ void EditSession::placePatternInLane (int pattern, double atSeconds, const juce:
     if (getTransport().isRecording())
         return;
 
-    const double start = juce::jmax (0.0, snapTime (atSeconds));   // follows the Snap grid size (Snap off: exactly where asked)
+    const double start = barStartAt (juce::jmax (0.0, snapTime (atSeconds)));   // blocks always start on a bar: the Snap grid picks which one
 
     // A copy already here (in any lane) would play twice
     for (auto& b : getPatternBlocks())
@@ -106,7 +106,7 @@ void EditSession::placePatternInLane (int pattern, double atSeconds, const juce:
     for (int i = 0; i < getNumTracks(); ++i)
         if (auto* t = getTrack (i))
             for (auto* c : t->getClips())
-                if (clipPattern (*c) == pattern && ! c->state.hasProperty (laneProp)
+                if (clipPattern (*c) == pattern
                      && std::abs (c->getPosition().getStart().inSeconds() - start) < 0.001)
                     c->state.setProperty (laneProp, laneId, nullptr);
 

@@ -263,7 +263,7 @@ void AutomationLane::mouseUp (const juce::MouseEvent&)
 
 void AutomationLane::mouseWheelMove (const juce::MouseEvent& e, const juce::MouseWheelDetails& wheel)
 {
-    if (e.mods.isCommandDown())
+    if (e.mods.isCommandDown() || (! e.mods.isShiftDown() && ! e.mods.isAltDown() && std::abs (wheel.deltaX) <= std::abs (wheel.deltaY)))
     {
         if (wheel.deltaY != 0.0f)
             session.zoomAround (session.xToTime (e.x, getWidth()), wheel.deltaY > 0.0f ? 0.8 : 1.25);
