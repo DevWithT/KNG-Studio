@@ -291,7 +291,7 @@ void EditSession::setPatternSwing (int pattern, float percent)
     {
         auto* track = getTrack (i);
 
-        if (track == nullptr || ! (bool) track->state.getProperty ("kngChannel", false))
+        if (track == nullptr || ! ((bool) track->state.getProperty ("kngChannel", false) || (bool) track->state.getProperty ("kngDrum", false)))
             continue;
 
         for (auto* c : track->getClips())
