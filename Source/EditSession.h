@@ -253,10 +253,6 @@ public:
     juce::String getBusName (int bus);
     float getSendToBusDb (int trackIndex, int bus);
     void setSendToBusDb (int trackIndex, int bus, float db);
-    /** Where a lane's sound goes: -1 = Master, otherwise a bus number. */
-    int getTrackOutputBus (int trackIndex);
-    /** Sends a lane's output to a bus (or -1 for Master). Returns false if that would make a loop. */
-    bool setTrackOutputBus (int trackIndex, int bus);
     /** Buses this lane sends to, in the order the sends sit in its chain. */
     juce::Array<int> getSendBuses (int trackIndex);
     bool isSendPreFader (int trackIndex, int bus);
@@ -268,6 +264,8 @@ public:
     juce::Array<int> getBusTargets (int trackIndex);
     /** Names of the lanes feeding a bus, by output or by send. */
     juce::StringArray getBusSources (int bus);
+    /** True if `from` can safely output to `dest`: not itself, and `dest` doesn't already feed `from` by output or by a send. */
+    bool canFeed (tracktion::AudioTrack& from, tracktion::AudioTrack& dest);
 
     // Sidechain ducking: a compressor on the target track, triggered by the source (kick ducks the 808)
     void duckFromTrack (int targetIndex, int sourceIndex);

@@ -3,6 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "EditSession.h"
 #include "KngTheme.h"
+#include "RouteMenu.h"
 
 /** The Routing pop-up for one lane: where its sound goes (Output) and its sends.
     Each send has a level, a Pre / Post fader switch, a mute and a remove button. */
@@ -19,9 +20,17 @@ public:
         addAndMakeVisible (outputLabel);
         outputLabel.setText ("Output", juce::dontSendNotification);
 
-        addAndMakeVisible (outputBox);
-        outputBox.setTooltip ("Where this lane's sound goes. Master is the normal route. Pick a bus to feed a group.");
-        outputBox.onChange = [this] { outputPicked(); };
+        addAndMakeVisible (outputButton);
+        outputButton.setTooltip ("Where this lane's sound goes. Master is the normal route. Pick a bus or another lane to feed a group.");
+        outputButton.onClick = [this]
+        {
+            if (auto* t = session.getTrack (trackIndex))
+            {
+                juce::PopupMenu menu;
+                KngRoute::addItems (menu, session, *t);
+                menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&outputButton));
+            }
+        };
 
         addAndMakeVisible (sendsLabel);
         sendsLabel.setText ("Sends", juce::dontSendNotification);
@@ -42,7 +51,7 @@ public:
 
         auto out = r.removeFromTop (24);
         outputLabel.setBounds (out.removeFromLeft (60));
-        outputBox.setBounds (out);
+        outputButton.setBounds (out);
         r.removeFromTop (10);
 
         sendsLabel.setBounds (r.removeFromTop (18));
@@ -156,7 +165,7 @@ private:
     //==========================================================================
     void timerCallback() override
     {
-        if (outputBox.isPopupActive() || addBox.isPopupActive())
+        if (addBox.isPopupActive())
             return;
 
         if (makeSignature() != signature)
@@ -170,7 +179,8 @@ private:
         for (int b : session.getSendBuses (trackIndex))
             sig << b << ",";
 
-        sig << "|" << session.getTrackOutputBus (trackIndex) << "|";
+        if (auto* t = session.getTrack (trackIndex))
+            sig << "|" << KngRoute::currentName (*t) << "|";
 
         for (int b : session.getBusTargets (trackIndex))
             sig << b << ",";
@@ -195,15 +205,9 @@ private:
 
         const auto targets = session.getBusTargets (trackIndex);
         const auto sent = session.getSendBuses (trackIndex);
-        const int currentOutput = session.getTrackOutputBus (trackIndex);
 
-        outputBox.clear (juce::dontSendNotification);
-        outputBox.addItem ("Master", 1);
-
-        for (int b : targets)
-            outputBox.addItem (session.getBusName (b), 100 + b);
-
-        outputBox.setSelectedId (currentOutput < 0 ? 1 : 100 + currentOutput, juce::dontSendNotification);
+        if (auto* t = session.getTrack (trackIndex))
+            outputButton.setButtonText ("Output: " + KngRoute::currentName (*t));
 
         addBox.clear (juce::dontSendNotification);
         addBox.addItem ("Add send...", 1);
@@ -224,15 +228,6 @@ private:
         signature = makeSignature();
         setSize (400, 130 + 30 * rows.size());
         resized();
-    }
-
-    void outputPicked()
-    {
-        const int id = outputBox.getSelectedId();
-        const int bus = id >= 100 ? id - 100 : -1;
-
-        if (! session.setTrackOutputBus (trackIndex, bus))
-            requestRebuild();
     }
 
     void addPicked()
@@ -277,7 +272,8 @@ private:
     juce::String signature;
 
     juce::Label title, outputLabel, sendsLabel;
-    juce::ComboBox outputBox, addBox;
+    juce::TextButton outputButton;
+    juce::ComboBox addBox;
     juce::OwnedArray<SendRow> rows;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (RoutePopup)

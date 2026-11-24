@@ -212,7 +212,10 @@ void TrackHeader::timerCallback()
 
     // Route lights up when this lane has sends or outputs to a bus
     const int numSends = session.getSendBuses (trackIndex).size();
-    const bool toBus = session.getTrackOutputBus (trackIndex) >= 0;
+    bool toBus = false;
+
+    if (auto* routed = session.getTrack (trackIndex))
+        toBus = routed->getOutput().getDestinationTrack() != nullptr;
     const auto routeText = juce::String ("Route") + (numSends > 0 ? " " + juce::String (numSends) : juce::String());
 
     if (routeButton.getButtonText() != routeText)

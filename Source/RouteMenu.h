@@ -34,8 +34,8 @@ namespace KngRoute
         {
             tracktion::AudioTrack::Ptr dest (s->getTrack (i));
 
-            // Skip itself and anything that already feeds into this track
-            if (dest == nullptr || dest == from || dest->getOutput().feedsInto (from.get()))
+            // Skip itself and anything that already feeds into this track (by output or by a send)
+            if (dest == nullptr || ! s->canFeed (*from, *dest))
                 continue;
 
             menu.addItem (dest->getName(), true, dest.get() == current, [s, from, dest]

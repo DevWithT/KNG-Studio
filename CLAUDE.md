@@ -58,7 +58,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `EditSessionPlaylistEdit.cpp`: cut and resize blocks; tidy the Playlist; separate overlaps.
 - `EditSessionPlugins.cpp`: adds instruments and effects by id (built-in or VST).
 - `EditSessionProject.cpp`: save, import audio, copy files into the project.
-- `EditSessionRouting.cpp`: buses, sends to a bus (level, pre/post fader, mute, remove), lane outputs (Master or a bus), loop-safe targets, sidechain ducking.
+- `EditSessionRouting.cpp`: buses, sends to a bus (level, pre/post fader, mute, remove), loop-safe routing check (canFeed, getBusTargets), sidechain ducking. Output itself lives in RouteMenu.h (KngRoute).
 - `EditSessionSampler.cpp`: KNG Sampler settings, chop a clip to pads, open the piano roll.
 - `EditSessionSelection.cpp`: multi-clip selection.
 - `EditSessionSlices.cpp`: Slices: findHits (finds hits in a clip), writeSliceFile, chopClipAtCuts (Rack rows plus Chops), slicesToPads (Drum Kit pads)
@@ -236,7 +236,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `EditSessionPlaylistEdit.cpp`: cutBlock, resizeBlock, tidyPlaylist, separateOverlappingBlocks
 - `EditSessionPlugins.cpp`: setInstrumentById, addInstrumentTrack, addEffectById
 - `EditSessionProject.cpp`: save, importAudioFile, copyIntoProject, importAudioFileAt
-- `EditSessionRouting.cpp`: getBusNumbers, getBusName, addBus, getSendToBusDb, setSendToBusDb, duckFromTrack, removeDucking, getDuckSource, getTrackOutputBus, setTrackOutputBus, getSendBuses, isSendPreFader, setSendPreFader, isSendMuted, setSendMuted, removeSend, getBusTargets, getBusSources
+- `EditSessionRouting.cpp`: getBusNumbers, getBusName, addBus, getSendToBusDb, setSendToBusDb, duckFromTrack, removeDucking, getDuckSource, getSendBuses, isSendPreFader, setSendPreFader, isSendMuted, setSendMuted, removeSend, getBusTargets, getBusSources, canFeed
 - `EditSessionSampler.cpp`: getKngSampler, setBuiltInSampler, setSamplerSample, getSamplerSampleName, getSamplerRoot, setSamplerRoot, getSamplerGain, setSamplerGain, getSamplerOneShot, setSamplerOneShot, chopClipToPads, openPianoRollForTrack
 - `EditSessionSelection.cpp`: clearSelection, toggleClipSelection, addClipsToSelection, isClipSelected, getSelectedClips, selectAllClips
 - Slice functions (findHits, chopClipAtCuts, slicesToPads, writeSliceFile): EditSessionSlices.cpp. chopClipToPads (EditSessionSampler.cpp) now only builds the cut list and calls chopClipAtCuts.

@@ -266,44 +266,6 @@ int EditSession::getDuckSource (int targetIndex)
 //==============================================================================
 // Output routing and send controls
 
-int EditSession::getTrackOutputBus (int trackIndex)
-{
-    if (auto* t = getTrack (trackIndex))
-        if (auto* dest = t->getOutput().getDestinationTrack())
-            if (auto* r = findReturn (*dest))
-                return r->busNumber.get();
-
-    return -1;
-}
-
-bool EditSession::setTrackOutputBus (int trackIndex, int bus)
-{
-    auto* track = getTrack (trackIndex);
-
-    if (track == nullptr)
-        return false;
-
-    if (bus >= 0)
-    {
-        auto* dest = findBusTrack (*this, bus);
-
-        if (dest == nullptr || dest == track || reaches (*this, *dest, *track, 0))
-            return false;
-
-        beginEdit();
-        track->getOutput().setOutputToTrack (dest);
-    }
-    else
-    {
-        beginEdit();
-        track->getOutput().setOutputToDefaultDevice (false);
-    }
-
-    edit->restartPlayback();
-    save();
-    return true;
-}
-
 juce::Array<int> EditSession::getSendBuses (int trackIndex)
 {
     juce::Array<int> result;
@@ -435,4 +397,9 @@ juce::StringArray EditSession::getBusSources (int bus)
     }
 
     return names;
+}
+
+bool EditSession::canFeed (te::AudioTrack& from, te::AudioTrack& dest)
+{
+    return &from != &dest && ! reaches (*this, dest, from, 0);
 }
