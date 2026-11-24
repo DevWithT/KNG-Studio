@@ -127,9 +127,14 @@ juce::Array<int> RackRow::getVisiblePads()
     return pads;
 }
 
-int RackRow::getNumSteps()
+int RackRow::getLiveSteps()
 {
     return session.getPatternSteps (session.getCurrentPattern());
+}
+
+int RackRow::getNumSteps()
+{
+    return displaySteps (getLiveSteps());
 }
 
 te::MidiClip* RackRow::getClip (bool createIfMissing)

@@ -68,7 +68,7 @@ void RackRow::paintChannelSteps (juce::Graphics& g, te::MidiClip* clip)
     auto lane = getLaneArea().withHeight (rowHeight).reduced (0, 6);
 
     // Velocity of every hit on this channel
-    int velocity[128] = {};
+    int velocity[maxSteps] = {};
 
     if (clip != nullptr)
     {
@@ -448,7 +448,8 @@ void RackRow::fillLine (int note, int every)
 
     // every = 0 clears the line
     for (int step = 0; step < steps; ++step)
-        PatternGrid::setStep (*clip, note, step, every > 0 && step % every == 0, um);
+        if (step < getLiveSteps())
+            PatternGrid::setStep (*clip, note, step, every > 0 && step % every == 0, um);
 
     if (clip->isLinked())
         clip->updateLinkedClips();

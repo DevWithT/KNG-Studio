@@ -1,6 +1,7 @@
 #include "RackView.h"
 #include "PluginBrowser.h"
 #include "KitBrowser.h"
+#include "PatternGrid.h"
 #include "KngTheme.h"
 
 namespace te = tracktion;
@@ -14,7 +15,7 @@ static bool isAudioFile (const juce::File& f)
 RackView::RackView (EditSession& sessionToUse)
     : session (sessionToUse)
 {
-    for (auto* c : std::initializer_list<juce::Component*> { &patternBox, &barsBox, &swingLabel, &swingSlider, &viewport })
+    for (auto* c : std::initializer_list<juce::Component*> { &patternBox, &trimButton, &swingLabel, &swingSlider, &viewport })
         addAndMakeVisible (c);
 
     // The pattern menu also holds Place at Playhead and Loop Pattern
@@ -36,15 +37,7 @@ RackView::RackView (EditSession& sessionToUse)
         syncToolbar();
     };
 
-    barsBox.addItem ("1 bar", 1);
-    barsBox.addItem ("2 bars", 2);
-    barsBox.addItem ("3 bars", 3);
-    barsBox.addItem ("4 bars", 4);
-    barsBox.addItem ("5 bars", 5);
-    barsBox.addItem ("6 bars", 6);
-    barsBox.addItem ("7 bars", 7);
-    barsBox.addItem ("8 bars", 8);
-    barsBox.onChange = [this] { session.setPatternBars (session.getCurrentPattern(), barsBox.getSelectedId()); };
+    trimButton.onClick = [this] { trimPattern(); };
 
     swingSlider.setSliderStyle (juce::Slider::LinearHorizontal);
     swingSlider.setTextBoxStyle (juce::Slider::TextBoxRight, false, 44, 20);
@@ -60,7 +53,7 @@ RackView::RackView (EditSession& sessionToUse)
 
     // Tooltips
     patternBox.setTooltip ("Which pattern the Rack is editing. Also: New pattern, Place at Playhead, Loop Pattern.");
-    barsBox.setTooltip ("How many bars long this pattern is");
+    trimButton.setTooltip ("Shorten the pattern to the last bar that has a step or note in it (never under 2 bars)");
     swingSlider.setTooltip ("Push every other 16th late for groove (drum and sound rows only)");
     addRowButton.setTooltip ("Add a sample or an instrument as a new row. You can also drag samples in from the Browser.");
 
@@ -190,7 +183,7 @@ void RackView::layoutRows()
     // Steps keep a readable size: a long pattern is wider than the panel and scrolls sideways
     constexpr int headerSpace = 340;   // a row's controls on the left, with a little to spare
     constexpr int minStepWidth = 20;
-    const int patternSteps = session.getPatternSteps (session.getCurrentPattern());
+    const int patternSteps = RackRow::displaySteps (session.getPatternSteps (session.getCurrentPattern()));
     const int width = juce::jmax (viewWidth, headerSpace + patternSteps * minStepWidth);
     int y = 0;
     juce::String sig;
@@ -210,6 +203,29 @@ void RackView::layoutRows()
     sig << session.getPatternSteps (session.getCurrentPattern());
     lastLayoutSignature = sig;
     content.setSize (width, juce::jmax (y, 1));
+}
+
+// Shorten the pattern to the last bar that has anything in it, on any sound
+void RackView::trimPattern()
+{
+    const int pattern = session.getCurrentPattern();
+    const int live = session.getPatternSteps (pattern);
+    const int perBar = juce::jmax (1, live / juce::jmax (1, session.getPatternBars (pattern)));
+    int lastStep = 0;
+
+    for (int i = 0; i < session.getNumTracks(); ++i)
+    {
+        if (auto* clip = session.getPatternClip (i, pattern, false))
+        {
+            const double start = PatternGrid::clipStartBeat (*clip);
+
+            for (auto* n : clip->getSequence().getNotes())
+                lastStep = juce::jmax (lastStep, PatternGrid::beatToStep (n->getStartBeat().inBeats() - start));
+        }
+    }
+
+    session.setPatternBars (pattern, juce::jmax (2, lastStep / perBar + 1));
+    layoutRows();
 }
 
 void RackView::syncToolbar()
@@ -240,8 +256,8 @@ void RackView::syncToolbar()
     if (! patternBox.isPopupActive() && patternBox.getSelectedId() != current)
         patternBox.setSelectedId (current, juce::dontSendNotification);
 
-    if (! barsBox.isPopupActive())
-        barsBox.setSelectedId (session.getPatternBars (current), juce::dontSendNotification);
+    if (! trimButton.isMouseButtonDown())
+        trimButton.setEnabled (session.getPatternBars (current) > 2);
 
     if (! swingSlider.isMouseButtonDown())
         swingSlider.setValue (session.getPatternSwing (current), juce::dontSendNotification);
@@ -376,7 +392,7 @@ void RackView::resized()
 
     patternBox.setBounds (tb.removeFromLeft (150));
     tb.removeFromLeft (6);
-    barsBox.setBounds (tb.removeFromLeft (90));
+    trimButton.setBounds (tb.removeFromLeft (60));
     tb.removeFromLeft (16);
     swingLabel.setBounds (tb.removeFromLeft (46));
     swingSlider.setBounds (tb.removeFromLeft (180));

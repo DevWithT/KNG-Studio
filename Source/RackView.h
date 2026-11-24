@@ -36,11 +36,13 @@ private:
     void syncToolbar();
     void addSamples (const juce::Array<juce::File>& files);
     void showAddMenu();
+    void trimPattern();
     juce::Array<tracktion::Track*> getRackTracks();
 
     EditSession& session;
 
-    juce::ComboBox patternBox, barsBox;
+    juce::ComboBox patternBox;
+    juce::TextButton trimButton { "Trim" };
     juce::Label swingLabel { {}, "Swing" };
     juce::Slider swingSlider;
     juce::TextButton addRowButton { "+ Add a sound or instrument" };

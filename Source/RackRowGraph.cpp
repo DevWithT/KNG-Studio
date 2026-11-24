@@ -77,7 +77,7 @@ void RackRow::makeChannelLegato (te::MidiClip& clip)
     // Each hit rings until the next one, whatever its pitch
     auto* um = &session.getEdit().getUndoManager();
     const auto notes = clip.getSequence().getNotes();
-    const double end = PatternGrid::clipStartBeat (clip) + getNumSteps() * PatternGrid::stepBeats;
+    const double end = PatternGrid::clipStartBeat (clip) + getLiveSteps() * PatternGrid::stepBeats;
     std::vector<double> starts;
 
     for (auto* n : notes)

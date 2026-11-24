@@ -95,6 +95,10 @@ void RackRow::mouseDown (const juce::MouseEvent& e)
 
     session.beginEdit();
     painting = true;
+
+    // Placing a step in a locked bar unlocks it
+    if (paintOn)
+        growToStep (step);
     lastNote = note;
     lastStep = step;
 
@@ -107,6 +111,23 @@ void RackRow::mouseDown (const juce::MouseEvent& e)
         preview (note);
 
     repaint();
+}
+
+// A step placed in a locked bar unlocks it: the pattern grows to take in that whole bar
+void RackRow::growToStep (int step)
+{
+    const int pattern = session.getCurrentPattern();
+    const int live = session.getPatternSteps (pattern);
+
+    if (step < live)
+        return;
+
+    const int perBar = juce::jmax (1, live / juce::jmax (1, session.getPatternBars (pattern)));
+    session.setPatternBars (pattern, step / perBar + 1);
+
+    // The Rack is wider now
+    if (onLayoutChanged)
+        onLayoutChanged();
 }
 
 void RackRow::mouseDrag (const juce::MouseEvent& e)
@@ -132,6 +153,10 @@ void RackRow::mouseDrag (const juce::MouseEvent& e)
     }
 
     int note = 0, step = 0;
+
+    // Dragging into a locked bar unlocks it
+    if (paintOn && hitAt (e.getPosition(), note, step) && step >= getLiveSteps())
+        growToStep (step);
 
     if (hitAt (e.getPosition(), note, step) && (note != lastNote || step != lastStep))
     {

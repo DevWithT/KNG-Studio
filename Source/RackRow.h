@@ -16,6 +16,11 @@ public:
     int getIdealHeight();
     tracktion::Track* getTrack() const   { return track.get(); }
 
+    /** The Rack draws the pattern's own steps plus a few locked bars after them, dimmed until a step is placed in one. */
+    static constexpr int maxSteps   = 512;   // 32 bars of 16 steps
+    static constexpr int lockedBars = 2;
+    static int displaySteps (int liveSteps)   { return juce::jmin (maxSteps, liveSteps + lockedBars * 16); }
+
     /** Called when the row grows or shrinks (a drum row opens or closes). */
     std::function<void()> onLayoutChanged;
 
@@ -47,7 +52,9 @@ private:
     bool isExpanded();
     void setExpanded (bool shouldBeOpen);
     juce::Array<int> getVisiblePads();
-    int getNumSteps();
+    int getNumSteps();      // steps drawn: the pattern's own steps plus the locked bars after them
+    int getLiveSteps();     // steps the pattern really has
+    void growToStep (int step);   // a step placed in a locked bar grows the pattern to include that bar
     int getChannelNote();
     tracktion::MidiClip* getClip (bool createIfMissing);
 
