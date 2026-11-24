@@ -402,9 +402,6 @@ void TrackHeader::mouseDown (const juce::MouseEvent& e)
             menu.addSubMenu ("Automate", automate);
     }
 
-    menu.addItem (session.isAutomationShown (idx) ? "Hide Automation" : "Show Automation",
-                  [s, idx] { s->setAutomationShown (idx, ! s->isAutomationShown (idx)); });
-
     menu.addSeparator();
 
     // KngTune
@@ -413,17 +410,6 @@ void TrackHeader::mouseDown (const juce::MouseEvent& e)
         if (! s->addKngTune (idx))
             juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::WarningIcon, "KngTune not found",
                                                     "Put KngTune in your VST3 folder, then use File > Scan Plugins.");
-    });
-
-    // Bounce the lane (with its effects) to audio on a new lane
-    menu.addItem ("Bounce in Place", [s, idx] { s->bounceTrackInPlace (idx); });
-
-    // Overlap two clips, then this blends them so there's no click or jump at the join
-    menu.addItem ("Crossfade Overlapping Clips", [s, idx]
-    {
-        if (s->crossfadeOverlaps (idx) == 0)
-            juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::InfoIcon, "No overlaps",
-                                                    "Drag one clip so its start overlaps the end of the one before it, then try again.");
     });
 
     // Sends to buses

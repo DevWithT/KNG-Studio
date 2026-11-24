@@ -14,6 +14,7 @@ public:
 
     void paint (juce::Graphics&) override;
     void resized() override;
+    void mouseDown (const juce::MouseEvent&) override;
 
 private:
     void timerCallback() override   { refreshList(); }
@@ -26,6 +27,7 @@ private:
     juce::ComboBox paramBox;
     juce::TextButton clearButton { "Clear" };
     juce::TextButton writeButton { "Write" };
+    juce::TextButton closeButton;
     juce::StringArray lastIds;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AutomationHeader)

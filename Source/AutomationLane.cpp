@@ -22,6 +22,18 @@ AutomationHeader::AutomationHeader (EditSession& sessionToUse, int trackIndexToU
     addAndMakeVisible (clearButton);
 
     addAndMakeVisible (writeButton);
+
+    addAndMakeVisible (closeButton);
+    closeButton.setButtonText (juce::String (juce::CharPointer_UTF8 ("\xc3\x97")));
+    closeButton.setTooltip ("Hide this row. The curve keeps playing. Right-click the row header to delete it.");
+    closeButton.onClick = [this]
+    {
+        auto* s = &session;
+        const int idx = trackIndex;
+        juce::MessageManager::callAsync ([s, idx] { s->setAutomationShown (idx, false); });
+    };
+    clearButton.setTooltip ("Remove every point from this curve");
+
     writeButton.setColour (juce::TextButton::buttonOnColourId, KngTheme::rec);
     writeButton.setColour (juce::TextButton::textColourOnId, juce::Colours::white);
     writeButton.setTooltip ("Write: record knob and fader moves as automation while the song plays. This switch is shared by every lane.");
@@ -88,6 +100,8 @@ void AutomationHeader::resized()
     auto r = getLocalBounds().reduced (6);
 
     auto top = r.removeFromTop (18);
+    closeButton.setBounds (top.removeFromRight (20));
+    top.removeFromRight (3);
     clearButton.setBounds (top.removeFromRight (46));
     top.removeFromRight (3);
     writeButton.setBounds (top.removeFromRight (46));
@@ -98,6 +112,32 @@ void AutomationHeader::resized()
 }
 
 //==============================================================================
+void AutomationHeader::mouseDown (const juce::MouseEvent& e)
+{
+    if (! e.mods.isPopupMenu())
+        return;
+
+    auto* s = &session;
+    const int idx = trackIndex;
+
+    juce::PopupMenu menu;
+    menu.addItem ("Delete this automation", [s, idx]
+    {
+        if (auto* param = s->getAutomationParam (idx))
+        {
+            s->beginEdit();
+            param->getCurve().clear (&s->getEdit().getUndoManager());
+            s->save();
+        }
+
+        juce::MessageManager::callAsync ([s, idx] { s->setAutomationShown (idx, false); });
+    });
+
+    menu.showMenuAsync ({});
+}
+
+//==============================================================================
+
 AutomationLane::AutomationLane (EditSession& sessionToUse, int trackIndexToUse)
     : session (sessionToUse), trackIndex (trackIndexToUse)
 {

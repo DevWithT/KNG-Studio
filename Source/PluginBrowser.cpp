@@ -211,17 +211,14 @@ void PluginBrowser::paintListBoxItem (int row, juce::Graphics& g, int width, int
         g.fillRoundedRectangle (juce::Rectangle<float> (2.0f, 1.0f, width - 4.0f, height - 2.0f), 4.0f);
     }
 
-    // Small badge: instrument or effect
-    auto badge = juce::Rectangle<float> (8.0f, (height - 16) * 0.5f, 22.0f, 16.0f);
+    // Thin colour tick: green = instrument, orange = effect
+    auto tick = juce::Rectangle<float> (8.0f, (height - 16) * 0.5f, 3.0f, 16.0f);
     g.setColour (e.instrument ? juce::Colour (0xff5ad45a).withAlpha (0.8f) : juce::Colour (0xffe6a23a).withAlpha (0.8f));
-    g.fillRoundedRectangle (badge, 3.0f);
-    g.setColour (juce::Colours::black);
-    g.setFont (juce::Font (juce::FontOptions (10.0f, juce::Font::bold)));
-    g.drawText (e.instrument ? "IN" : "FX", badge.toNearestInt(), juce::Justification::centred);
+    g.fillRoundedRectangle (tick, 1.5f);
 
     g.setColour (juce::Colours::white.withAlpha (0.92f));
     g.setFont (juce::Font (juce::FontOptions (13.0f)));
-    g.drawText (e.name, 36, 0, width - 40, height, juce::Justification::centredLeft, true);
+    g.drawText (e.name, 20, 0, width - 24, height, juce::Justification::centredLeft, true);
 }
 
 juce::String PluginBrowser::getTooltipForRow (int row)
