@@ -2,6 +2,7 @@
 
 #include <tracktion_engine/tracktion_engine.h>
 #include <vector>
+#include "SliceFx.h"
 
 class KngSamplerPlugin;
 class KngLoudnessPlugin;
@@ -206,6 +207,8 @@ public:
     /** Same cuts as above, but loads slice 1 on pad 1, slice 2 on pad 2 and so on, on a Drum Kit track.
         Returns how many pads were loaded, or -1. */
     int slicesToPads (tracktion::AudioClipBase& clip, const std::vector<double>& cuts, int trackIndex);
+    /** Reverse, pitch and volume per slice (index 0 is slice 1) for the next chopClipAtCuts or slicesToPads. The Slice Editor sets it before the call and clears it after. */
+    void setSliceFx (std::vector<SliceFx> fx)   { sliceFxForNextWrite = std::move (fx); }
 
     /** Writes one slice of a clip to its own 24 bit wav in the project Audio folder. Empty File on failure. */
     juce::File writeSliceFile (tracktion::AudioClipBase& clip, double fromTime, double toTime, int number);
@@ -493,6 +496,7 @@ private:
     double viewLength = 60.0;
     bool snapEnabled = true;
     double playlistEndCache = 0.0;
+    std::vector<SliceFx> sliceFxForNextWrite;
     juce::uint32 playlistEndStamp = 0;
     bool recoveredFromCrash = false;
     juce::Time lastBackupTime;

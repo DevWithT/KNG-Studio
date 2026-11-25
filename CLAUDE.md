@@ -63,6 +63,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `EditSessionRouting.cpp`: buses, sends to a bus (level, pre/post fader, mute, remove), loop-safe routing check (canFeed, getBusTargets), sidechain ducking. Output itself lives in RouteMenu.h (KngRoute).
 - `EditSessionSampler.cpp`: KNG Sampler settings, chop a clip to pads, open the piano roll.
 - `EditSessionSelection.cpp`: multi-clip selection.
+- `SliceFx.h`: SliceFx (reverse, pitch in semitones, volume in dB for one slice) and applySliceFx. Header only. EditSession::setSliceFx hands the list to the next chop or send to pads.
 - `EditSessionSlices.cpp`: Slices: findHits (finds hits in a clip), writeSliceFile, chopClipAtCuts (Rack rows plus Chops), slicesToPads (Drum Kit pads)
 - `EditSessionSynth.cpp`: puts KNG Synth on a track.
 - `EditSessionTempo.cpp`: bar maths, tempo and time-signature changes, MIDI learn.
@@ -90,6 +91,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `MarkerBar.cpp/.h`: thin row above the ruler for song section markers.
 - `PlaylistToolbar.h`: Select, Paint and Cut tools; keeps the Playlist tidy.
 - `ClipProps.cpp/.h`: stretch, pitch and gain for one audio clip.
+- `SliceEditorFx.cpp`: Slice Editor per-slice controls. Pick a slice (arrows or the number badge), then Reverse, Pitch (semitones) and Volume (dB). syncSliceFx keeps one SliceFx per slice as markers are added or removed. The settings are baked into the slice files on Chop to Rack and Send to Pads. Members of SliceEditorView.
 - `SliceEditorTap.cpp`: Slice Editor tap-in cuts. Play button, Cut Here button and the T key add a cut at the red playhead. Space starts and stops. Members of SliceEditorView.
 - `SliceEditorView.cpp/.h`: Slice Editor window: waveform with draggable slice markers, Detect Hits, Grid cut (1/4 to 1/32, with triplets), Split into N parts, Chop to Rack, Send to Pads. showSliceEditor (session, clip) opens it. Opened from the audio clip right-click menu.
 - `SliceCuts.h` (header only): cut lists for the Slice Editor: grid cuts on the tempo map (KngSliceCuts::grid) and equal parts (KngSliceCuts::equalParts).
@@ -323,7 +325,7 @@ Medium:
 10. Per-plugin CPU monitor: double-click the CPU meter. Check first what the engine reports per plugin.
 11. Saved window layouts: built (View > Layouts; three slots; remembers panels, dock height and tab, browser tab), not yet tested. No keyboard shortcuts yet.
 12. Stem export per lane: ExportDialog, exportStem and exportTracks exist. Make sure one click exports every lane.
-13. Slice Editor, first part: Grid cut and Split into N are built (SliceCuts.h), not yet tested. Still to do: tap-in cuts during playback, and per-slice reverse, pitch and volume.
+13. Slice Editor, first part: Grid cut and Split into N are built (SliceCuts.h), and so are tap-in cuts during playback and per-slice reverse, pitch and volume (SliceEditorTap.cpp, SliceEditorFx.cpp). None of it is tested yet.
 
 Large:
 14. Master output panel: LoudnessDisplay already shows LUFS and peak. Add a scope and a spectrum.

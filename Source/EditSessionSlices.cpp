@@ -55,7 +55,12 @@ juce::File EditSession::writeSliceFile (te::AudioClipBase& clip, double fromTime
         return {};
     }
 
-    writer->writeFromAudioSampleBuffer (buffer, 0, len);
+    const int fxIndex = number - 1;
+
+    if (fxIndex >= 0 && fxIndex < (int) sliceFxForNextWrite.size() && ! sliceFxForNextWrite[(size_t) fxIndex].isDefault())
+        buffer = applySliceFx (buffer, sliceFxForNextWrite[(size_t) fxIndex]);
+
+    writer->writeFromAudioSampleBuffer (buffer, 0, buffer.getNumSamples());
     writer.reset();
     return file;
 }

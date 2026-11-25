@@ -34,6 +34,12 @@ private:
     void sendToPads();
     void close();
     void setupTap();
+    void setupFx();
+    void layoutFxRow (juce::Rectangle<int> row);
+    void drawSliceExtras (juce::Graphics& g, juce::Rectangle<int> wave) const;
+    bool selectSliceAt (juce::Point<int> p);
+    void selectSlice (int index);
+    void syncSliceFx();
     void layoutTapRow (juce::Rectangle<int> row);
     void drawPlayhead (juce::Graphics& g, juce::Rectangle<int> wave) const;
     double playheadTime() const;
@@ -56,6 +62,14 @@ private:
     juce::TextButton playButton { "Play" }, tapButton { "Cut Here (T)" };
     juce::Label tapLabel;
 
+    std::vector<SliceFx> sliceFx;               // one per slice, in order
+    std::vector<double> prevCuts;               // the cuts at the last sync, to see which slice was split or merged
+    int selected = 0;
+    juce::TextButton prevSliceButton { "<" }, nextSliceButton { ">" };
+    juce::Label sliceLabel, pitchLabel { {}, "Pitch" }, volLabel { {}, "Volume" };
+    juce::ToggleButton reverseButton { "Reverse" };
+    juce::Slider pitchSlider, gainSlider;
+
     static constexpr int numPeaks = 2048;
     std::vector<float> peaksLo, peaksHi;
     float peakMax = 0.0f;
@@ -67,7 +81,7 @@ private:
                      rackButton { "Chop to Rack" }, padsButton { "Send to Pads..." }, doneButton { "Done" };
 
     static constexpr int toolbarHeight = 80;
-    static constexpr int bottomHeight  = 44;
+    static constexpr int bottomHeight  = 84;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SliceEditorView)
 };

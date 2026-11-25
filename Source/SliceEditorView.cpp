@@ -78,7 +78,8 @@ SliceEditorView::SliceEditorView (EditSession& sessionToUse, te::AudioClipBase& 
     loadPeaks();
     detect();
     setupTap();
-    setSize (900, 420);
+    setupFx();
+    setSize (900, 460);
 }
 
 //==============================================================================
@@ -217,6 +218,7 @@ void SliceEditorView::splitCut (int parts)
 
 void SliceEditorView::updateInfo()
 {
+    syncSliceFx();
     const int n = (int) cuts.size() + 1;
     infoLabel.setText (juce::String (n) + (n == 1 ? " slice" : " slices") + " (16 max)", juce::dontSendNotification);
 }
@@ -230,6 +232,9 @@ void SliceEditorView::mouseDown (const juce::MouseEvent& e)
         return;
 
     const int m = markerAt ((float) e.x);
+
+    if (m < 0 && ! e.mods.isPopupMenu() && selectSliceAt (e.getPosition()))
+        return;
 
     if (e.mods.isPopupMenu())
     {
@@ -271,6 +276,9 @@ void SliceEditorView::mouseDrag (const juce::MouseEvent& e)
     const double hi = dragging + 1 < (int) cuts.size() ? cuts[(size_t) dragging + 1] - 0.01 : length - 0.01;
 
     cuts[(size_t) dragging] = juce::jlimit (lo, juce::jmax (lo, hi), xToTime ((float) e.x));
+
+    if (prevCuts.size() == cuts.size())
+        prevCuts[(size_t) dragging] = cuts[(size_t) dragging];
     repaint();
 }
 
@@ -342,6 +350,7 @@ void SliceEditorView::paint (juce::Graphics& g)
         }
     }
 
+    drawSliceExtras (g, wave);
     drawPlayhead (g, wave);
 
     // Markers
@@ -375,6 +384,8 @@ void SliceEditorView::resized()
     infoLabel.setBounds (top);
 
     auto bottom = getLocalBounds().removeFromBottom (bottomHeight).reduced (8, 8);
+    layoutFxRow (bottom.removeFromTop (28));
+    bottom.removeFromTop (8);
     doneButton.setBounds (bottom.removeFromRight (80));
     bottom.removeFromRight (6);
     padsButton.setBounds (bottom.removeFromRight (130));
@@ -393,7 +404,12 @@ void SliceEditorView::close()
 
 void SliceEditorView::chopToRack()
 {
-    if (session.chopClipAtCuts (*clip, getFullCuts()) >= 0)
+    session.setSliceFx (sliceFx);
+
+    const int chopped = session.chopClipAtCuts (*clip, getFullCuts());
+    session.setSliceFx ({});
+
+    if (chopped >= 0)
         close();
     else
         juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::WarningIcon, "Slice Editor",
@@ -425,7 +441,9 @@ void SliceEditorView::sendToPads()
                                 return;
 
                             const int trackIndex = result - 1;
+                            safe->session.setSliceFx (safe->sliceFx);
                             const int loaded = safe->session.slicesToPads (*safe->clip, safe->getFullCuts(), trackIndex);
+                            safe->session.setSliceFx ({});
 
                             if (loaded < 0)
                             {

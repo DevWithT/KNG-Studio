@@ -167,6 +167,7 @@ target_sources(KNGStudio PRIVATE
     Source/RackRowGraph.cpp
     Source/EditSessionSlices.cpp
     Source/SliceEditorTap.cpp
+    Source/SliceEditorFx.cpp
     Source/SliceEditorView.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE
