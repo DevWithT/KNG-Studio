@@ -25,6 +25,8 @@ private:
     void loadPeaks();
     void detect();
     void updateInfo();
+    void gridCut (double beats);
+    void splitCut (int parts);
     void chopToRack();
     void sendToPads();
     void close();
@@ -43,6 +45,7 @@ private:
 
     juce::Label sensLabel { {}, "Sensitivity" }, infoLabel, hintLabel;
     juce::Slider sensitivity;
+    juce::ComboBox gridBox, splitBox;
     juce::TextButton detectButton { "Detect Hits" }, clearButton { "Clear" },
                      rackButton { "Chop to Rack" }, padsButton { "Send to Pads..." }, doneButton { "Done" };
 

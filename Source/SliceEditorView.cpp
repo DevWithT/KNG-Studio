@@ -1,6 +1,7 @@
 #include "SliceEditorView.h"
 
 #include <algorithm>
+#include "SliceCuts.h"
 
 namespace te = tracktion;
 
@@ -13,7 +14,7 @@ SliceEditorView::SliceEditorView (EditSession& sessionToUse, te::AudioClipBase& 
     length = juce::jmax (0.05, pos.getLength().inSeconds());
 
     for (auto* c : std::initializer_list<juce::Component*> { &sensLabel, &sensitivity, &detectButton, &clearButton,
-                                                             &infoLabel, &hintLabel, &rackButton, &padsButton,
+                                                             &infoLabel, &hintLabel, &rackButton, &padsButton, &gridBox, &splitBox,
                                                              &doneButton })
         addAndMakeVisible (c);
 
@@ -40,6 +41,38 @@ SliceEditorView::SliceEditorView (EditSession& sessionToUse, te::AudioClipBase& 
     clearButton.onClick  = [this] { cuts.clear(); updateInfo(); repaint(); };
     rackButton.onClick   = [this] { chopToRack(); };
     padsButton.onClick   = [this] { sendToPads(); };
+
+    gridBox.setTextWhenNothingSelected ("Grid cut...");
+    gridBox.setTooltip ("Cut the clip at every grid line, counted on the song's tempo. T means triplets.");
+
+    for (int i = 0; i < (int) std::size (KngSliceCuts::gridChoices); ++i)
+        gridBox.addItem (KngSliceCuts::gridChoices[i].name, i + 1);
+
+    gridBox.onChange = [this]
+    {
+        const int id = gridBox.getSelectedId();
+
+        if (id >= 1)
+            gridCut (KngSliceCuts::gridChoices[id - 1].beats);
+
+        gridBox.setSelectedId (0, juce::dontSendNotification);
+    };
+
+    splitBox.setTextWhenNothingSelected ("Split into...");
+    splitBox.setTooltip ("Cut the clip into this many equal parts.");
+
+    for (int n = 2; n <= 16; ++n)
+        splitBox.addItem (juce::String (n) + " parts", n);
+
+    splitBox.onChange = [this]
+    {
+        const int id = splitBox.getSelectedId();
+
+        if (id >= 2)
+            splitCut (id);
+
+        splitBox.setSelectedId (0, juce::dontSendNotification);
+    };
     doneButton.onClick   = [this] { close(); };
 
     loadPeaks();
@@ -151,6 +184,32 @@ void SliceEditorView::loadPeaks()
 void SliceEditorView::detect()
 {
     cuts = session.findHits (*clip, (float) sensitivity.getValue());
+    updateInfo();
+    repaint();
+}
+
+// Replaces the markers with cuts on a beat grid (counted on the song's tempo, from the clip start)
+void SliceEditorView::gridCut (double beats)
+{
+    auto result = KngSliceCuts::grid (session, *clip, beats, 16);
+    const bool tooMany = result.size() > 15;
+
+    if (tooMany)
+        result.resize (15);
+
+    cuts = result;
+    hintLabel.setText (tooMany ? "That grid makes more than 16 slices, so the cut stops at 16. Pick a bigger grid or use a shorter clip."
+                               : "Click to add a marker. Drag to move it. Right-click a marker to delete it.",
+                       juce::dontSendNotification);
+    updateInfo();
+    repaint();
+}
+
+// Replaces the markers with equal parts
+void SliceEditorView::splitCut (int parts)
+{
+    cuts = KngSliceCuts::equalParts (length, parts);
+    hintLabel.setText ("Click to add a marker. Drag to move it. Right-click a marker to delete it.", juce::dontSendNotification);
     updateInfo();
     repaint();
 }
@@ -302,6 +361,10 @@ void SliceEditorView::resized()
     detectButton.setBounds (top.removeFromLeft (100));
     top.removeFromLeft (6);
     clearButton.setBounds (top.removeFromLeft (70));
+    top.removeFromLeft (12);
+    gridBox.setBounds (top.removeFromLeft (120));
+    top.removeFromLeft (6);
+    splitBox.setBounds (top.removeFromLeft (120));
     top.removeFromLeft (12);
     infoLabel.setBounds (top);
 

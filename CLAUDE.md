@@ -90,7 +90,8 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `MarkerBar.cpp/.h`: thin row above the ruler for song section markers.
 - `PlaylistToolbar.h`: Select, Paint and Cut tools; keeps the Playlist tidy.
 - `ClipProps.cpp/.h`: stretch, pitch and gain for one audio clip.
-- `SliceEditorView.cpp/.h`: Slice Editor window: waveform with draggable slice markers, Detect Hits, Chop to Rack, Send to Pads. showSliceEditor (session, clip) opens it. Opened from the audio clip right-click menu.
+- `SliceEditorView.cpp/.h`: Slice Editor window: waveform with draggable slice markers, Detect Hits, Grid cut (1/4 to 1/32, with triplets), Split into N parts, Chop to Rack, Send to Pads. showSliceEditor (session, clip) opens it. Opened from the audio clip right-click menu.
+- `SliceCuts.h` (header only): cut lists for the Slice Editor: grid cuts on the tempo map (KngSliceCuts::grid) and equal parts (KngSliceCuts::equalParts).
 - `CompView.cpp/.h`: take comping for an audio clip, and its window.
 
 ### Rack and patterns
@@ -321,7 +322,7 @@ Medium:
 10. Per-plugin CPU monitor: double-click the CPU meter. Check first what the engine reports per plugin.
 11. Saved window layouts: built (View > Layouts; three slots; remembers panels, dock height and tab, browser tab), not yet tested. No keyboard shortcuts yet.
 12. Stem export per lane: ExportDialog, exportStem and exportTracks exist. Make sure one click exports every lane.
-13. Slice Editor, first part: Grid cuts (with triplets), Split into N, tap-in cuts during playback, and per-slice reverse, pitch and volume.
+13. Slice Editor, first part: Grid cut and Split into N are built (SliceCuts.h), not yet tested. Still to do: tap-in cuts during playback, and per-slice reverse, pitch and volume.
 
 Large:
 14. Master output panel: LoudnessDisplay already shows LUFS and peak. Add a scope and a spectrum.
