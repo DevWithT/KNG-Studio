@@ -73,7 +73,7 @@ juce::Component* SettingsComponent::makeRecordingPage()
     page->heights.add (32);
 
     page->items.add (makeText ("Hearing your effects while you record: put your chain on the track, arm it, "
-                               "and turn on Monitor in the transport bar.", 13.0f, 0.65f));
+                               "and press Mon on its lane (the Mon button shows up while the lane is armed).", 13.0f, 0.65f));
     page->heights.add (40);
 
     for (auto* c : page->items)

@@ -311,7 +311,7 @@ Small:
 3. Record quantization chooser: built (Quantize box after the Snap grid box; snaps note starts when recording stops, in Pattern mode and in normal takes), not yet tested.
 4. Undo history list: built (Edit > Undo History...). Steps named so far: Split clip, Delete clip, Delete lane, Record quantize; the rest show as "Edit N". Name more with beginEdit ("Name") or edit->getUndoManager().setCurrentTransactionName ("Name"). Not yet tested.
 5. Punch in/out: the Punch button records only between the loop markers. Decide whether it needs its own in and out points, separate from the loop.
-6. Audio settings extras: buffer size, recording latency offset (EditSessionLatency and LatencyDialog exist), record folder and bit depth. Add whichever are missing to SettingsComponent.
+6. Audio settings extras: buffer size and sample rate are already in Settings > Audio (the JUCE device selector), and the recording latency offset has its own dialog. Still missing: recording bit depth and record folder. The Tracktion docs show no setting for either, so find the real one before building.
 
 Medium:
 7. Info panel: a hint bar at the bottom of the window first, then a floating hover box.
@@ -332,7 +332,7 @@ Large:
 - Comping: CompView exists. Decide on take lanes under the lane and pitch scoring with KngTune.
 - Clip gain line with Auto Ride (per-clip gain exists; the line is the parked Gain envelopes item below).
 - Clean Takes: strip silence that keeps breaths.
-- Capture: an always-listening buffer for audio and MIDI, per lane.
+- Capture: an always-listening buffer for audio and MIDI, per lane. The engine already has retrospective recording (InputDevice::updateRetrospectiveBufferLength and InputDevice::setRetrospectiveLock), so this is mostly UI.
 - Stem separation (needs a model licence check first).
 - Warp markers with three plainly named modes (tempo follow already exists).
 - Scratch Pads and Swap Clips.
