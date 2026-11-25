@@ -35,6 +35,8 @@ private:
     juce::Label cpuLabel;
     float cpuSmooth = 0.0f;
     juce::TextButton timeSigButton { "4/4" };
+    juce::TextButton tapButton { "Tap" };
+    juce::Array<double> tapTimes;
     juce::TextButton learnButton { "Learn" };
     juce::TextButton patternModeButton { "Pattern" }, songModeButton { "Song" };
     juce::TextButton clickButton { "Click" }, loopButton { "Loop" }, punchButton { "Punch" }, snapButton { "Snap" },

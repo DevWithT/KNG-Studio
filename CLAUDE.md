@@ -304,11 +304,11 @@ Planned work, roughly in order. When an item is finished, move it out of this li
 
 ### Immediate, easiest to hardest
 Small:
-1. Tempo tap: a Tap button by the tempo display.
-2. Count-in dropdown next to the metronome. EditSessionTransport already has setCountInBars and getCountInBars; add the dropdown in TransportBar if it is missing.
+1. Tempo tap: built (Tap button next to the tempo box), not yet tested.
+2. Count-in dropdown: already built (countInBox in TransportBar: none, 1 bar, 2 bars). Nothing to do.
 3. Record quantization chooser: pick a grid that recorded MIDI notes snap to.
 4. Undo history list: a panel of undo steps; click one to step back to it.
-5. Punch in/out: setPunchEnabled exists (EditSessionExtras); add draggable in and out points on the ruler.
+5. Punch in/out: the Punch button records only between the loop markers. Decide whether it needs its own in and out points, separate from the loop.
 6. Audio settings extras: buffer size, recording latency offset (EditSessionLatency and LatencyDialog exist), record folder and bit depth. Add whichever are missing to SettingsComponent.
 
 Medium:

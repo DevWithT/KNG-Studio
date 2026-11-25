@@ -59,6 +59,29 @@ TransportBar::TransportBar (EditSession& sessionToUse)
     tempoSlider.setValue (session.getBpm(), juce::dontSendNotification);
     tempoSlider.onValueChange = [this] { session.setBpmAt (session.getTransport().getPosition().inSeconds(), tempoSlider.getValue()); };
 
+    // Tap tempo: tap along to a beat (a pause of more than 2 seconds starts over)
+    addAndMakeVisible (tapButton);
+    tapButton.setTooltip ("Tap tempo: tap along to the beat. Pause for 2 seconds to start over.");
+    tapButton.onClick = [this]
+    {
+        const double now = juce::Time::getMillisecondCounterHiRes();
+
+        if (! tapTimes.isEmpty() && now - tapTimes.getLast() > 2000.0)
+            tapTimes.clear();
+
+        tapTimes.add (now);
+
+        while (tapTimes.size() > 6)
+            tapTimes.remove (0);
+
+        if (tapTimes.size() >= 2)
+        {
+            const double averageMs = (tapTimes.getLast() - tapTimes.getFirst()) / (double) (tapTimes.size() - 1);
+            const double bpm = juce::jlimit (40.0, 300.0, std::round (60000.0 / averageMs));
+            session.setBpmAt (session.getTransport().getPosition().inSeconds(), bpm);
+        }
+    };
+
     // Count-in
     countInBox.addItem ("No count-in", 1);
     countInBox.addItem ("1 bar count-in", 2);
@@ -315,6 +338,7 @@ void TransportBar::resized()
     divider();
 
     place (tempoSlider, 150);
+    place (tapButton, 44);
     place (timeSigButton, 56);
     place (countInBox, 130);
     place (clickButton, 70);
