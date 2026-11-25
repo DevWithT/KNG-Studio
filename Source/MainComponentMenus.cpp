@@ -22,6 +22,7 @@
 #include "KngPopOut.h"
 #include "UndoHistory.h"
 #include "RoutingMatrix.h"
+#include "PluginCpuMonitor.h"
 
 // Command id for Undo History. It sits outside the MainComponent command list on purpose.
 static constexpr int cmdUndoHistory = 9001;
@@ -119,6 +120,7 @@ juce::PopupMenu MainComponent::getMenuForIndex (int menuIndex, const juce::Strin
             add (cmdBrowser, "Browser", "B", true, browserVisible);
             add (cmdPianoKeys, "Computer Keyboard Piano", "Ctrl+K", hasSession, pianoKeysOn);
             add (9002, "Routing Matrix...", {}, hasSession);
+            add (9003, "Plugin CPU Monitor...", {}, hasSession);
 
             {
                 juce::PopupMenu layouts;
@@ -196,6 +198,7 @@ void MainComponent::menuItemSelected (int id, int)
 
         case cmdUndo:          session->undo(); break;
         case cmdRedo:          session->redo(); break;
+        case 9003: if (auto* w = PluginCpuMonitor::open (*session)) songWindows.add (w); break;
         case 9002: if (auto* w = RoutingMatrix::open (*session)) songWindows.add (w); break;
         case cmdUndoHistory:   if (auto* w = UndoHistoryList::open (*session)) songWindows.add (w); break;
         case cmdCopy:          session->copySelectedClip(); break;

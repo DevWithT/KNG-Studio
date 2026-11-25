@@ -126,6 +126,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `LevelMeter.cpp/.h`: level meter component.
 - `LoudnessDisplay.cpp/.h`: master loudness readout: momentary, short-term, integrated LUFS, peak.
 - `KngLoudnessPlugin.cpp/.h`: invisible BS.1770 loudness meter at the end of the master chain.
+- `PluginCpuMonitor.h`: header-only. View > Plugin CPU Monitor... opens a window listing every plugin on every lane and on the master, busiest first, with a bar and a percent of the audio buffer (Plugin::getCpuUsage, smoothed). PluginCpuMonitor::open (session) returns the new window (the caller keeps it in songWindows) or nullptr if one is already open.
 - `RoutingMatrix.h`: header-only. View > Routing Matrix... opens a window with one row per lane: an Output button (same menu as the Routing pop-up) and a send level cell for every bus. Greyed cells would make a loop. RoutingMatrix::open (session) returns the new window (the caller keeps it in songWindows) or nullptr if one is already open.
 - `RoutePopup.h`: Routing pop-up for a lane: Output (Master or a bus), and its sends with level, Pre/Post fader, mute, remove.
 - `FxChainComponent.cpp/.h`: a track's effect chain list with its add menu, and its window.
@@ -327,7 +328,7 @@ Medium:
 7. Info panel: first half built (HintBar in the status bar shows the tooltip of whatever the mouse is over), not yet tested. Still to do: add tooltips to controls that have none, and decide if a floating box is needed.
 8. Group Clips: built and not yet tested (Ctrl+G groups, Ctrl+Shift+G ungroups, both are in the clip right-click menu; grouped clips have no badge on them yet). Make Unique for Playlist clips is still to do (patterns already have makePatternUnique).
 9. Routing matrix: built (View > Routing Matrix...), not yet tested.
-10. Per-plugin CPU monitor: double-click the CPU meter. Check first what the engine reports per plugin.
+10. Plugin CPU Monitor: built (View > Plugin CPU Monitor...), not yet tested. If every plugin shows 0% while playing, the engine flag TRACKTION_ENABLE_PLUGIN_CPU_MEASUREMENT may be off and must be set to 1 in target_compile_definitions.
 11. Saved window layouts: built (View > Layouts; three slots; remembers panels, dock height and tab, browser tab), not yet tested. No keyboard shortcuts yet.
 12. Stem export: built (Export dialog: "Stems: one per track" with an All/None checklist, and "Stems: one per folder"), not yet tested.
 13. Slice Editor, first part: Grid cut and Split into N are built (SliceCuts.h), and so are tap-in cuts during playback and per-slice reverse, pitch and volume (SliceEditorTap.cpp, SliceEditorFx.cpp). None of it is tested yet.
