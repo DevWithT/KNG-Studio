@@ -255,7 +255,7 @@ void EditSession::quantiseRecordedTake()
 
             if (! changed)
             {
-                beginEdit();
+                beginEdit ("Record quantize");
                 changed = true;
             }
 

@@ -87,7 +87,8 @@ public:
     void duplicateSelectedClip();
     void copySelectedClip();
     void pasteClip();
-    void beginEdit();
+    /** Starts a new undo step. The name shows in Undo History. */
+    void beginEdit (const juce::String& stepName = {});
 
     // MIDI and instruments
     tracktion::MidiClip* createMidiClip (int trackIndex, double startSeconds);

@@ -72,9 +72,9 @@ void EditSession::setSnapGrid (int perBeat)
 }
 
 //==============================================================================
-void EditSession::beginEdit()
+void EditSession::beginEdit (const juce::String& stepName)
 {
-    edit->getUndoManager().beginNewTransaction();
+    edit->getUndoManager().beginNewTransaction (stepName);
 }
 
 void EditSession::splitSelectedClipAtPlayhead()
@@ -98,7 +98,7 @@ void EditSession::splitSelectedClipAtPlayhead()
         {
             if (! started)
             {
-                beginEdit();
+                beginEdit ("Split clip");
                 started = true;
             }
 

@@ -20,6 +20,10 @@
 #include "PluginWindow.h"
 #include "MidiMapDialog.h"
 #include "KngPopOut.h"
+#include "UndoHistory.h"
+
+// Command id for Undo History. It sits outside the MainComponent command list on purpose.
+static constexpr int cmdUndoHistory = 9001;
 
 //==============================================================================
 juce::StringArray MainComponent::getMenuBarNames()
@@ -71,6 +75,7 @@ juce::PopupMenu MainComponent::getMenuForIndex (int menuIndex, const juce::Strin
         case 1: // Edit
             add (cmdUndo, "Undo", "Ctrl+Z", hasSession);
             add (cmdRedo, "Redo", "Ctrl+Y", hasSession);
+            add (cmdUndoHistory, "Undo History...", {}, hasSession);
             m.addSeparator();
             add (cmdCopy, "Copy Clip", "Ctrl+C", hasClip);
             add (cmdPaste, "Paste Clip", "Ctrl+V", hasSession);
@@ -160,6 +165,7 @@ void MainComponent::menuItemSelected (int id, int)
 
         case cmdUndo:          session->undo(); break;
         case cmdRedo:          session->redo(); break;
+        case cmdUndoHistory:   if (auto* w = UndoHistoryList::open (*session)) songWindows.add (w); break;
         case cmdCopy:          session->copySelectedClip(); break;
         case cmdPaste:         session->pasteClip(); break;
         case cmdDuplicate:     session->duplicateSelectedClip(); break;

@@ -129,6 +129,7 @@ void EditSession::deleteTrack (int index)
             c->removeFromParent();
     }
 
+    edit->getUndoManager().setCurrentTransactionName ("Delete lane");
     edit->deleteTrack (track);
 
     if (juce::isPositiveAndBelow (index, (int) trackInputs.size()))
@@ -380,6 +381,8 @@ void EditSession::deleteSelectedClip()
 
     clearSelection();
     beginEdit();
+
+    edit->getUndoManager().setCurrentTransactionName ("Delete clip");
 
     for (auto& c : clips)
         c->removeFromParent();

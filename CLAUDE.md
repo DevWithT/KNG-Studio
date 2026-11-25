@@ -28,6 +28,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `LatencyDialog.cpp/.h`: dialog for measuring and setting recording latency.
 - `LatencyTester.cpp/.h`: plays a click and times how long it takes to come back in.
 - `MidiMapDialog.cpp/.h`: lists every MIDI controller link in the song, with Remove.
+- `UndoHistory.h` (header only): Edit > Undo History window (UndoHistoryList::open): redo steps, Now, undo steps; click one to jump to it. Its menu id cmdUndoHistory (9001) lives in MainComponentMenus.cpp.
 - `PluginWindow.cpp/.h`: plugin editor windows, and KngUIBehaviour that hooks them into the engine.
 - `PluginBrowser.cpp/.h`: every instrument and effect in one searchable list.
 - `KitBrowser.cpp/.h`: left-side Sounds panel (kits, search, favorites) and SamplePreviewer.
@@ -308,7 +309,7 @@ Small:
 1. Tempo tap: built (Tap button next to the tempo box), not yet tested.
 2. Count-in dropdown: already built (countInBox in TransportBar: none, 1 bar, 2 bars). Nothing to do.
 3. Record quantization chooser: built (Quantize box after the Snap grid box; snaps note starts when recording stops, in Pattern mode and in normal takes), not yet tested.
-4. Undo history list: a panel of undo steps; click one to step back to it.
+4. Undo history list: built (Edit > Undo History...). Steps named so far: Split clip, Delete clip, Delete lane, Record quantize; the rest show as "Edit N". Name more with beginEdit ("Name") or edit->getUndoManager().setCurrentTransactionName ("Name"). Not yet tested.
 5. Punch in/out: the Punch button records only between the loop markers. Decide whether it needs its own in and out points, separate from the loop.
 6. Audio settings extras: buffer size, recording latency offset (EditSessionLatency and LatencyDialog exist), record folder and bit depth. Add whichever are missing to SettingsComponent.
 
