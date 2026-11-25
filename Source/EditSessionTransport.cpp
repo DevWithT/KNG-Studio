@@ -95,6 +95,10 @@ void EditSession::stop()
         save();
 
     // A pattern take: fold the recorded notes into the pattern once the engine has written them (next tick)
+    // A normal take: snap the recorded notes to the Record Quantize grid once the engine has written them (next tick)
+    if (wasRecording && recordingPattern == 0 && getRecordQuantize() > 0.0)
+        juce::MessageManager::callAsync ([this] { quantiseRecordedTake(); });
+
     if (wasRecording && recordingPattern > 0)
     {
         const int pattern = recordingPattern;
@@ -208,6 +212,79 @@ void EditSession::redo()
     clearSelection();
     edit->redo();
     syncTrackState();
+}
+
+//==============================================================================
+// Record quantize: 0 = off, otherwise the grid size in beats (1 = quarter note, 0.25 = 16th). Saved with the song.
+double EditSession::getRecordQuantize() const
+{
+    return (double) edit->state.getProperty ("kngRecQuant", 0.0);
+}
+
+void EditSession::setRecordQuantize (double beats)
+{
+    edit->state.setProperty ("kngRecQuant", juce::jmax (0.0, beats), nullptr);
+}
+
+// Record quantize for a normal take: every note in the clips the take just made snaps its start to the grid, counted on the song's beats.
+// Pattern takes are handled in mergePatternTake.
+void EditSession::quantiseRecordedTake()
+{
+    const double grid = getRecordQuantize();
+
+    if (grid <= 0.0)
+        return;
+
+    auto& ts = edit->tempoSequence;
+    auto* um = &edit->getUndoManager();
+    bool changed = false;
+
+    for (int i = 0; i < getNumTracks(); ++i)
+    {
+        auto* track = getTrack (i);
+
+        if (track == nullptr)
+            continue;
+
+        for (auto* c : track->getClips())
+        {
+            auto* mc = dynamic_cast<te::MidiClip*> (c);
+
+            if (mc == nullptr || std::find (clipsBeforeRecording.begin(), clipsBeforeRecording.end(), c->itemID) != clipsBeforeRecording.end())
+                continue;
+
+            if (! changed)
+            {
+                beginEdit();
+                changed = true;
+            }
+
+            const double clipBeat = ts.toBeats (mc->getPosition().getStart()).inBeats();
+            const double contentBeat = mc->getContentBeatAtTime (mc->getPosition().getStart()).inBeats();
+
+            // Collect first: moving a note can reorder the list
+            std::vector<te::MidiNote*> notes;
+
+            for (auto* n : mc->getSequence().getNotes())
+                notes.push_back (n);
+
+            for (auto* n : notes)
+            {
+                const double start = n->getStartBeat().inBeats();
+                const double onTimeline = clipBeat + (start - contentBeat);
+                double snapped = std::round (onTimeline / grid) * grid;
+
+                // Never move a note in front of the take's own start
+                if (snapped < clipBeat - 0.0001)
+                    snapped += grid;
+
+                n->setStartAndLength (te::BeatPosition::fromBeats (start + (snapped - onTimeline)), n->getLengthBeats(), um);
+            }
+        }
+    }
+
+    if (changed)
+        save();
 }
 
 void EditSession::retake()

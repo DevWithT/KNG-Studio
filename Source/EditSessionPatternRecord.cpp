@@ -61,6 +61,15 @@ void EditSession::mergePatternTake (int pattern)
                     if (b < 0.0)
                         b += lengthBeats;
 
+                    // Record quantize: snap the start to the grid; a note that rounds up to the pattern's end wraps to its start
+                    if (const double grid = getRecordQuantize(); grid > 0.0)
+                    {
+                        b = std::round (b / grid) * grid;
+
+                        if (b >= lengthBeats - 0.0001)
+                            b = 0.0;
+                    }
+
                     const double len = juce::jmax (0.05, juce::jmin (n->getLengthBeats().inBeats(), lengthBeats - b));
 
                     target->getSequence().addNote (n->getNoteNumber(), te::BeatPosition::fromBeats (targetContent + b),

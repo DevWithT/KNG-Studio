@@ -360,6 +360,9 @@ public:
     bool isClickEnabled() const;
     void setCountInBars (int bars);
     int getCountInBars() const;
+    /** Record quantize: when recording stops, each recorded note's start snaps to this grid. 0 = off, otherwise the grid size in beats (1 = quarter note, 0.25 = 16th). Saved with the song. */
+    double getRecordQuantize() const;
+    void setRecordQuantize (double beats);
 
     // Tempo map: tempo and time signature changes, with bars counted the musical way
     struct TempoMark
@@ -469,6 +472,7 @@ private:
     void pruneBackups();
     tracktion::MidiClip* restorePatternStash (int trackIndex, int pattern, double atSeconds);
     void mergePatternTake (int pattern);
+    void quantiseRecordedTake();
 
     tracktion::Engine& engine;
     juce::File editFile;

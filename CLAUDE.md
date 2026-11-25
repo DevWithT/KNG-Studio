@@ -66,7 +66,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `EditSessionTempo.cpp`: bar maths, tempo and time-signature changes, MIDI learn.
 - `EditSessionTools.cpp`: built-in effects list, adding one, bounce in place, move pattern block.
 - `EditSessionTracks.cpp`: move a track; duplicate, copy and paste a clip.
-- `EditSessionTransport.cpp`: play, record, stop, BPM, click, count-in, loop, undo/redo, retake.
+- `EditSessionTransport.cpp`: play, record, stop, BPM, click, count-in, record quantize, loop, undo/redo, retake.
 - `EditSessionView.cpp`: view range, zoom, scroll, x/time mapping, snap grid, beginEdit, split.
 - `EditSessionVocalAlign.cpp`: lines a double or ad-lib up with the lead vocal (slide, then per-phrase nudges)
 - `EditSessionVolume.cpp`: track and master volume in dB.
@@ -243,7 +243,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `EditSessionTempo.cpp`: barStartAt, barsAfter, barNumberAt, getBpmAt, setBpmAt, getTimeSigAt, addTempoChange, addTimeSigChange, getTempoMarks, removeTempoMark, setMidiLearn, isMidiLearn
 - `EditSessionTools.cpp`: getBuiltInEffects, addBuiltInPlugin, bounceTrackInPlace, movePatternBlock
 - `EditSessionTracks.cpp`: moveTrack, duplicateSelectedClip, copySelectedClip, pasteClip
-- `EditSessionTransport.cpp`: play, record, stop, setBpm, getBpm, setClickEnabled, isClickEnabled, setCountInBars, getCountInBars, setLooping, isLooping, setLoopRange, getLoopStart, getLoopEnd, undo, redo, retake
+- `EditSessionTransport.cpp`: play, record, stop, setBpm, getBpm, setClickEnabled, isClickEnabled, setCountInBars, getCountInBars, setLooping, isLooping, setLoopRange, getLoopStart, getLoopEnd, getRecordQuantize, setRecordQuantize, quantiseRecordedTake, undo, redo, retake
 - `EditSessionView.cpp`: setView, zoomAround, scrollBy, xToTime, timeToX, snapTime, getSnapGrid, setSnapGrid, beginEdit, splitSelectedClipAtPlayhead, getPlaylistEnd
 - `EditSessionVocalAlign.cpp`: alignClipToTrack
 - `EditSessionVolume.cpp`: getTrackVolumeDb, setTrackVolumeDb, getMasterVolumeDb, setMasterVolumeDb
@@ -266,6 +266,7 @@ On the edit (song):
 - `kngPatternSwing<n>`: pattern n's swing, in percent.
 - `kngPatternHome<n>`: pattern n's home position, in seconds.
 - `kngSnapGrid`: snap grid size, in grid lines per beat.
+- `kngRecQuant`: record quantize grid in beats (missing or 0 = off, 0.25 = 16th).
 - `kngLaneHeight`: Playlist row height in pixels.
 - `kngViewStart`, `kngViewLength`: the visible time range, in seconds.
 - `kngFolderCollapsed_<hash>`: whether a folder is collapsed, keyed by a hash of its name.
@@ -306,7 +307,7 @@ Planned work, roughly in order. When an item is finished, move it out of this li
 Small:
 1. Tempo tap: built (Tap button next to the tempo box), not yet tested.
 2. Count-in dropdown: already built (countInBox in TransportBar: none, 1 bar, 2 bars). Nothing to do.
-3. Record quantization chooser: pick a grid that recorded MIDI notes snap to.
+3. Record quantization chooser: built (Quantize box after the Snap grid box; snaps note starts when recording stops, in Pattern mode and in normal takes), not yet tested.
 4. Undo history list: a panel of undo steps; click one to step back to it.
 5. Punch in/out: the Punch button records only between the loop markers. Decide whether it needs its own in and out points, separate from the loop.
 6. Audio settings extras: buffer size, recording latency offset (EditSessionLatency and LatencyDialog exist), record folder and bit depth. Add whichever are missing to SettingsComponent.

@@ -2,6 +2,8 @@
 #include "ExportDialog.h"
 #include "KngTheme.h"
 
+static const double recordQuantBeats[] = { 0.0, 1.0, 0.5, 1.0 / 3.0, 0.25, 1.0 / 6.0, 0.125 };
+
 TransportBar::TransportBar (EditSession& sessionToUse)
     : session (sessionToUse)
 {
@@ -143,6 +145,24 @@ TransportBar::TransportBar (EditSession& sessionToUse)
             session.setSnapGrid (grids[id - 1]);
     };
 
+    // Record quantize: recorded notes snap their start to this grid when recording stops
+    addAndMakeVisible (recordQuantBox);
+    recordQuantBox.addItem ("Quantize: Off", 1);
+    recordQuantBox.addItem ("Quantize: 1/4", 2);
+    recordQuantBox.addItem ("Quantize: 1/8", 3);
+    recordQuantBox.addItem ("Quantize: 1/8T", 4);
+    recordQuantBox.addItem ("Quantize: 1/16", 5);
+    recordQuantBox.addItem ("Quantize: 1/16T", 6);
+    recordQuantBox.addItem ("Quantize: 1/32", 7);
+    recordQuantBox.setTooltip ("Record quantize: snaps the start of each note you record to this grid when you stop. Notes keep their length. T means triplets.");
+    recordQuantBox.onChange = [this]
+    {
+        const int id = recordQuantBox.getSelectedId();
+
+        if (id >= 1 && id <= 7)
+            session.setRecordQuantize (recordQuantBeats[id - 1]);
+    };
+
     // Tooltips
     playButton.setTooltip ("Play / Pause (Space)");
     stopButton.setTooltip ("Stop and return to where you started (Space)");
@@ -268,6 +288,19 @@ void TransportBar::timerCallback()
                                                  : cpuPercent >= 50 ? juce::Colour (0xffffb020)
                                                                     : juce::Colour (0xff5ad45a));
 
+    // Record quantize follows the song too
+    if (! recordQuantBox.isPopupActive())
+    {
+        const double q = session.getRecordQuantize();
+        int id = 1;
+
+        for (int i = 1; i < 7; ++i)
+            if (q > 0.0 && std::abs (q - recordQuantBeats[i]) < 0.0001)
+                id = i + 1;
+
+        recordQuantBox.setSelectedId (id, juce::dontSendNotification);
+    }
+
     // Grid size follows the song (it changes when you open another one)
     if (! gridBox.isPopupActive())
     {
@@ -348,6 +381,7 @@ void TransportBar::resized()
     place (punchButton, 70);
     place (snapButton, 64);
     place (gridBox, 72);
+    place (recordQuantBox, 118);
     divider();
 
     place (learnButton, 64);
