@@ -169,6 +169,8 @@ target_sources(KNGStudio PRIVATE
     Source/SliceEditorTap.cpp
     Source/SliceEditorFx.cpp
     Source/SliceEditorTempo.cpp
+    Source/SliceEditorLane.cpp
+    Source/EditSessionSliceLane.cpp
     Source/SliceEditorView.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE

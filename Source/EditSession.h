@@ -207,6 +207,8 @@ public:
     /** Same cuts as above, but loads slice 1 on pad 1, slice 2 on pad 2 and so on, on a Drum Kit track.
         Returns how many pads were loaded, or -1. */
     int slicesToPads (tracktion::AudioClipBase& clip, const std::vector<double>& cuts, int trackIndex);
+    /** Puts each slice on a new audio lane as its own clip, at its original spot (or on the song's tempo, see setSliceSourceBpm). Returns the new lane's index, or -1. */
+    int chopClipToLane (tracktion::AudioClipBase& clip, const std::vector<double>& cuts);
     /** The tempo (BPM) the clip was played at, or 0 to keep its own timing. The next chopClipAtCuts places the Chops notes so the rhythm follows the song's tempo. The Slice Editor sets it before the call and clears it after. */
     void setSliceSourceBpm (double bpm)         { sliceSourceBpmForNextChop = bpm; }
     /** Reverse, pitch and volume per slice (index 0 is slice 1) for the next chopClipAtCuts or slicesToPads. The Slice Editor sets it before the call and clears it after. */

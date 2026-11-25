@@ -36,6 +36,8 @@ private:
     void setupTap();
     void setupFx();
     void setupTempo();
+    void setupLane();
+    void chopToLane();
     double guessSourceBpm() const;
     void layoutFxRow (juce::Rectangle<int> row);
     void drawSliceExtras (juce::Graphics& g, juce::Rectangle<int> wave) const;
@@ -74,6 +76,7 @@ private:
     juce::ToggleButton matchToggle { "Match tempo" };
     juce::Slider sourceBpm;
     juce::TextButton detectBpmButton { "Detect" };
+    juce::TextButton laneButton { "Chop to Lane" };
 
     static constexpr int numPeaks = 2048;
     std::vector<float> peaksLo, peaksHi;

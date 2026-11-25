@@ -80,6 +80,7 @@ SliceEditorView::SliceEditorView (EditSession& sessionToUse, te::AudioClipBase& 
     setupTap();
     setupFx();
     setupTempo();
+    setupLane();
     setSize (900, 460);
 }
 
@@ -392,6 +393,8 @@ void SliceEditorView::resized()
     padsButton.setBounds (bottom.removeFromRight (130));
     bottom.removeFromRight (6);
     rackButton.setBounds (bottom.removeFromRight (120));
+    bottom.removeFromRight (6);
+    laneButton.setBounds (bottom.removeFromRight (130));
     bottom.removeFromRight (10);
     hintLabel.setBounds (bottom);
 }
