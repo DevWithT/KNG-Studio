@@ -207,6 +207,8 @@ public:
     /** Same cuts as above, but loads slice 1 on pad 1, slice 2 on pad 2 and so on, on a Drum Kit track.
         Returns how many pads were loaded, or -1. */
     int slicesToPads (tracktion::AudioClipBase& clip, const std::vector<double>& cuts, int trackIndex);
+    /** The tempo (BPM) the clip was played at, or 0 to keep its own timing. The next chopClipAtCuts places the Chops notes so the rhythm follows the song's tempo. The Slice Editor sets it before the call and clears it after. */
+    void setSliceSourceBpm (double bpm)         { sliceSourceBpmForNextChop = bpm; }
     /** Reverse, pitch and volume per slice (index 0 is slice 1) for the next chopClipAtCuts or slicesToPads. The Slice Editor sets it before the call and clears it after. */
     void setSliceFx (std::vector<SliceFx> fx)   { sliceFxForNextWrite = std::move (fx); }
 
@@ -497,6 +499,7 @@ private:
     bool snapEnabled = true;
     double playlistEndCache = 0.0;
     std::vector<SliceFx> sliceFxForNextWrite;
+    double sliceSourceBpmForNextChop = 0.0;
     juce::uint32 playlistEndStamp = 0;
     bool recoveredFromCrash = false;
     juce::Time lastBackupTime;

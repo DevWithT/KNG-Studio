@@ -44,7 +44,13 @@ void SliceEditorView::layoutTapRow (juce::Rectangle<int> row)
     row.removeFromLeft (6);
     tapButton.setBounds (row.removeFromLeft (120));
     row.removeFromLeft (12);
+    auto tempo = row.removeFromRight (300);
     tapLabel.setBounds (row);
+    matchToggle.setBounds (tempo.removeFromLeft (112));
+    tempo.removeFromLeft (6);
+    detectBpmButton.setBounds (tempo.removeFromRight (64));
+    tempo.removeFromRight (6);
+    sourceBpm.setBounds (tempo);
 }
 
 //==============================================================================

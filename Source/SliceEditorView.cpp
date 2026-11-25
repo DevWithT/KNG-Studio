@@ -79,6 +79,7 @@ SliceEditorView::SliceEditorView (EditSession& sessionToUse, te::AudioClipBase& 
     detect();
     setupTap();
     setupFx();
+    setupTempo();
     setSize (900, 460);
 }
 
@@ -405,8 +406,10 @@ void SliceEditorView::close()
 void SliceEditorView::chopToRack()
 {
     session.setSliceFx (sliceFx);
+    session.setSliceSourceBpm (matchToggle.getToggleState() ? sourceBpm.getValue() : 0.0);
 
     const int chopped = session.chopClipAtCuts (*clip, getFullCuts());
+    session.setSliceSourceBpm (0.0);
     session.setSliceFx ({});
 
     if (chopped >= 0)

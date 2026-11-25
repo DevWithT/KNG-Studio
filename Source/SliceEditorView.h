@@ -35,6 +35,8 @@ private:
     void close();
     void setupTap();
     void setupFx();
+    void setupTempo();
+    double guessSourceBpm() const;
     void layoutFxRow (juce::Rectangle<int> row);
     void drawSliceExtras (juce::Graphics& g, juce::Rectangle<int> wave) const;
     bool selectSliceAt (juce::Point<int> p);
@@ -69,6 +71,9 @@ private:
     juce::Label sliceLabel, pitchLabel { {}, "Pitch" }, volLabel { {}, "Volume" };
     juce::ToggleButton reverseButton { "Reverse" };
     juce::Slider pitchSlider, gainSlider;
+    juce::ToggleButton matchToggle { "Match tempo" };
+    juce::Slider sourceBpm;
+    juce::TextButton detectBpmButton { "Detect" };
 
     static constexpr int numPeaks = 2048;
     std::vector<float> peaksLo, peaksHi;

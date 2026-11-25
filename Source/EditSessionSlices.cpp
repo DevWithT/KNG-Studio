@@ -202,6 +202,15 @@ int EditSession::chopClipAtCuts (te::AudioClipBase& clip, const std::vector<doub
     const int numSlices = juce::jmin (16, (int) cuts.size() - 1);
     int firstIndex = -1;
 
+    // Tempo match: squeeze or stretch the chop timing from the clip's tempo to the song's tempo
+    const double clipStartSec = pos.getStart().inSeconds();
+    const double projectBpm = getBpmAt (clipStartSec);
+    const double tempoScale = (sliceSourceBpmForNextChop > 0.0 && projectBpm > 0.0) ? sliceSourceBpmForNextChop / projectBpm : 1.0;
+    auto scaledTime = [clipStartSec, tempoScale] (double t)
+    {
+        return te::TimePosition::fromSeconds (clipStartSec + (t - clipStartSec) * tempoScale);
+    };
+
     for (int i = 0; i < numSlices; ++i)
     {
         const auto file = writeSliceFile (clip, cuts[(size_t) i], cuts[(size_t) i + 1], i + 1);
@@ -221,11 +230,11 @@ int EditSession::chopClipAtCuts (te::AudioClipBase& clip, const std::vector<doub
         // A hit where this slice was, so the chops play back like the original
         if (auto* track = getTrack (index))
         {
-            if (auto midi = track->insertMIDIClip (te::TimeRange (pos.getStart(), pos.getEnd()), nullptr))
+            if (auto midi = track->insertMIDIClip (te::TimeRange (pos.getStart(), scaledTime (pos.getEnd().inSeconds())), nullptr))
             {
                 midi->setName ("Chops");
-                const auto b1 = midi->getContentBeatAtTime (te::TimePosition::fromSeconds (cuts[(size_t) i]));
-                const auto b2 = midi->getContentBeatAtTime (te::TimePosition::fromSeconds (cuts[(size_t) i + 1]));
+                const auto b1 = midi->getContentBeatAtTime (scaledTime (cuts[(size_t) i]));
+                const auto b2 = midi->getContentBeatAtTime (scaledTime (cuts[(size_t) i + 1]));
                 midi->getSequence().addNote (60, b1, b2 - b1, 100, 0, &edit->getUndoManager());
             }
         }
