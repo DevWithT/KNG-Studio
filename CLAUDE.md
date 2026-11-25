@@ -40,6 +40,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `EditSessionBackup.cpp`: lock file, timed backups and pruning old ones.
 - `EditSessionChannels.cpp`: adds a sample channel to the Rack.
 - `EditSessionClips.cpp`: audio clip tempo-follow, pitch and gain; song markers.
+- `EditSessionSections.cpp`: Sections (a marker with a length and a kngSection property): addSection, getSectionClips, moveClipsInRange, duplicateSection (shifts everything after the section right by its length, copies the clips, adds a new numbered section).
 - `EditSessionCrossfade.cpp`: crossfades overlapping audio clips on a lane.
 - `EditSessionDrums.cpp`: drum tracks, pads, kit folders, creating pattern clips.
 - `EditSessionExport.cpp`: mix, stem and multi-track export; render settings.
@@ -89,7 +90,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `AutomationLane.cpp/.h`: automation row: AutomationHeader (pick target) and the curve.
 - `FolderHeader.cpp/.h`: bar above a folder's tracks: collapse, name, mute, solo.
 - `TimelineRuler.cpp/.h`: the bar.beat ruler above the lanes.
-- `MarkerBar.cpp/.h`: thin row above the ruler for song section markers.
+- `MarkerBar.cpp/.h`: thin row above the ruler. Markers show as a label (double-click to add). Sections show as a named block (right-click empty space to add): drag to move it with the clips that start inside it, drag the right edge to resize, right-click for Rename, Duplicate Section, Select Clips in Section and Delete.
 - `PlaylistToolbar.h`: Select, Paint and Cut tools; keeps the Playlist tidy.
 - `ClipProps.cpp/.h`: stretch, pitch and gain for one audio clip.
 - `SliceEditorLane.cpp`: Slice Editor Chop to Lane button (setupLane, chopToLane). Members of SliceEditorView.
@@ -296,6 +297,7 @@ On a clip:
 - `kngPattern`: the pattern number the clip belongs to.
 - `kngGroup`: a group id shared by clips that belong together (Group Clips).
 - `kngLane`: id of the Playlist lane the clip's block sits in.
+- `kngSection` on a marker clip: true when the marker is a section block.
 - `kngSwing`: swing percent, copied from the clip's pattern.
 - `kngKey`, `kngScale`, `kngChordRoot`, `kngChordType`, `kngStamp`, `kngTheoryOpen`: piano roll theory settings.
 
@@ -335,7 +337,7 @@ Medium:
 
 Large:
 14. Master output panel: LoudnessDisplay already shows LUFS and peak. Add a scope and a spectrum.
-15. Sections: song markers exist (MarkerBar, getMarkers, addMarkerAt, jumpToMarker). Make them draggable named blocks with a length. Moving a block moves everything under it. One feature, not two.
+15. Sections: built and not yet tested (add, move with clips, resize, duplicate with room, select clips, delete).
 16. Collect and Save: importAudioFile and copyIntoProject already copy imports into the project. Extend it to Sounds browser files, KNG Sampler files and Kit samples, with a File menu item.
 17. Slice Editor, second part: tempo match is built (SliceEditorTempo.cpp), not yet tested. Chop to Lane is built (each slice becomes its own clip on a new lane), not yet tested. Opening the editor from a lane is built (lane header right-click, Slice Editor submenu), not yet tested. Still to do: Snap to key (KngTune and the theory settings).
 

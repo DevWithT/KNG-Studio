@@ -163,6 +163,12 @@ public:
     void addMarkerAt (double seconds);
     void jumpToMarker (int direction);
 
+    // Sections: markers with a length. Moving one takes the clips that start inside it. Duplicating makes room first.
+    void addSection (double startSeconds, const juce::String& name, double lengthSeconds);
+    std::vector<tracktion::Clip::Ptr> getSectionClips (double fromSeconds, double toSeconds);
+    void moveClipsInRange (double fromSeconds, double toSeconds, double deltaSeconds);
+    int duplicateSection (tracktion::Clip& section);
+
     // Autosave and crash recovery
     bool didRecoverFromCrash() const            { return recoveredFromCrash; }
     juce::File getBackupsFolder() const;
