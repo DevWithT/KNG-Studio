@@ -206,6 +206,78 @@ void MainComponent::showMidiMappings()
     midiMapWindow = options.launchAsync();
 }
 
+//==============================================================================
+// Window layouts: three slots, kept between launches in Documents\KNG Studio\layouts.xml.
+// A layout remembers which panels are showing, the bottom panel's height and tab, and the left column's tab.
+
+static juce::File getLayoutsFile()
+{
+    return juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)
+               .getChildFile ("KNG Studio").getChildFile ("layouts.xml");
+}
+
+void MainComponent::saveLayout (int slot)
+{
+    std::unique_ptr<juce::XmlElement> root = juce::XmlDocument::parse (getLayoutsFile());
+
+    if (root == nullptr || root->getTagName() != "Layouts")
+        root = std::make_unique<juce::XmlElement> ("Layouts");
+
+    const juce::String tag = "Slot" + juce::String (slot);
+
+    if (auto* old = root->getChildByName (tag))
+        root->removeChildElement (old, true);
+
+    auto* e = root->createNewChildElement (tag);
+    e->setAttribute ("dockVisible", dockVisible ? 1 : 0);
+    e->setAttribute ("dockHeight", dockHeight);
+    e->setAttribute ("dockTab", static_cast<int> (dock.getCurrentTab()));
+    e->setAttribute ("browser", browserVisible ? 1 : 0);
+    e->setAttribute ("browserTab", browserTabs.getCurrentTabIndex());
+    e->setAttribute ("inspector", inspectorVisible ? 1 : 0);
+    e->setAttribute ("patterns", patternsVisible ? 1 : 0);
+
+    getLayoutsFile().getParentDirectory().createDirectory();
+    root->writeTo (getLayoutsFile());
+}
+
+void MainComponent::loadLayout (int slot)
+{
+    std::unique_ptr<juce::XmlElement> root = juce::XmlDocument::parse (getLayoutsFile());
+    auto* e = root != nullptr ? root->getChildByName ("Slot" + juce::String (slot)) : nullptr;
+
+    if (e == nullptr)
+    {
+        juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::InfoIcon,
+                                                "Layout " + juce::String (slot),
+                                                "Nothing is saved in this layout yet. Arrange your panels, then use View > Layouts > Save as Layout "
+                                                    + juce::String (slot) + ".");
+        return;
+    }
+
+    dockVisible      = e->getIntAttribute ("dockVisible", 1) != 0;
+    dockHeight       = juce::jlimit (150, 900, e->getIntAttribute ("dockHeight", dockHeight));
+    browserVisible   = e->getIntAttribute ("browser", 1) != 0;
+    inspectorVisible = e->getIntAttribute ("inspector", 1) != 0;
+    patternsVisible  = e->getIntAttribute ("patterns", 1) != 0;
+
+    browserTabs.setCurrentTabIndex (juce::jlimit (0, juce::jmax (0, browserTabs.getNumTabs() - 1),
+                                                  e->getIntAttribute ("browserTab", 0)));
+
+    // Only Rack and Mixer come back; the other dock tabs need a clip or a track to show
+    const int tab = e->getIntAttribute ("dockTab", -1);
+
+    if (dockVisible && session != nullptr)
+    {
+        if (tab == static_cast<int> (DockPanel::mixerTab))
+            dock.showTab (DockPanel::mixerTab);
+        else if (tab == static_cast<int> (DockPanel::rackTab))
+            dock.showTab (DockPanel::rackTab);
+    }
+
+    resized();
+}
+
 void MainComponent::toggleRack()
 {
     if (session == nullptr)

@@ -24,6 +24,8 @@
 
 // Command id for Undo History. It sits outside the MainComponent command list on purpose.
 static constexpr int cmdUndoHistory = 9001;
+static constexpr int cmdLayoutLoad = 9100;   // 9101 to 9103
+static constexpr int cmdLayoutSave = 9200;   // 9201 to 9203
 
 //==============================================================================
 juce::StringArray MainComponent::getMenuBarNames()
@@ -115,6 +117,20 @@ juce::PopupMenu MainComponent::getMenuForIndex (int menuIndex, const juce::Strin
             add (cmdDock, "Dock", "D", true, dockVisible);
             add (cmdBrowser, "Browser", "B", true, browserVisible);
             add (cmdPianoKeys, "Computer Keyboard Piano", "Ctrl+K", hasSession, pianoKeysOn);
+
+            {
+                juce::PopupMenu layouts;
+
+                for (int slot = 1; slot <= 3; ++slot)
+                    layouts.addItem (cmdLayoutLoad + slot, "Layout " + juce::String (slot));
+
+                layouts.addSeparator();
+
+                for (int slot = 1; slot <= 3; ++slot)
+                    layouts.addItem (cmdLayoutSave + slot, "Save as Layout " + juce::String (slot));
+
+                m.addSubMenu ("Layouts", layouts);
+            }
             m.addSeparator();
             add (cmdZoomIn, "Zoom In", "Ctrl+=", hasSession);
             add (cmdZoomOut, "Zoom Out", "Ctrl+-", hasSession);
@@ -134,6 +150,19 @@ juce::PopupMenu MainComponent::getMenuForIndex (int menuIndex, const juce::Strin
 
 void MainComponent::menuItemSelected (int id, int)
 {
+    // Window layouts
+    if (id > cmdLayoutLoad && id <= cmdLayoutLoad + 3)
+    {
+        loadLayout (id - cmdLayoutLoad);
+        return;
+    }
+
+    if (id > cmdLayoutSave && id <= cmdLayoutSave + 3)
+    {
+        saveLayout (id - cmdLayoutSave);
+        return;
+    }
+
     // These work with or without a project open
     switch (id)
     {

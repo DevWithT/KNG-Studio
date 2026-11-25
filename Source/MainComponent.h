@@ -65,6 +65,8 @@ private:
     void showAudioSettings();
     void showSettings();
     void showMidiMappings();
+    void saveLayout (int slot);
+    void loadLayout (int slot);
     juce::Component::SafePointer<juce::DialogWindow> midiMapWindow;
     juce::Array<juce::Component::SafePointer<juce::DialogWindow>> songWindows;
     void showPluginScanner();

@@ -20,7 +20,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `MainComponentProject.cpp`: project folders; open, close, new, save, restore backup, new-song setup, save as template, new song from template.
 - `MainComponentMenus.cpp`: menu bar names, contents and command handling.
 - `MainComponentKeys.cpp`: keyboard shortcuts, shortcuts help, play/stop, zoom to fit and the computer keyboard piano (Ctrl+K, letter keys play the selected instrument, Up/Down change octave).
-- `MainComponentWindows.cpp`: dock panel openers and dialog windows.
+- `MainComponentWindows.cpp`: dock panel openers, dialog windows and saved window layouts (saveLayout, loadLayout: three slots in Documents\KNG Studio\layouts.xml, menu ids 9101 to 9103 and 9201 to 9203 live in MainComponentMenus.cpp).
 - `StartScreen.cpp/.h`: opening screen: start something new, start from a template, or reopen a song.
 - `HintBar.h` (header only): the hint text in the middle of the status bar. It shows the tooltip of whatever the mouse is over, 10 times a second.
 - `SettingsComponent.cpp/.h`: settings for audio, plugins, recording, folders and about.
@@ -319,7 +319,7 @@ Medium:
 8. Make Unique and Group Clips for Playlist clips (patterns already have makePatternUnique).
 9. Routing matrix: a grid of what feeds what (getBusTargets and canFeed already hold the data).
 10. Per-plugin CPU monitor: double-click the CPU meter. Check first what the engine reports per plugin.
-11. Saved window layouts.
+11. Saved window layouts: built (View > Layouts; three slots; remembers panels, dock height and tab, browser tab), not yet tested. No keyboard shortcuts yet.
 12. Stem export per lane: ExportDialog, exportStem and exportTracks exist. Make sure one click exports every lane.
 13. Slice Editor, first part: Grid cuts (with triplets), Split into N, tap-in cuts during playback, and per-slice reverse, pitch and volume.
 
