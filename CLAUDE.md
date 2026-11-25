@@ -62,7 +62,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `EditSessionProject.cpp`: save, import audio, copy files into the project.
 - `EditSessionRouting.cpp`: buses, sends to a bus (level, pre/post fader, mute, remove), loop-safe routing check (canFeed, getBusTargets), sidechain ducking. Output itself lives in RouteMenu.h (KngRoute).
 - `EditSessionSampler.cpp`: KNG Sampler settings, chop a clip to pads, open the piano roll.
-- `EditSessionSelection.cpp`: multi-clip selection.
+- `EditSessionSelection.cpp`: multi-clip selection and Group Clips (clips with the same kngGroup property are picked, moved, copied and deleted together; groups expand inside getSelectedClips and isClipSelected; duplicates and pastes get new ids through regroupCopies).
 - `SliceFx.h`: SliceFx (reverse, pitch in semitones, volume in dB for one slice) and applySliceFx. Header only. EditSession::setSliceFx hands the list to the next chop or send to pads.
 - `EditSessionSliceLane.cpp`: chopClipToLane. Writes each slice to a file and puts each one on a new audio lane as its own clip (original spot, or on the song's tempo when setSliceSourceBpm is set), then mutes the original clip.
 - `EditSessionSlices.cpp`: Slices: findHits (finds hits in a clip), writeSliceFile, chopClipAtCuts (Rack rows plus Chops), slicesToPads (Drum Kit pads)
@@ -247,7 +247,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `EditSessionProject.cpp`: save, importAudioFile, copyIntoProject, importAudioFileAt
 - `EditSessionRouting.cpp`: getBusNumbers, getBusName, addBus, getSendToBusDb, setSendToBusDb, duckFromTrack, removeDucking, getDuckSource, getSendBuses, isSendPreFader, setSendPreFader, isSendMuted, setSendMuted, removeSend, getBusTargets, getBusSources, canFeed
 - `EditSessionSampler.cpp`: getKngSampler, setBuiltInSampler, setSamplerSample, getSamplerSampleName, getSamplerRoot, setSamplerRoot, getSamplerGain, setSamplerGain, getSamplerOneShot, setSamplerOneShot, chopClipToPads, openPianoRollForTrack
-- `EditSessionSelection.cpp`: clearSelection, toggleClipSelection, addClipsToSelection, isClipSelected, getSelectedClips, selectAllClips
+- `EditSessionSelection.cpp`: clearSelection, toggleClipSelection, addClipsToSelection, isClipSelected, getSelectedClips, isClipSelectedDirect, groupSelectedClips, ungroupSelectedClips, isClipGrouped, regroupCopies, selectAllClips
 - Slice functions (findHits, chopClipAtCuts, slicesToPads, writeSliceFile): EditSessionSlices.cpp. chopClipToPads (EditSessionSampler.cpp) now only builds the cut list and calls chopClipAtCuts.
 - `EditSessionSynth.cpp`: setBuiltInSynth
 - `EditSessionTempo.cpp`: barStartAt, barsAfter, barNumberAt, getBpmAt, setBpmAt, getTimeSigAt, addTempoChange, addTimeSigChange, getTempoMarks, removeTempoMark, setMidiLearn, isMidiLearn
@@ -293,6 +293,7 @@ On a track:
 
 On a clip:
 - `kngPattern`: the pattern number the clip belongs to.
+- `kngGroup`: a group id shared by clips that belong together (Group Clips).
 - `kngLane`: id of the Playlist lane the clip's block sits in.
 - `kngSwing`: swing percent, copied from the clip's pattern.
 - `kngKey`, `kngScale`, `kngChordRoot`, `kngChordType`, `kngStamp`, `kngTheoryOpen`: piano roll theory settings.
@@ -324,7 +325,7 @@ Small:
 
 Medium:
 7. Info panel: first half built (HintBar in the status bar shows the tooltip of whatever the mouse is over), not yet tested. Still to do: add tooltips to controls that have none, and decide if a floating box is needed.
-8. Make Unique and Group Clips for Playlist clips (patterns already have makePatternUnique).
+8. Group Clips: built and not yet tested (Ctrl+G groups, Ctrl+Shift+G ungroups, both are in the clip right-click menu; grouped clips have no badge on them yet). Make Unique for Playlist clips is still to do (patterns already have makePatternUnique).
 9. Routing matrix: built (View > Routing Matrix...), not yet tested.
 10. Per-plugin CPU monitor: double-click the CPU meter. Check first what the engine reports per plugin.
 11. Saved window layouts: built (View > Layouts; three slots; remembers panels, dock height and tab, browser tab), not yet tested. No keyboard shortcuts yet.

@@ -32,6 +32,17 @@ bool TrackLane::keyPressed (const juce::KeyPress& key)
 {
     const bool hasSelection = ! session.getSelectedClips().empty();
 
+    // Ctrl+G groups the selected clips, Ctrl+Shift+G ungroups them
+    if (key.getModifiers().isCommandDown() && (key.getKeyCode() == 'G' || key.getKeyCode() == 'g'))
+    {
+        if (key.getModifiers().isShiftDown())
+            session.ungroupSelectedClips();
+        else
+            session.groupSelectedClips();
+
+        return true;
+    }
+
     if (key == juce::KeyPress::deleteKey || key == juce::KeyPress::backspaceKey)
     {
         if (hasSelection)
@@ -184,6 +195,13 @@ void TrackLane::showClipMenu (te::Clip* clip)
         menu.addSeparator();
     }
 
+    if (s->getSelectedClips().size() > 1)
+        menu.addItem ("Group Clips (Ctrl+G)", [s] { s->groupSelectedClips(); });
+
+    if (s->isClipGrouped (clip))
+        menu.addItem ("Ungroup (Ctrl+Shift+G)", [s] { s->ungroupSelectedClips(); });
+
+    menu.addSeparator();
     menu.addItem ("Duplicate (Ctrl+D)", [s] { s->duplicateSelectedClip(); });
     menu.addItem ("Copy (Ctrl+C)",      [s] { s->copySelectedClip(); });
     menu.addItem ("Paste (Ctrl+V)",     [s] { s->pasteClip(); });

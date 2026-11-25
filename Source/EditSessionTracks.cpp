@@ -68,6 +68,7 @@ void EditSession::duplicateSelectedClip()
     }
 
     clearSelection();
+    regroupCopies (copies);
     selection = copies;
 
     if (! copies.empty())
@@ -123,6 +124,7 @@ void EditSession::pasteClip()
     }
 
     clearSelection();
+    regroupCopies (pasted);
     selection = pasted;
 
     if (! pasted.empty())

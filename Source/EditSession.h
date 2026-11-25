@@ -83,6 +83,13 @@ public:
     bool isClipSelected (tracktion::Clip* clip) const;
     std::vector<tracktion::Clip::Ptr> getSelectedClips() const;
     void selectAllClips();
+
+    // Group Clips: clips that share a "kngGroup" property are picked, moved, copied and deleted together
+    void groupSelectedClips();
+    void ungroupSelectedClips();
+    bool isClipGrouped (tracktion::Clip* clip) const;
+    bool isClipSelectedDirect (tracktion::Clip* clip) const;   // selected on its own, ignoring its group
+    void regroupCopies (const std::vector<tracktion::Clip::Ptr>& copies);   // duplicates and pastes get new group ids
     void deleteSelectedClip();
     void splitSelectedClipAtPlayhead();
     void duplicateSelectedClip();
