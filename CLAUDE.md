@@ -96,7 +96,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `SliceEditorTempo.cpp`: Slice Editor tempo match. Match tempo toggle, source BPM box and Detect (guesses from the clip length as 1 to 16 bars of 4/4). On Chop to Rack the editor calls EditSession::setSliceSourceBpm, so chopClipAtCuts scales the Chops clip and notes from the clip's tempo to the song's tempo. Members of SliceEditorView.
 - `SliceEditorFx.cpp`: Slice Editor per-slice controls. Pick a slice (arrows or the number badge), then Reverse, Pitch (semitones) and Volume (dB). syncSliceFx keeps one SliceFx per slice as markers are added or removed. The settings are baked into the slice files on Chop to Rack and Send to Pads. Members of SliceEditorView.
 - `SliceEditorTap.cpp`: Slice Editor tap-in cuts. Play button, Cut Here button and the T key add a cut at the red playhead. Space starts and stops. Members of SliceEditorView.
-- `SliceEditorView.cpp/.h`: Slice Editor window: waveform with draggable slice markers, Detect Hits, Grid cut (1/4 to 1/32, with triplets), Split into N parts, Chop to Rack, Send to Pads. showSliceEditor (session, clip) opens it. Opened from the audio clip right-click menu.
+- `SliceEditorView.cpp/.h`: Slice Editor window: waveform with draggable slice markers, Detect Hits, Grid cut (1/4 to 1/32, with triplets), Split into N parts, Chop to Rack, Send to Pads. showSliceEditor (session, clip) opens it. Opened from the audio clip right-click menu, and from a lane header's right-click menu (a Slice Editor submenu that lists the lane's audio clips).
 - `SliceCuts.h` (header only): cut lists for the Slice Editor: grid cuts on the tempo map (KngSliceCuts::grid) and equal parts (KngSliceCuts::equalParts).
 - `CompView.cpp/.h`: take comping for an audio clip, and its window.
 
@@ -334,7 +334,7 @@ Large:
 14. Master output panel: LoudnessDisplay already shows LUFS and peak. Add a scope and a spectrum.
 15. Sections: song markers exist (MarkerBar, getMarkers, addMarkerAt, jumpToMarker). Make them draggable named blocks with a length. Moving a block moves everything under it. One feature, not two.
 16. Collect and Save: importAudioFile and copyIntoProject already copy imports into the project. Extend it to Sounds browser files, KNG Sampler files and Kit samples, with a File menu item.
-17. Slice Editor, second part: tempo match is built (SliceEditorTempo.cpp), not yet tested. Chop to Lane is built (each slice becomes its own clip on a new lane), not yet tested. Still to do: Snap to key (KngTune and the theory settings), and opening the editor from a lane.
+17. Slice Editor, second part: tempo match is built (SliceEditorTempo.cpp), not yet tested. Chop to Lane is built (each slice becomes its own clip on a new lane), not yet tested. Opening the editor from a lane is built (lane header right-click, Slice Editor submenu), not yet tested. Still to do: Snap to key (KngTune and the theory settings).
 
 ### Waiting on a decision
 - Comping: CompView exists. Decide on take lanes under the lane and pitch scoring with KngTune.

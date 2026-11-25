@@ -142,6 +142,7 @@ void TrackLane::showClipMenu (te::Clip* clip)
             chop.addItem (juce::String (n) + " slices", [s, acbPtr, n] { s->chopClipToPads (*acbPtr, n, false); });
 
         chop.addItem ("At markers", [s, acbPtr] { s->chopClipToPads (*acbPtr, 16, true); });
+        menu.addItem ("Slice Editor...", [s, acbPtr] { showSliceEditor (*s, *acbPtr); });
         menu.addSubMenu ("Chop to Pads", chop);
 
         menu.addItem ("Convert to MIDI (one voice or melody)", [s, acbPtr]

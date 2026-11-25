@@ -1,4 +1,5 @@
 #include "TrackHeader.h"
+#include "SliceEditorView.h"
 #include "RoutePopup.h"
 #include "KngTheme.h"
 
@@ -523,6 +524,32 @@ void TrackHeader::mouseDown (const juce::MouseEvent& e)
         templates.addItem (name, [s, idx, name] { s->loadChainTemplate (idx, name); });
 
     menu.addSubMenu ("Templates", templates);
+
+    // Slice Editor for one of this lane's audio clips
+    {
+        juce::PopupMenu slice;
+
+        if (auto* laneTrack = s->getTrack (idx))
+        {
+            for (auto* c : laneTrack->getClips())
+            {
+                if (slice.getNumItems() >= 20)
+                    break;
+
+                if (auto* acb = dynamic_cast<te::WaveAudioClip*> (c))
+                {
+                    te::AudioClipBase::Ptr ptr (acb);
+                    const auto label = (acb->getName().isNotEmpty() ? acb->getName() : juce::String ("Clip"))
+                                       + "  (at " + juce::String (acb->getPosition().getStart().inSeconds(), 1) + " s)";
+
+                    slice.addItem (label, [s, ptr] { showSliceEditor (*s, *ptr); });
+                }
+            }
+        }
+
+        if (slice.getNumItems() > 0)
+            menu.addSubMenu ("Slice Editor", slice);
+    }
     menu.addSeparator();
 
     // Deleting rebuilds the lane list, so do it after this header's click finishes
