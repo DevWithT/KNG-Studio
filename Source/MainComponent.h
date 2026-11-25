@@ -24,6 +24,7 @@
 #include "TrackInspector.h"
 #include "PatternListPanel.h"
 #include "PlaylistToolbar.h"
+#include "HintBar.h"
 #include "PlaylistScrollBar.h"
 
 class MainComponent : public juce::Component,
@@ -114,6 +115,7 @@ private:
 
     juce::MenuBarComponent menuBar;
     juce::Label projectLabel, deviceLabel;
+    HintBar hintBar;
 
     std::unique_ptr<EditSession> session;
     std::unique_ptr<TransportBar> transportBar;

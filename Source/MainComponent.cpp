@@ -60,6 +60,7 @@ MainComponent::MainComponent (tracktion::Engine& engineToUse)
 
     menuBar.setModel (this);
     addAndMakeVisible (menuBar);
+    addAndMakeVisible (hintBar);
 
     for (auto* l : { &projectLabel, &deviceLabel })
     {
@@ -189,7 +190,8 @@ void MainComponent::resized()
 
     auto status = area.removeFromBottom (statusHeight);
     projectLabel.setBounds (status.removeFromLeft (320).reduced (8, 0));
-    deviceLabel.setBounds (status.reduced (8, 0));
+    deviceLabel.setBounds (status.removeFromRight (470).reduced (8, 0));
+    hintBar.setBounds (status.reduced (8, 0));
 
     // The transport bar runs the full width, flush under the menu
     if (transportBar != nullptr)

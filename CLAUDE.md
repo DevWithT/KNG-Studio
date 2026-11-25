@@ -22,6 +22,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `MainComponentKeys.cpp`: keyboard shortcuts, shortcuts help, play/stop, zoom to fit and the computer keyboard piano (Ctrl+K, letter keys play the selected instrument, Up/Down change octave).
 - `MainComponentWindows.cpp`: dock panel openers and dialog windows.
 - `StartScreen.cpp/.h`: opening screen: start something new, start from a template, or reopen a song.
+- `HintBar.h` (header only): the hint text in the middle of the status bar. It shows the tooltip of whatever the mouse is over, 10 times a second.
 - `SettingsComponent.cpp/.h`: settings for audio, plugins, recording, folders and about.
 - `TransportBar.cpp/.h`: top bar with transport, tempo and song controls.
 - `ExportDialog.cpp/.h`: export dialog for the mix and stems.
@@ -314,7 +315,7 @@ Small:
 6. Audio settings extras: buffer size and sample rate are already in Settings > Audio (the JUCE device selector), and the recording latency offset has its own dialog. Still missing: recording bit depth and record folder. The Tracktion docs show no setting for either, so find the real one before building.
 
 Medium:
-7. Info panel: a hint bar at the bottom of the window first, then a floating hover box.
+7. Info panel: first half built (HintBar in the status bar shows the tooltip of whatever the mouse is over), not yet tested. Still to do: add tooltips to controls that have none, and decide if a floating box is needed.
 8. Make Unique and Group Clips for Playlist clips (patterns already have makePatternUnique).
 9. Routing matrix: a grid of what feeds what (getBusTargets and canFeed already hold the data).
 10. Per-plugin CPU monitor: double-click the CPU meter. Check first what the engine reports per plugin.
