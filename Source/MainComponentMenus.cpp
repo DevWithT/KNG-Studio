@@ -21,6 +21,7 @@
 #include "MidiMapDialog.h"
 #include "KngPopOut.h"
 #include "UndoHistory.h"
+#include "RoutingMatrix.h"
 
 // Command id for Undo History. It sits outside the MainComponent command list on purpose.
 static constexpr int cmdUndoHistory = 9001;
@@ -117,6 +118,7 @@ juce::PopupMenu MainComponent::getMenuForIndex (int menuIndex, const juce::Strin
             add (cmdDock, "Dock", "D", true, dockVisible);
             add (cmdBrowser, "Browser", "B", true, browserVisible);
             add (cmdPianoKeys, "Computer Keyboard Piano", "Ctrl+K", hasSession, pianoKeysOn);
+            add (9002, "Routing Matrix...", {}, hasSession);
 
             {
                 juce::PopupMenu layouts;
@@ -194,6 +196,7 @@ void MainComponent::menuItemSelected (int id, int)
 
         case cmdUndo:          session->undo(); break;
         case cmdRedo:          session->redo(); break;
+        case 9002: if (auto* w = RoutingMatrix::open (*session)) songWindows.add (w); break;
         case cmdUndoHistory:   if (auto* w = UndoHistoryList::open (*session)) songWindows.add (w); break;
         case cmdCopy:          session->copySelectedClip(); break;
         case cmdPaste:         session->pasteClip(); break;

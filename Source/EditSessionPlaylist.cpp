@@ -130,6 +130,7 @@ void EditSession::moveBlock (const PatternBlock& block, double toSeconds, const 
 
     for (auto* c : getBlockClips (block))
     {
+        edit->getUndoManager().setCurrentTransactionName (copy ? "Copy block" : "Move block");
         te::Clip* target = c;
         te::Clip::Ptr dup;
 

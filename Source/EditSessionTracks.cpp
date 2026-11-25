@@ -18,6 +18,7 @@ void EditSession::moveTrack (int index, int direction)
         return;
 
     beginEdit();
+    edit->getUndoManager().setCurrentTransactionName ("Move lane");
     edit->moveTrack (te::Track::Ptr (track), te::TrackInsertPoint (*other, direction < 0));
 
     // Keep each track's input and arm state with it
@@ -53,6 +54,7 @@ void EditSession::duplicateSelectedClip()
 
     beginEdit();
     std::vector<te::Clip::Ptr> copies;
+    edit->getUndoManager().setCurrentTransactionName ("Duplicate clip");
 
     for (auto& c : clips)
     {
@@ -103,6 +105,7 @@ void EditSession::pasteClip()
 
     beginEdit();
     std::vector<te::Clip::Ptr> pasted;
+    edit->getUndoManager().setCurrentTransactionName ("Paste clip");
 
     for (auto& s : sources)
     {

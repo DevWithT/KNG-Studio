@@ -126,6 +126,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `LevelMeter.cpp/.h`: level meter component.
 - `LoudnessDisplay.cpp/.h`: master loudness readout: momentary, short-term, integrated LUFS, peak.
 - `KngLoudnessPlugin.cpp/.h`: invisible BS.1770 loudness meter at the end of the master chain.
+- `RoutingMatrix.h`: header-only. View > Routing Matrix... opens a window with one row per lane: an Output button (same menu as the Routing pop-up) and a send level cell for every bus. Greyed cells would make a loop. RoutingMatrix::open (session) returns the new window (the caller keeps it in songWindows) or nullptr if one is already open.
 - `RoutePopup.h`: Routing pop-up for a lane: Output (Master or a bus), and its sends with level, Pre/Post fader, mute, remove.
 - `FxChainComponent.cpp/.h`: a track's effect chain list with its add menu, and its window.
 - `SidechainMenu.h`: header-only: KngSidechain::addMenu adds a "Sidechain" source submenu to a plugin slot's menu.
@@ -317,17 +318,17 @@ Small:
 1. Tempo tap: built (Tap button next to the tempo box), not yet tested.
 2. Count-in dropdown: already built (countInBox in TransportBar: none, 1 bar, 2 bars). Nothing to do.
 3. Record quantization chooser: built (Quantize box after the Snap grid box; snaps note starts when recording stops, in Pattern mode and in normal takes), not yet tested.
-4. Undo history list: built (Edit > Undo History...). Steps named so far: Split clip, Delete clip, Delete lane, Record quantize; the rest show as "Edit N". Name more with beginEdit ("Name") or edit->getUndoManager().setCurrentTransactionName ("Name"). Not yet tested.
+4. Undo history list: built (Edit > Undo History...). Steps named so far: Split clip, Delete clip, Delete lane, Record quantize, Move lane, Duplicate clip, Paste clip, Add effect, Move effect, Remove effect, Copy block, Move block, Change instrument, Remove instrument; the rest show as "Edit N". Name more with beginEdit ("Name") or edit->getUndoManager().setCurrentTransactionName ("Name"). Not yet tested.
 5. Punch in/out: the Punch button records only between the loop markers. Decide whether it needs its own in and out points, separate from the loop.
 6. Audio settings extras: buffer size and sample rate are already in Settings > Audio (the JUCE device selector), and the recording latency offset has its own dialog. Still missing: recording bit depth and record folder. The Tracktion docs show no setting for either, so find the real one before building.
 
 Medium:
 7. Info panel: first half built (HintBar in the status bar shows the tooltip of whatever the mouse is over), not yet tested. Still to do: add tooltips to controls that have none, and decide if a floating box is needed.
 8. Make Unique and Group Clips for Playlist clips (patterns already have makePatternUnique).
-9. Routing matrix: a grid of what feeds what (getBusTargets and canFeed already hold the data).
+9. Routing matrix: built (View > Routing Matrix...), not yet tested.
 10. Per-plugin CPU monitor: double-click the CPU meter. Check first what the engine reports per plugin.
 11. Saved window layouts: built (View > Layouts; three slots; remembers panels, dock height and tab, browser tab), not yet tested. No keyboard shortcuts yet.
-12. Stem export per lane: ExportDialog, exportStem and exportTracks exist. Make sure one click exports every lane.
+12. Stem export: built (Export dialog: "Stems: one per track" with an All/None checklist, and "Stems: one per folder"), not yet tested.
 13. Slice Editor, first part: Grid cut and Split into N are built (SliceCuts.h), and so are tap-in cuts during playback and per-slice reverse, pitch and volume (SliceEditorTap.cpp, SliceEditorFx.cpp). None of it is tested yet.
 
 Large:

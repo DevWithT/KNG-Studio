@@ -35,6 +35,8 @@ void EditSession::addPlugin (te::PluginList& list, const juce::PluginDescription
 
     beginEdit();
 
+    edit->getUndoManager().setCurrentTransactionName ("Add effect");
+
     // FX go before the volume, meter and sends, so they're pre-fader
     int index = list.size();
 
@@ -71,6 +73,7 @@ void EditSession::movePlugin (te::PluginList& list, te::Plugin* plugin, int dire
         return;
 
     beginEdit();
+    edit->getUndoManager().setCurrentTransactionName ("Move effect");
     list.state.moveChild (from, to, &edit->getUndoManager());
 }
 
@@ -80,6 +83,7 @@ void EditSession::removePlugin (te::Plugin* plugin)
         return;
 
     beginEdit();
+    edit->getUndoManager().setCurrentTransactionName ("Remove effect");
     plugin->deleteFromParent();
 }
 

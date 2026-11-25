@@ -66,6 +66,8 @@ void EditSession::setInstrument (int trackIndex, const juce::PluginDescription& 
 
     beginEdit();
 
+    edit->getUndoManager().setCurrentTransactionName ("Change instrument");
+
     // One instrument per track, so swap out the old one
     for (auto p : track->pluginList.getPlugins())
         if (p->isSynth())
@@ -91,6 +93,7 @@ void EditSession::removeInstrument (int trackIndex)
     if (auto* inst = getInstrument (trackIndex))
     {
         beginEdit();
+        edit->getUndoManager().setCurrentTransactionName ("Remove instrument");
         inst->deleteFromParent();
         save();
     }
