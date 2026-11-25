@@ -166,6 +166,7 @@ target_sources(KNGStudio PRIVATE
     Source/EditSessionVocalAlign.cpp
     Source/RackRowGraph.cpp
     Source/EditSessionSlices.cpp
+    Source/SliceEditorTap.cpp
     Source/SliceEditorView.cpp)
 
 target_compile_definitions(KNGStudio PRIVATE

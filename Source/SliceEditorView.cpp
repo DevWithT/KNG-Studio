@@ -77,7 +77,8 @@ SliceEditorView::SliceEditorView (EditSession& sessionToUse, te::AudioClipBase& 
 
     loadPeaks();
     detect();
-    setSize (900, 380);
+    setupTap();
+    setSize (900, 420);
 }
 
 //==============================================================================
@@ -341,6 +342,8 @@ void SliceEditorView::paint (juce::Graphics& g)
         }
     }
 
+    drawPlayhead (g, wave);
+
     // Markers
     for (int i = 0; i < (int) cuts.size(); ++i)
     {
@@ -354,7 +357,10 @@ void SliceEditorView::paint (juce::Graphics& g)
 
 void SliceEditorView::resized()
 {
-    auto top = getLocalBounds().removeFromTop (toolbarHeight).reduced (8, 8);
+    auto toolbar = getLocalBounds().removeFromTop (toolbarHeight).reduced (8, 8);
+    auto top = toolbar.removeFromTop (28);
+    toolbar.removeFromTop (8);
+    layoutTapRow (toolbar.removeFromTop (28));
     sensLabel.setBounds (top.removeFromLeft (80));
     sensitivity.setBounds (top.removeFromLeft (180));
     top.removeFromLeft (8);

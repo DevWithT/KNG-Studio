@@ -90,6 +90,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `MarkerBar.cpp/.h`: thin row above the ruler for song section markers.
 - `PlaylistToolbar.h`: Select, Paint and Cut tools; keeps the Playlist tidy.
 - `ClipProps.cpp/.h`: stretch, pitch and gain for one audio clip.
+- `SliceEditorTap.cpp`: Slice Editor tap-in cuts. Play button, Cut Here button and the T key add a cut at the red playhead. Space starts and stops. Members of SliceEditorView.
 - `SliceEditorView.cpp/.h`: Slice Editor window: waveform with draggable slice markers, Detect Hits, Grid cut (1/4 to 1/32, with triplets), Split into N parts, Chop to Rack, Send to Pads. showSliceEditor (session, clip) opens it. Opened from the audio clip right-click menu.
 - `SliceCuts.h` (header only): cut lists for the Slice Editor: grid cuts on the tempo map (KngSliceCuts::grid) and equal parts (KngSliceCuts::equalParts).
 - `CompView.cpp/.h`: take comping for an audio clip, and its window.
