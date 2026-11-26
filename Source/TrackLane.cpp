@@ -1,5 +1,6 @@
 #include "TrackLane.h"
 #include "KngTheme.h"
+#include "GroupBadge.h"
 
 namespace te = tracktion;
 
@@ -303,6 +304,9 @@ void TrackLane::drawClips (juce::Graphics& g)
         }
 
         drawFades (g, *ct.clip, area);
+
+        if (session.isClipGrouped (ct.clip.get()))
+            KngGroupBadge::draw (g, area);
         drawMidiNotes (g, *ct.clip, area, base, [this] (double s) { return timeToX (s); });
 
         // Take label

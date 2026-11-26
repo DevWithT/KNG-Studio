@@ -11,6 +11,7 @@ AutomationHeader::AutomationHeader (EditSession& sessionToUse, int trackIndexToU
     label.setFont (juce::Font (juce::FontOptions (12.0f)));
 
     addAndMakeVisible (paramBox);
+    paramBox.setTooltip ("What this row automates. Pick a knob, then draw its curve on the lane.");
     paramBox.onChange = [this]
     {
         const int sel = paramBox.getSelectedId() - 1;
@@ -20,6 +21,7 @@ AutomationHeader::AutomationHeader (EditSession& sessionToUse, int trackIndexToU
     };
 
     addAndMakeVisible (clearButton);
+    clearButton.setTooltip ("Delete every point on this curve (Undo brings them back)");
 
     addAndMakeVisible (writeButton);
 

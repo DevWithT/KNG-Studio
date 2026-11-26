@@ -100,9 +100,11 @@ KitBrowser::KitBrowser (juce::AudioDeviceManager& deviceManager)
     title.setFont (juce::Font (juce::FontOptions (14.0f)));
 
     addAndMakeVisible (openFolderButton);
+    openFolderButton.setTooltip ("Open the Kits folder in Explorer. Drop sounds in there and they show up here.");
     openFolderButton.onClick = [this] { kitsFolder.startAsProcess(); };
 
     addAndMakeVisible (viewBox);
+    viewBox.setTooltip ("Show every sound, or only your favorites");
     viewBox.addItem ("All Sounds", 1);
     viewBox.addItem ("Favorites", 2);
     viewBox.setSelectedId (1, juce::dontSendNotification);

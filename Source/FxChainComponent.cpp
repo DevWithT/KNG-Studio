@@ -69,6 +69,7 @@ FxChainComponent::FxChainComponent (EditSession& sessionToUse, te::PluginList& l
     : session (sessionToUse), list (listToUse), ownerTrack (listToUse.getOwnerTrack())
 {
     addAndMakeVisible (addButton);
+    addButton.setTooltip ("Add an effect to the end of this chain");
     addButton.onClick = [this] { showAddMenu(); };
 
     rebuild();

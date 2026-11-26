@@ -81,6 +81,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `TracksView.cpp/.h`: the Playlist: one row per lane; handles plugin and pattern drops.
 - `TrackHeader.cpp/.h`: a lane's header: colour strip, name, R M S (plus Mon while the lane is armed), meter, input.
 - `TrackLane.cpp/.h`: one lane's clip area.
+- `GroupBadge.h`: header-only. KngGroupBadge::draw puts a small "G" tab on the name band of a grouped clip (TrackLane::drawClips calls it).
 - `TrackLaneMouse.cpp`: TrackLane hit testing and the click, drag, release path.
 - `TrackLaneMouseActions.cpp`: TrackLane scroll wheel, keys, clip menu, audio file drops, double-click.
 - `BlockLayer.cpp/.h`: sits over one lane and draws its pattern blocks.
@@ -330,8 +331,8 @@ Small:
 6. Audio settings extras: buffer size and sample rate are already in Settings > Audio (the JUCE device selector), and the recording latency offset has its own dialog. Still missing: recording bit depth and record folder. The Tracktion docs show no setting for either, so find the real one before building.
 
 Medium:
-7. Info panel: first half built (HintBar in the status bar shows the tooltip of whatever the mouse is over), not yet tested. Still to do: add tooltips to controls that have none, and decide if a floating box is needed.
-8. Group Clips: built and not yet tested (Ctrl+G groups, Ctrl+Shift+G ungroups, both are in the clip right-click menu; grouped clips have no badge on them yet). Make Unique for Playlist clips is still to do (patterns already have makePatternUnique).
+7. Info panel: first half built (HintBar in the status bar shows the tooltip of whatever the mouse is over), not yet tested. Tooltips added to the controls that had none (AutomationHeader, FX chain Add, Sounds panel Open Folder and view box): done, not yet tested. Still to do: decide if a floating box is needed.
+8. Group Clips: built and not yet tested (Ctrl+G groups, Ctrl+Shift+G ungroups, both are in the clip right-click menu; grouped clips show a small "G" badge (GroupBadge.h): done, not yet tested). Make Unique already exists for pattern blocks (block menu). Audio clips need nothing, because Duplicate makes an independent clip and edits never change the source file.
 9. Routing matrix: built (View > Routing Matrix...), not yet tested.
 10. Plugin CPU Monitor: built (View > Plugin CPU Monitor...), not yet tested. If every plugin shows 0% while playing, the engine flag TRACKTION_ENABLE_PLUGIN_CPU_MEASUREMENT may be off and must be set to 1 in target_compile_definitions.
 11. Saved window layouts: built (View > Layouts; three slots; remembers panels, dock height and tab, browser tab), not yet tested. No keyboard shortcuts yet.
