@@ -53,6 +53,8 @@ public:
     void addMidiTrack();
     bool isMidiTrack (int index);
     void deleteTrack (int index);
+    /** Puts a copy of a lane right under it: its audio clips, effects and settings. Pattern blocks are not copied (they would play twice). Returns the new lane's index, or -1. */
+    int duplicateLane (int trackIndex);
     void moveTrack (int index, int direction);
     void setFocusedTrack (int index)            { focusedTrack = index; }
 
@@ -83,6 +85,12 @@ public:
     bool isClipSelected (tracktion::Clip* clip) const;
     std::vector<tracktion::Clip::Ptr> getSelectedClips() const;
     void selectAllClips();
+    /** Edit > Cut Clip: copies the selected clips, then deletes them. */
+    void cutSelectedClip();
+    /** Edit > Invert Selection: selects every clip that is not selected now. */
+    void invertSelection();
+    /** Edit > Swap Clips: with exactly two clips selected, they trade places. Returns false if not exactly two. */
+    bool swapSelectedClips();
 
     // Group Clips: clips that share a "kngGroup" property are picked, moved, copied and deleted together
     void groupSelectedClips();

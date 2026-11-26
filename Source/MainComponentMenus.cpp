@@ -83,6 +83,7 @@ juce::PopupMenu MainComponent::getMenuForIndex (int menuIndex, const juce::Strin
             add (cmdRedo, "Redo", "Ctrl+Y", hasSession);
             add (cmdUndoHistory, "Undo History...", {}, hasSession);
             m.addSeparator();
+            add (9006, "Cut Clip", "Ctrl+X", hasClip);
             add (cmdCopy, "Copy Clip", "Ctrl+C", hasClip);
             add (cmdPaste, "Paste Clip", "Ctrl+V", hasSession);
             add (cmdDuplicate, "Duplicate Clip", "Ctrl+D", hasClip);
@@ -90,6 +91,9 @@ juce::PopupMenu MainComponent::getMenuForIndex (int menuIndex, const juce::Strin
             add (cmdSplit, "Split at Playhead", "S", hasClip);
             add (cmdDelete, "Delete Clip", "Del", hasClip);
             add (cmdSelectAll, "Select All Clips", "Ctrl+A", hasSession);
+            add (9007, "Select None", "Ctrl+Shift+A", hasSession);
+            add (9008, "Invert Selection", "Ctrl+I", hasSession);
+            add (9009, "Swap Clips", {}, hasSession && session->getSelectedClips().size() == 2);
             m.addSeparator();
             add (cmdMidiLearn, "MIDI Learn", "Ctrl+L", hasSession, hasSession && session->isMidiLearn());
             add (cmdMidiMappings, "MIDI Mappings...", {}, hasSession);
@@ -98,6 +102,7 @@ juce::PopupMenu MainComponent::getMenuForIndex (int menuIndex, const juce::Strin
         case 2: // Track
             add (cmdAddAudioTrack, "Add Audio Track", {}, hasSession);
             add (cmdAddMidiTrack, "Add MIDI Track", {}, hasSession);
+            add (9010, "Duplicate Lane", {}, hasSession && session->isLaneTrack (session->getSelectedTrackIndex()));
             break;
 
         case 3: // Transport
@@ -231,6 +236,19 @@ void MainComponent::menuItemSelected (int id, int)
         case cmdSplit:         session->splitSelectedClipAtPlayhead(); break;
         case cmdDelete:        session->deleteSelectedClip(); break;
         case cmdSelectAll:     session->selectAllClips(); break;
+        case 9006:             session->cutSelectedClip(); break;
+        case 9007:             session->clearSelection(); break;
+        case 9008:             session->invertSelection(); break;
+        case 9009:             session->swapSelectedClips(); break;
+        case 9010:
+        {
+            const int n = session->duplicateLane (session->getSelectedTrackIndex());
+
+            if (n >= 0)
+                session->selectTrack (n);
+
+            break;
+        }
         case cmdMidiLearn:     session->setMidiLearn (! session->isMidiLearn()); break;
         case cmdMidiMappings:  showMidiMappings(); break;
 

@@ -56,6 +56,9 @@ void MainComponent::showShortcuts()
         "Ctrl+Z / Ctrl+Y\tUndo / Redo\n"
         "Ctrl+C / Ctrl+V\tCopy / Paste clip\n"
         "Ctrl+D\tDuplicate clip\n"
+        "Ctrl+X\tCut clip\n"
+        "Ctrl+A / Ctrl+Shift+A\tSelect all / select none\n"
+        "Ctrl+I\tInvert selection\n"
         "Ctrl+R\tRe-take (while recording)\n"
         "Ctrl+L\tMIDI Learn on / off\n"
         "Ctrl+K\tComputer keyboard piano on / off\n"
@@ -126,7 +129,18 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
         if (code == 'D' || code == 'd')  { session->duplicateSelectedClip(); return true; }
         if (code == 'C' || code == 'c')  { session->copySelectedClip();      return true; }
         if (code == 'V' || code == 'v')  { session->pasteClip();             return true; }
-        if (code == 'A' || code == 'a')  { session->selectAllClips();        return true; }
+        if (code == 'A' || code == 'a')
+        {
+            if (mods.isShiftDown())
+                session->clearSelection();
+            else
+                session->selectAllClips();
+
+            return true;
+        }
+
+        if (code == 'X' || code == 'x')  { session->cutSelectedClip();       return true; }
+        if (code == 'I' || code == 'i')  { session->invertSelection();       return true; }
         if (code == 'R' || code == 'r')  { session->retake();                return true; }
         if (code == 'L' || code == 'l')  { session->setMidiLearn (! session->isMidiLearn()); return true; }
         if (code == ',')                 { showSettings();                   return true; }

@@ -203,8 +203,10 @@ void TrackLane::showClipMenu (te::Clip* clip)
 
     menu.addSeparator();
     menu.addItem ("Duplicate (Ctrl+D)", [s] { s->duplicateSelectedClip(); });
+    menu.addItem ("Cut (Ctrl+X)",       [s] { s->cutSelectedClip(); });
     menu.addItem ("Copy (Ctrl+C)",      [s] { s->copySelectedClip(); });
     menu.addItem ("Paste (Ctrl+V)",     [s] { s->pasteClip(); });
+    menu.addItem ("Swap Clips", s->getSelectedClips().size() == 2, false, [s] { s->swapSelectedClips(); });
     menu.addSeparator();
     menu.addItem ("Split at Playhead (S)", [s] { s->splitSelectedClipAtPlayhead(); });
     menu.addItem ("Delete (Del)",          [s] { s->deleteSelectedClip(); });

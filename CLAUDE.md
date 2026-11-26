@@ -40,6 +40,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `EditSessionBackup.cpp`: lock file, timed backups and pruning old ones.
 - `EditSessionChannels.cpp`: adds a sample channel to the Rack.
 - `EditSessionClips.cpp`: audio clip tempo-follow, pitch and gain; song markers.
+- `EditSessionClipTools.cpp`: cut clip, invert selection, swap two selected clips, duplicate lane (audio clips and effects; pattern blocks are not copied). Select None is clearSelection.
 - `EditSessionSections.cpp`: Sections (a marker with a length and a kngSection property): addSection, getSectionClips, moveClipsInRange, duplicateSection (shifts everything after the section right by its length, copies the clips, adds a new numbered section).
 - `EditSessionCollect.cpp`: collectAndSave: copies audio clips and Drum Kit pad samples that live outside the project into its Audio folder and points the song at the copies (File > Collect and Save...). It also copies the KNG Sampler's sample (the kngFile property) on any lane.
 - `EditSessionCrossfade.cpp`: crossfades overlapping audio clips on a lane.
@@ -233,6 +234,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `EditSessionBackup.cpp`: getLockFile, getBackupsFolder, timerCallback, makeBackup, pruneBackups
 - `EditSessionChannels.cpp`: addSampleChannel
 - `EditSessionClips.cpp`: getClipSourceBpm, setClipFollowTempo, setClipPitch, setClipGain, getMarkers, addMarkerAt, jumpToMarker
+- `EditSessionClipTools.cpp`: cutSelectedClip, invertSelection, swapSelectedClips, duplicateLane
 - `EditSessionCollect.cpp`: collectAndSave
 - `EditSessionCrossfade.cpp`: crossfadeOverlaps
 - `EditSessionDrums.cpp`: getKitsFolder, isDrumTrack, getDrumSampler, getPadName, setPadName, setPadSample, clearPad, getPadGain, getPadPan, setPadGainAndPan, getPadPitch, setPadPitch, playPad, loadKitFolder, createPatternClip
