@@ -1,4 +1,5 @@
 #include "EditSession.h"
+#include "SlicePitchShift.h"
 
 #include <algorithm>
 #include <cmath>
@@ -58,7 +59,9 @@ juce::File EditSession::writeSliceFile (te::AudioClipBase& clip, double fromTime
     const int fxIndex = number - 1;
 
     if (fxIndex >= 0 && fxIndex < (int) sliceFxForNextWrite.size() && ! sliceFxForNextWrite[(size_t) fxIndex].isDefault())
-        buffer = applySliceFx (buffer, sliceFxForNextWrite[(size_t) fxIndex]);
+        buffer = KngSlicePitchShift::applyFx (buffer, reader->sampleRate,
+                                              sliceFxForNextWrite[(size_t) fxIndex],
+                                              sliceKeepLengthForNextWrite);
 
     writer->writeFromAudioSampleBuffer (buffer, 0, buffer.getNumSamples());
     writer.reset();

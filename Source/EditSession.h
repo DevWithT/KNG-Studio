@@ -516,6 +516,7 @@ private:
     bool snapEnabled = true;
     double playlistEndCache = 0.0;
     std::vector<SliceFx> sliceFxForNextWrite;
+    bool sliceKeepLengthForNextWrite = true;   // false = record-style pitch (speed changes too)
     double sliceSourceBpmForNextChop = 0.0;
     juce::uint32 playlistEndStamp = 0;
     bool recoveredFromCrash = false;
