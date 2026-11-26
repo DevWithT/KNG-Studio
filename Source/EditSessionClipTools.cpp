@@ -112,11 +112,6 @@ int EditSession::duplicateLane (int trackIndex)
     // Keep the per-lane input and arm lists lined up with the new lane
     syncTrackState();
 
-    if (newIndex < (int) trackInputs.size() && (int) trackInputs.size() > getNumTracks() - 1)
-    {
-        // already the right length: nothing to insert
-    }
-
     trackInputs.insert (trackInputs.begin() + juce::jmin (newIndex, (int) trackInputs.size()), inputChoice);
     trackArmed.insert (trackArmed.begin() + juce::jmin (newIndex, (int) trackArmed.size()), false);
     trackInputs.resize ((size_t) getNumTracks(), 0);

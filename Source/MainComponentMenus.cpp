@@ -27,6 +27,7 @@
 #include "RecentProjects.h"
 #include "ProjectSettings.h"
 #include "ScratchPads.h"
+#include "CleanTakes.h"
 
 // Command id for Undo History. It sits outside the MainComponent command list on purpose.
 static constexpr int cmdUndoHistory = 9001;
@@ -108,6 +109,7 @@ juce::PopupMenu MainComponent::getMenuForIndex (int menuIndex, const juce::Strin
             add (9007, "Select None", "Ctrl+Shift+A", hasSession);
             add (9008, "Invert Selection", "Ctrl+I", hasSession);
             add (9009, "Swap Clips", {}, hasSession && session->getSelectedClips().size() == 2);
+            add (9013, "Clean Takes...", {}, hasSession && KngCleanTakes::selectedTakeClip (*session) != nullptr);
             m.addSeparator();
             add (cmdMidiLearn, "MIDI Learn", "Ctrl+L", hasSession, hasSession && session->isMidiLearn());
             add (cmdMidiMappings, "MIDI Mappings...", {}, hasSession);
@@ -266,6 +268,11 @@ void MainComponent::menuItemSelected (int id, int)
         case 9007:             session->clearSelection(); break;
         case 9008:             session->invertSelection(); break;
         case 9009:             session->swapSelectedClips(); break;
+        case 9013:
+            if (auto* takeClip = KngCleanTakes::selectedTakeClip (*session))
+                KngCleanTakes::run (*session, *takeClip);
+
+            break;
         case 9010:
         {
             const int n = session->duplicateLane (session->getSelectedTrackIndex());
