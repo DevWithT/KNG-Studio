@@ -125,8 +125,9 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `MixerViewInserts.cpp`: MixerStrip insert slots, opening plugins, add-effect menu.
 - `MasterStrip.cpp/.h`: the master channel strip.
 - `LevelMeter.cpp/.h`: level meter component.
+- `MasterScope.h`: header-only. The master output drawn live: waveform (triggered on an upward zero crossing, left and right in two colours), a 40-band spectrum (4096-point FFT, tilted 3 dB per octave) and a left/right match figure in the big version. Small copy in MasterStrip (right of the meter). MasterScope::open (session) opens View > Master Output... and returns the new window (the caller keeps it in songWindows) or nullptr if one is already open. Reads samples with KngLoudnessPlugin::copyRecent.
 - `LoudnessDisplay.cpp/.h`: master loudness readout: momentary, short-term, integrated LUFS, peak.
-- `KngLoudnessPlugin.cpp/.h`: invisible BS.1770 loudness meter at the end of the master chain.
+- `KngLoudnessPlugin.cpp/.h`: invisible BS.1770 loudness meter at the end of the master chain. It also keeps the newest 8192 samples of left and right in a lock-free ring (copyRecent, getScopeSampleRate) for MasterScope.
 - `PluginCpuMonitor.h`: header-only. View > Plugin CPU Monitor... opens a window listing every plugin on every lane and on the master, busiest first, with a bar and a percent of the audio buffer (Plugin::getCpuUsage, smoothed). PluginCpuMonitor::open (session) returns the new window (the caller keeps it in songWindows) or nullptr if one is already open.
 - `RoutingMatrix.h`: header-only. View > Routing Matrix... opens a window with one row per lane: an Output button (same menu as the Routing pop-up) and a send level cell for every bus. Greyed cells would make a loop. RoutingMatrix::open (session) returns the new window (the caller keeps it in songWindows) or nullptr if one is already open.
 - `RoutePopup.h`: Routing pop-up for a lane: Output (Master or a bus), and its sends with level, Pre/Post fader, mute, remove.
@@ -336,7 +337,7 @@ Medium:
 13. Slice Editor, first part: Grid cut and Split into N are built (SliceCuts.h), and so are tap-in cuts during playback and per-slice reverse, pitch and volume (SliceEditorTap.cpp, SliceEditorFx.cpp). None of it is tested yet.
 
 Large:
-14. Master output panel: LoudnessDisplay already shows LUFS and peak. Add a scope and a spectrum.
+14. Master output panel: built (small scope and spectrum in the master strip, big window under View > Master Output...), not yet tested.
 15. Sections: built and not yet tested (add, move with clips, resize, duplicate with room, select clips, delete).
 16. Collect and Save: importAudioFile and copyIntoProject already copy imports into the project. Extend it to Sounds browser files, KNG Sampler files and Kit samples, with a File menu item.
 17. Slice Editor, second part: tempo match is built (SliceEditorTempo.cpp), not yet tested. Chop to Lane is built (each slice becomes its own clip on a new lane), not yet tested. Opening the editor from a lane is built (lane header right-click, Slice Editor submenu), not yet tested. Still to do: Snap to key (KngTune and the theory settings).

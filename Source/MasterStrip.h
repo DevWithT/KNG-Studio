@@ -4,6 +4,7 @@
 #include "EditSession.h"
 #include "LevelMeter.h"
 #include "LoudnessDisplay.h"
+#include "MasterScope.h"
 
 class MasterStrip : public juce::Component
 {
@@ -22,6 +23,7 @@ private:
     juce::TextButton chainButton { "Master Chain" };
     LevelMeter meter;
     LoudnessDisplay loudness { session };
+    MasterScope scope { session };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MasterStrip)
 };

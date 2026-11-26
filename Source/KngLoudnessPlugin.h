@@ -35,6 +35,25 @@ public:
     /** Message thread: the highest sample peak since the last call. */
     float takePeak()   { return peak.exchange (0.0f); }
 
+    /** Message thread: copies the newest `num` samples (up to scopeSize) of the left and right master signal, oldest first.
+        Returns a counter that goes up as audio arrives, so the caller can tell whether anything is new. */
+    juce::uint32 copyRecent (float* left, float* right, int num) const
+    {
+        num = juce::jlimit (1, scopeSize, num);
+        const auto end = scopeWrite.load (std::memory_order_acquire);
+
+        for (int i = 0; i < num; ++i)
+        {
+            const auto idx = (size_t) ((end - (juce::uint32) num + (juce::uint32) i) & (juce::uint32) (scopeSize - 1));
+            left[i] = scopeL[idx];
+            right[i] = scopeR[idx];
+        }
+
+        return end;
+    }
+
+    double getScopeSampleRate() const   { return sampleRate; }
+
 private:
     KngEq::Coefs shelfCoefs, highPassCoefs;
     std::array<std::array<KngEq::State, 2>, 2> states {};
@@ -44,4 +63,8 @@ private:
     juce::AbstractFifo fifo { 2048 };
     std::vector<float> fifoData = std::vector<float> (2048, 0.0f);
     std::atomic<float> peak { 0.0f };
+
+    static constexpr int scopeSize = 8192;   // a power of two
+    std::array<float, (size_t) scopeSize> scopeL {}, scopeR {};
+    std::atomic<juce::uint32> scopeWrite { 0 };
 };

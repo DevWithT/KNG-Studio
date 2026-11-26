@@ -45,6 +45,7 @@ MasterStrip::MasterStrip (EditSession& sessionToUse)
     addAndMakeVisible (meter);
     meter.attachTo (session.getMasterMeterPlugin());
     addAndMakeVisible (loudness);
+    addAndMakeVisible (scope);
 }
 
 void MasterStrip::paint (juce::Graphics& g)
@@ -64,6 +65,8 @@ void MasterStrip::resized()
     chainButton.setBounds (r.removeFromLeft (110));
     r.removeFromLeft (10);
     meter.setBounds (r.removeFromRight (200).reduced (0, 4));
+    r.removeFromRight (8);
+    scope.setBounds (r.getWidth() > 600 ? r.removeFromRight (150).reduced (0, 4) : juce::Rectangle<int>());
     r.removeFromRight (10);
     loudness.setBounds (r.removeFromRight (270));
     r.removeFromRight (10);

@@ -35,6 +35,23 @@ void KngLoudnessPlugin::applyToBuffer (const te::PluginRenderContext& fc)
     const int chans = juce::jmin (2, buffer.getNumChannels());
     float blockPeak = 0.0f;
 
+    // Keep the newest samples for the scope and spectrum
+    if (buffer.getNumChannels() > 0)
+    {
+        auto w = scopeWrite.load (std::memory_order_relaxed);
+        const float* l = buffer.getReadPointer (0, fc.bufferStartSample);
+        const float* r = buffer.getNumChannels() > 1 ? buffer.getReadPointer (1, fc.bufferStartSample) : l;
+
+        for (int i = 0; i < fc.bufferNumSamples; ++i, ++w)
+        {
+            const auto idx = (size_t) (w & (juce::uint32) (scopeSize - 1));
+            scopeL[idx] = l[i];
+            scopeR[idx] = r[i];
+        }
+
+        scopeWrite.store (w, std::memory_order_release);
+    }
+
     for (int i = 0; i < fc.bufferNumSamples; ++i)
     {
         for (int ch = 0; ch < chans; ++ch)
