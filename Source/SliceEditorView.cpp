@@ -81,7 +81,8 @@ SliceEditorView::SliceEditorView (EditSession& sessionToUse, te::AudioClipBase& 
     setupFx();
     setupTempo();
     setupLane();
-    setSize (900, 460);
+    setupKey();
+    setSize (900, 492);
 }
 
 //==============================================================================
@@ -387,6 +388,8 @@ void SliceEditorView::resized()
 
     auto bottom = getLocalBounds().removeFromBottom (bottomHeight).reduced (8, 8);
     layoutFxRow (bottom.removeFromTop (28));
+    bottom.removeFromTop (8);
+    layoutKeyRow (bottom.removeFromTop (28));
     bottom.removeFromTop (8);
     doneButton.setBounds (bottom.removeFromRight (80));
     bottom.removeFromRight (6);

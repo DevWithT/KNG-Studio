@@ -37,6 +37,9 @@ private:
     void setupFx();
     void setupTempo();
     void setupLane();
+    void setupKey();
+    void layoutKeyRow (juce::Rectangle<int> row);
+    void snapToKey();
     void chopToLane();
     double guessSourceBpm() const;
     void layoutFxRow (juce::Rectangle<int> row);
@@ -77,6 +80,9 @@ private:
     juce::Slider sourceBpm;
     juce::TextButton detectBpmButton { "Detect" };
     juce::TextButton laneButton { "Chop to Lane" };
+    juce::Label keyLabel { {}, "Key" };
+    juce::ComboBox keyBox, scaleBox;
+    juce::TextButton snapKeyButton { "Snap to Key" };
 
     static constexpr int numPeaks = 2048;
     std::vector<float> peaksLo, peaksHi;
@@ -89,7 +95,7 @@ private:
                      rackButton { "Chop to Rack" }, padsButton { "Send to Pads..." }, doneButton { "Done" };
 
     static constexpr int toolbarHeight = 80;
-    static constexpr int bottomHeight  = 84;
+    static constexpr int bottomHeight  = 116;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SliceEditorView)
 };

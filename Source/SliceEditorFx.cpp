@@ -19,7 +19,8 @@ void SliceEditorView::setupFx()
 
     pitchSlider.setSliderStyle (juce::Slider::LinearHorizontal);
     pitchSlider.setTextBoxStyle (juce::Slider::TextBoxRight, false, 64, 22);
-    pitchSlider.setRange (-12.0, 12.0, 1.0);
+    pitchSlider.setRange (-12.0, 12.0, 0.1);
+    pitchSlider.setNumDecimalPlacesToDisplay (1);
     pitchSlider.setTextValueSuffix (" st");
     pitchSlider.setDoubleClickReturnValue (true, 0.0);
 
@@ -195,7 +196,7 @@ void SliceEditorView::drawSliceExtras (juce::Graphics& g, juce::Rectangle<int> w
             tags.add ("Rev");
 
         if (fx.semitones != 0.0f)
-            tags.add ((fx.semitones > 0.0f ? "+" : "") + juce::String ((int) fx.semitones) + " st");
+            tags.add ((fx.semitones > 0.0f ? "+" : "") + juce::String (fx.semitones, 1) + " st");
 
         if (fx.gainDb != 0.0f)
             tags.add ((fx.gainDb > 0.0f ? "+" : "") + juce::String (fx.gainDb, 1) + " dB");
