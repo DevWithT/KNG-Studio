@@ -173,7 +173,7 @@ void TrackLane::showClipMenu (te::Clip* clip)
         {
             if (! s->addKngTune (idx))
                 juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::WarningIcon, "KngTune not found",
-                                                        "Put KngTune in your VST3 folder, then use File > Scan Plugins.");
+                                                        "Put KngTune in your VST3 folder, then use File > Settings > Plugins.");
         });
 
         menu.addSeparator();

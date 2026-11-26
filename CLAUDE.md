@@ -22,8 +22,9 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `MainComponentKeys.cpp`: keyboard shortcuts, shortcuts help, play/stop, zoom to fit and the computer keyboard piano (Ctrl+K, letter keys play the selected instrument, Up/Down change octave). Ctrl+1/2/3 load window layout 1 to 3, Ctrl+Shift+1/2/3 save the current layout into that slot.
 - `MainComponentWindows.cpp`: dock panel openers, dialog windows and saved window layouts (saveLayout, loadLayout: three slots in Documents\KNG Studio\layouts.xml, menu ids 9101 to 9103 and 9201 to 9203 live in MainComponentMenus.cpp).
 - `StartScreen.cpp/.h`: opening screen: start something new, start from a template, or reopen a song.
+- `RecentProjects.h`: header-only: KngRecent::list gives the newest songs in Documents\KNG Studio for File > Recent Projects.
 - `HintBar.h` (header only): the hint text in the middle of the status bar. It shows the tooltip of whatever the mouse is over, 10 times a second.
-- `SettingsComponent.cpp/.h`: settings for audio, plugins, recording, folders and about.
+- `SettingsComponent.cpp/.h`: settings for audio, plugins, recording (including the latency check), folders and about. It is the one door: the separate Audio Settings, Scan Plugins and Latency Check menu items are gone.
 - `TransportBar.cpp/.h`: top bar with transport, tempo and song controls.
 - `ExportDialog.cpp/.h`: export dialog for the mix and stems.
 - `LatencyDialog.cpp/.h`: dialog for measuring and setting recording latency.

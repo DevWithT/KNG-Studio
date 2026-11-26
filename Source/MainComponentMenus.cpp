@@ -24,6 +24,7 @@
 #include "RoutingMatrix.h"
 #include "PluginCpuMonitor.h"
 #include "MasterScope.h"
+#include "RecentProjects.h"
 
 // Command id for Undo History. It sits outside the MainComponent command list on purpose.
 static constexpr int cmdUndoHistory = 9001;
@@ -31,6 +32,8 @@ static constexpr int cmdLayoutLoad = 9100;   // 9101 to 9103
 static constexpr int cmdLayoutSave = 9200;   // 9201 to 9203
 
 //==============================================================================
+static juce::Array<juce::File> recentMenuFiles;
+
 juce::StringArray MainComponent::getMenuBarNames()
 {
     return { "File", "Edit", "Track", "Transport", "View", "Help" };
@@ -61,6 +64,17 @@ juce::PopupMenu MainComponent::getMenuForIndex (int menuIndex, const juce::Strin
             m.addSeparator();
             add (cmdNew, "New Project...", "Ctrl+N");
             add (cmdOpen, "Open Project...", "Ctrl+O");
+
+            {
+                recentMenuFiles = KngRecent::list (8);
+                juce::PopupMenu recent;
+
+                for (int i = 0; i < recentMenuFiles.size(); ++i)
+                    recent.addItem (9300 + i, recentMenuFiles[i].getFileNameWithoutExtension());
+
+                m.addSubMenu ("Recent Projects", recent, recent.getNumItems() > 0);
+            }
+
             add (cmdSave, "Save", "Ctrl+S", hasSession);
             add (cmdBackupNow, "Save Backup Now", {}, hasSession);
             add (cmdRestoreBackup, "Restore Backup...", {}, hasSession);
@@ -71,9 +85,6 @@ juce::PopupMenu MainComponent::getMenuForIndex (int menuIndex, const juce::Strin
             add (cmdExport, "Export...", {}, hasSession);
             m.addSeparator();
             add (cmdSettings, "Settings...", "Ctrl+,");
-            add (cmdAudioSettings, "Audio Settings...");
-            add (cmdScanPlugins, "Scan Plugins...");
-            add (cmdLatency, "Latency Check...", {}, hasSession);
             m.addSeparator();
             add (cmdExit, "Exit");
             break;
@@ -172,6 +183,15 @@ void MainComponent::menuItemSelected (int id, int)
     if (id > cmdLayoutSave && id <= cmdLayoutSave + 3)
     {
         saveLayout (id - cmdLayoutSave);
+        return;
+    }
+
+    // File > Recent Projects
+    if (id >= 9300 && id < 9300 + recentMenuFiles.size())
+    {
+        if (! isBusyRecording())
+            loadProject (recentMenuFiles[id - 9300]);
+
         return;
     }
 

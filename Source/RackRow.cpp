@@ -309,7 +309,7 @@ void RackRow::showInstrumentMenu()
     }
 
     if (byMaker.empty())
-        menu.addItem ("No VST instruments yet. Use File > Scan Plugins.", false, false, nullptr);
+        menu.addItem ("No VST instruments yet. Use File > Settings > Plugins.", false, false, nullptr);
 
     for (auto& [maker, sub] : byMaker)
         menu.addSubMenu (maker, sub);
