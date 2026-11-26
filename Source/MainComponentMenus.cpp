@@ -25,6 +25,8 @@
 #include "PluginCpuMonitor.h"
 #include "MasterScope.h"
 #include "RecentProjects.h"
+#include "ProjectSettings.h"
+#include "ScratchPads.h"
 
 // Command id for Undo History. It sits outside the MainComponent command list on purpose.
 static constexpr int cmdUndoHistory = 9001;
@@ -79,6 +81,7 @@ juce::PopupMenu MainComponent::getMenuForIndex (int menuIndex, const juce::Strin
             add (cmdBackupNow, "Save Backup Now", {}, hasSession);
             add (cmdRestoreBackup, "Restore Backup...", {}, hasSession);
             add (cmdSaveTemplate, "Save as Template...", {}, hasSession);
+            add (9011, "Project Settings...", {}, hasSession);
             m.addSeparator();
             add (cmdImport, "Import Audio...", {}, hasSession);
             add (9005, "Collect and Save...", {}, hasSession);
@@ -137,6 +140,7 @@ juce::PopupMenu MainComponent::getMenuForIndex (int menuIndex, const juce::Strin
             add (cmdDock, "Dock", "D", true, dockVisible);
             add (cmdBrowser, "Browser", "B", true, browserVisible);
             add (cmdPianoKeys, "Computer Keyboard Piano", "Ctrl+K", hasSession, pianoKeysOn);
+            add (9012, "Scratch Pads...", {}, hasSession);
             add (9002, "Routing Matrix...", {}, hasSession);
             add (9003, "Plugin CPU Monitor...", {}, hasSession);
             add (9004, "Master Output...", {}, hasSession);
@@ -220,6 +224,8 @@ void MainComponent::menuItemSelected (int id, int)
         case cmdBackupNow:     session->makeBackup(); break;
         case cmdRestoreBackup: restoreBackup(); break;
         case cmdSaveTemplate:  saveAsTemplate(); break;
+        case 9011:             if (auto* w = ProjectSettings::open (*session)) songWindows.add (w); break;
+        case 9012:             if (auto* w = ScratchPads::open (*session)) songWindows.add (w); break;
         case cmdImport:        if (transportBar != nullptr) transportBar->importBeat(); break;
         case cmdExport:        if (transportBar != nullptr) transportBar->showExportDialog(); break;
         case cmdLatency:       showLatencyDialog(); break;
