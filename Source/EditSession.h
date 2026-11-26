@@ -226,6 +226,7 @@ public:
     void setSliceSourceBpm (double bpm)         { sliceSourceBpmForNextChop = bpm; }
     /** Reverse, pitch and volume per slice (index 0 is slice 1) for the next chopClipAtCuts or slicesToPads. The Slice Editor sets it before the call and clears it after. */
     void setSliceFx (std::vector<SliceFx> fx)   { sliceFxForNextWrite = std::move (fx); }
+    bool sliceKeepLengthForNextWrite = true;   // false = record-style pitch (speed changes too)
 
     /** Writes one slice of a clip to its own 24 bit wav in the project Audio folder. Empty File on failure. */
     juce::File writeSliceFile (tracktion::AudioClipBase& clip, double fromTime, double toTime, int number);
@@ -515,9 +516,7 @@ private:
     double viewLength = 60.0;
     bool snapEnabled = true;
     double playlistEndCache = 0.0;
-    std::vector<SliceFx> sliceFxForNextWrite;
-    bool sliceKeepLengthForNextWrite = true;   // false = record-style pitch (speed changes too)
-    double sliceSourceBpmForNextChop = 0.0;
+    std::vector<SliceFx> sliceFxForNextWrite;    double sliceSourceBpmForNextChop = 0.0;
     juce::uint32 playlistEndStamp = 0;
     bool recoveredFromCrash = false;
     juce::Time lastBackupTime;
