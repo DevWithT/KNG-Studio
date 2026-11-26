@@ -19,7 +19,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `MainComponent.cpp/.h`: main window layout; registers the built-in plugin types with the engine.
 - `MainComponentProject.cpp`: project folders; open, close, new, save, restore backup, new-song setup, save as template, new song from template.
 - `MainComponentMenus.cpp`: menu bar names, contents and command handling.
-- `MainComponentKeys.cpp`: keyboard shortcuts, shortcuts help, play/stop, zoom to fit and the computer keyboard piano (Ctrl+K, letter keys play the selected instrument, Up/Down change octave).
+- `MainComponentKeys.cpp`: keyboard shortcuts, shortcuts help, play/stop, zoom to fit and the computer keyboard piano (Ctrl+K, letter keys play the selected instrument, Up/Down change octave). Ctrl+1/2/3 load window layout 1 to 3, Ctrl+Shift+1/2/3 save the current layout into that slot.
 - `MainComponentWindows.cpp`: dock panel openers, dialog windows and saved window layouts (saveLayout, loadLayout: three slots in Documents\KNG Studio\layouts.xml, menu ids 9101 to 9103 and 9201 to 9203 live in MainComponentMenus.cpp).
 - `StartScreen.cpp/.h`: opening screen: start something new, start from a template, or reopen a song.
 - `HintBar.h` (header only): the hint text in the middle of the status bar. It shows the tooltip of whatever the mouse is over, 10 times a second.
@@ -41,7 +41,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `EditSessionChannels.cpp`: adds a sample channel to the Rack.
 - `EditSessionClips.cpp`: audio clip tempo-follow, pitch and gain; song markers.
 - `EditSessionSections.cpp`: Sections (a marker with a length and a kngSection property): addSection, getSectionClips, moveClipsInRange, duplicateSection (shifts everything after the section right by its length, copies the clips, adds a new numbered section).
-- `EditSessionCollect.cpp`: collectAndSave: copies audio clips and Drum Kit pad samples that live outside the project into its Audio folder and points the song at the copies (File > Collect and Save...). KNG Sampler files are not covered yet.
+- `EditSessionCollect.cpp`: collectAndSave: copies audio clips and Drum Kit pad samples that live outside the project into its Audio folder and points the song at the copies (File > Collect and Save...). It also copies the KNG Sampler's sample (the kngFile property) on any lane.
 - `EditSessionCrossfade.cpp`: crossfades overlapping audio clips on a lane.
 - `EditSessionDrums.cpp`: drum tracks, pads, kit folders, creating pattern clips.
 - `EditSessionExport.cpp`: mix, stem and multi-track export; render settings.
@@ -335,14 +335,14 @@ Medium:
 8. Group Clips: built and not yet tested (Ctrl+G groups, Ctrl+Shift+G ungroups, both are in the clip right-click menu; grouped clips show a small "G" badge (GroupBadge.h): done, not yet tested). Make Unique already exists for pattern blocks (block menu). Audio clips need nothing, because Duplicate makes an independent clip and edits never change the source file.
 9. Routing matrix: built (View > Routing Matrix...), not yet tested.
 10. Plugin CPU Monitor: built (View > Plugin CPU Monitor...), not yet tested. If every plugin shows 0% while playing, the engine flag TRACKTION_ENABLE_PLUGIN_CPU_MEASUREMENT may be off and must be set to 1 in target_compile_definitions.
-11. Saved window layouts: built (View > Layouts; three slots; remembers panels, dock height and tab, browser tab), not yet tested. No keyboard shortcuts yet.
+11. Saved window layouts: built (View > Layouts; three slots; remembers panels, dock height and tab, browser tab), not yet tested. Ctrl+1/2/3 load, Ctrl+Shift+1/2/3 save (not tested).
 12. Stem export: built (Export dialog: "Stems: one per track" with an All/None checklist, and "Stems: one per folder"), not yet tested.
 13. Slice Editor, first part: Grid cut and Split into N are built (SliceCuts.h), and so are tap-in cuts during playback and per-slice reverse, pitch and volume (SliceEditorTap.cpp, SliceEditorFx.cpp). None of it is tested yet.
 
 Large:
 14. Master output panel: built (small scope and spectrum in the master strip, big window under View > Master Output...), not yet tested.
 15. Sections: built and not yet tested (add, move with clips, resize, duplicate with room, select clips, delete).
-16. Collect and Save: built for audio clips and Drum Kit pads (File > Collect and Save...), not yet tested. KNG Sampler files still need adding.
+16. Collect and Save: built for audio clips, Drum Kit pads and the KNG Sampler (File > Collect and Save...), not yet tested.
 17. Slice Editor, second part: tempo match is built (SliceEditorTempo.cpp), not yet tested. Chop to Lane is built (each slice becomes its own clip on a new lane), not yet tested. Opening the editor from a lane is built (lane header right-click, Slice Editor submenu), not yet tested. Still to do: Snap to key (KngTune and the theory settings).
 
 ### Waiting on a decision

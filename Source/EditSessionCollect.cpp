@@ -1,6 +1,7 @@
 #include "EditSession.h"
 
 #include <map>
+#include "KngSamplerPlugin.h"
 
 namespace te = tracktion;
 
@@ -69,6 +70,18 @@ int EditSession::collectAndSave (int* numMissing)
 
                 if (dest != juce::File())
                     wac->getSourceFileReference().setToDirectFileReference (dest, true);
+            }
+        }
+
+        // KNG Sampler (Rack sound channels and sampler lanes)
+        if (auto* sampler = getKngSampler (i))
+        {
+            const auto dest = collect (sampler->getSampleFile());
+
+            if (dest != juce::File())
+            {
+                sampler->state.setProperty (KngSamplerPlugin::fileProp, dest.getFullPathName(), &edit->getUndoManager());
+                sampler->syncFromState();
             }
         }
 

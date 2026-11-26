@@ -59,6 +59,8 @@ void MainComponent::showShortcuts()
         "Ctrl+R\tRe-take (while recording)\n"
         "Ctrl+L\tMIDI Learn on / off\n"
         "Ctrl+K\tComputer keyboard piano on / off\n"
+        "Ctrl+1 / 2 / 3\tLoad window layout 1 / 2 / 3\n"
+        "Ctrl+Shift+1 / 2 / 3\tSave the window layout\n"
         "Up / Down\tOctave (while the piano is on)\n"
         "Ctrl+N / O / S\tNew / Open / Save\n"
         "Scroll\tZoom in / out\n"
@@ -129,6 +131,25 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
         if (code == 'L' || code == 'l')  { session->setMidiLearn (! session->isMidiLearn()); return true; }
         if (code == ',')                 { showSettings();                   return true; }
         if (code == 'K' || code == 'k')  { setPianoKeys (! pianoKeysOn);     return true; }
+
+        // Ctrl+1, 2, 3 load window layout 1, 2, 3. Ctrl+Shift+1, 2, 3 save the current layout there.
+        {
+            int slot = 0;
+
+            if (code == '1' || code == '!')      slot = 1;
+            else if (code == '2' || code == '@') slot = 2;
+            else if (code == '3' || code == '#') slot = 3;
+
+            if (slot > 0)
+            {
+                if (mods.isShiftDown())
+                    saveLayout (slot);
+                else
+                    loadLayout (slot);
+
+                return true;
+            }
+        }
 
         if (code == '=' || code == '+')
         {
