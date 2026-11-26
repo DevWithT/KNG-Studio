@@ -83,6 +83,7 @@ private:
     juce::Label keyLabel { {}, "Key" };
     juce::ComboBox keyBox, scaleBox;
     juce::TextButton snapKeyButton { "Snap to Key" };
+    juce::ToggleButton recordPitchToggle;
 
     static constexpr int numPeaks = 2048;
     std::vector<float> peaksLo, peaksHi;

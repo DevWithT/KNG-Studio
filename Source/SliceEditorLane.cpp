@@ -14,11 +14,13 @@ void SliceEditorView::setupLane()
 void SliceEditorView::chopToLane()
 {
     session.setSliceFx (sliceFx);
+    session.sliceKeepLengthForNextWrite = ! recordPitchToggle.getToggleState();
     session.setSliceSourceBpm (matchToggle.getToggleState() ? sourceBpm.getValue() : 0.0);
 
     const int lane = session.chopClipToLane (*clip, getFullCuts());
 
     session.setSliceFx ({});
+    session.sliceKeepLengthForNextWrite = true;
     session.setSliceSourceBpm (0.0);
 
     if (lane >= 0)

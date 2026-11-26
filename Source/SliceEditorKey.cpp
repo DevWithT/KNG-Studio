@@ -35,6 +35,11 @@ void SliceEditorView::setupKey()
     snapKeyButton.setTooltip ("Listen to each slice, find its note, and set its Pitch so it lands on the nearest note of this key and scale. Slices with no clear note (drums, noise) are left alone.");
 
     snapKeyButton.onClick = [this] { snapToKey(); };
+
+    addAndMakeVisible (recordPitchToggle);
+    recordPitchToggle.setButtonText ("Record-style pitch");
+    recordPitchToggle.setTooltip ("Off: pitch keeps each slice the same length (a real pitch shift). "
+                                  "On: pitch also changes the speed, like a sped-up or slowed-down record.");
 }
 
 void SliceEditorView::layoutKeyRow (juce::Rectangle<int> row)
@@ -45,6 +50,8 @@ void SliceEditorView::layoutKeyRow (juce::Rectangle<int> row)
     scaleBox.setBounds (row.removeFromLeft (150));
     row.removeFromLeft (10);
     snapKeyButton.setBounds (row.removeFromLeft (130));
+    row.removeFromLeft (14);
+    recordPitchToggle.setBounds (row.removeFromLeft (170));
 }
 
 void SliceEditorView::snapToKey()

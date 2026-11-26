@@ -412,11 +412,13 @@ void SliceEditorView::close()
 void SliceEditorView::chopToRack()
 {
     session.setSliceFx (sliceFx);
+    session.sliceKeepLengthForNextWrite = ! recordPitchToggle.getToggleState();
     session.setSliceSourceBpm (matchToggle.getToggleState() ? sourceBpm.getValue() : 0.0);
 
     const int chopped = session.chopClipAtCuts (*clip, getFullCuts());
     session.setSliceSourceBpm (0.0);
     session.setSliceFx ({});
+    session.sliceKeepLengthForNextWrite = true;
 
     if (chopped >= 0)
         close();
@@ -451,8 +453,10 @@ void SliceEditorView::sendToPads()
 
                             const int trackIndex = result - 1;
                             safe->session.setSliceFx (safe->sliceFx);
+                            safe->session.sliceKeepLengthForNextWrite = ! safe->recordPitchToggle.getToggleState();
                             const int loaded = safe->session.slicesToPads (*safe->clip, safe->getFullCuts(), trackIndex);
                             safe->session.setSliceFx ({});
+                            safe->session.sliceKeepLengthForNextWrite = true;
 
                             if (loaded < 0)
                             {
