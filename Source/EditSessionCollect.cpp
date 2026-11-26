@@ -69,7 +69,7 @@ int EditSession::collectAndSave (int* numMissing)
                 const auto dest = collect (wac->getOriginalFile());
 
                 if (dest != juce::File())
-                    wac->getSourceFileReference().setToDirectFileReference (dest, true);
+                    wac->getSourceFileReference().setToFile (dest, te::SourceFileReference::PathStyle::alwaysRelative, false);
             }
         }
 
