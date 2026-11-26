@@ -109,7 +109,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - Source/SlicePitchShift.h: offline pitch shift that keeps length (engine TimeStretcher, SoundTouch). applyFx() is the one place slice effects run. EditSession::sliceKeepLengthForNextWrite (default true) comes from the Slice Editor "Record-style pitch" checkbox (off = real pitch shift, on = old varispeed).
 - `SliceEditorView.cpp/.h`: Slice Editor window: waveform with draggable slice markers, Detect Hits, Grid cut (1/4 to 1/32, with triplets), Split into N parts, Chop to Rack, Send to Pads. showSliceEditor (session, clip) opens it. Opened from the audio clip right-click menu, and from a lane header's right-click menu (a Slice Editor submenu that lists the lane's audio clips).
 - `SliceCuts.h` (header only): cut lists for the Slice Editor: grid cuts on the tempo map (KngSliceCuts::grid) and equal parts (KngSliceCuts::equalParts).
-- `CompView.cpp/.h`: take comping for an audio clip, and its window.
+- `CompView.cpp/.h`: take comping for an audio clip, and its window. The triangle at the end of each row's label listens (row 0 plays the comp, a take row plays that take on its own and switches back to the comp when playback ends). A Clean Takes button deletes unused takes.
 
 ### Rack and patterns
 - `RackView.cpp/.h`: every sound and instrument in one place, editing the current pattern. Steps keep a minimum width of 20 px and long patterns scroll sideways. The Bars dropdown is gone: the pattern grows when a step is placed in a locked bar, and the Trim button shortens it.

@@ -31,6 +31,10 @@ private:
     void useTakeForRange (int takeIndex, double t1, double t2);
     void useTakeAt (int takeIndex, double t);
     void flatten();
+    void cleanTakes();
+    void startAudition (int row);       // row 0 = the comp as it is, 1+ = one take on its own
+    void stopAudition();
+    void drawPlayButton (juce::Graphics&, juce::Rectangle<int> labelArea, bool on) const;
 
     juce::Rectangle<int> getRowArea (int row) const;   // row 0 is the comp, 1+ are takes
     int rowAt (int y) const;
@@ -50,8 +54,14 @@ private:
     int dragTake = -1;
     double dragStart = 0.0, dragEnd = 0.0;
 
+    int auditioning = -1;               // -1 none, 0 the comp, 1+ a take row
+    int auditionRestoreTake = -1;       // the take to switch back to when a take audition ends
+    std::vector<Section> sectionCache;  // what the comp row shows while a take is being auditioned
+    juce::TextButton cleanButton { "Clean Takes" };
+
     static constexpr int toolbarHeight = 34;
-    static constexpr int labelWidth    = 70;
+    static constexpr int labelWidth    = 96;
+    static constexpr int playZone      = 26;    // the right end of the label is the listen button
     static constexpr int rowHeight     = 60;
     static constexpr int rowGap        = 4;
 

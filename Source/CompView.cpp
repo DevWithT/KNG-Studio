@@ -1,4 +1,5 @@
 #include "CompView.h"
+#include "CleanTakes.h"
 
 namespace te = tracktion;
 
@@ -9,9 +10,13 @@ CompView::CompView (EditSession& sessionToUse, te::WaveAudioClip& clipToComp)
     addAndMakeVisible (flattenButton);
     flattenButton.onClick = [this] { flatten(); };
 
+    addAndMakeVisible (cleanButton);
+    cleanButton.setTooltip ("Delete the takes this clip is not using");
+    cleanButton.onClick = [this] { cleanTakes(); };
+
     addAndMakeVisible (hintLabel);
     hintLabel.setFont (juce::Font (juce::FontOptions (12.0f)));
-    hintLabel.setText ("Drag across a take to use it there. Click a take to swap one section. Click a take's name to use all of it.",
+    hintLabel.setText ("Drag across a take to use it there. Click to swap a section. Click a name for the whole take. Triangle listens.",
                        juce::dontSendNotification);
 
     timerCallback();
@@ -23,6 +28,7 @@ CompView::CompView (EditSession& sessionToUse, te::WaveAudioClip& clipToComp)
 CompView::~CompView()
 {
     stopTimer();
+    stopAudition();
     thumbs.clear();
 }
 
@@ -48,6 +54,20 @@ void CompView::timerCallback()
     // Clip was deleted; the dock clears this panel
     if (clip->getParent() == nullptr)
         return;
+
+    // Listening ends when playback stops or passes the end of the clip
+    if (auditioning >= 0)
+    {
+        auto& transport = session.getTransport();
+
+        if (! transport.isPlaying() || transport.getPosition().inSeconds() >= clip->getPosition().getEnd().inSeconds())
+        {
+            if (transport.isPlaying())
+                session.stop();
+
+            stopAudition();
+        }
+    }
 
     auto& m = cm();
     numTakes = m.getNumTakes();
@@ -156,6 +176,8 @@ void CompView::useTakeAt (int takeIndex, double t)
 
 void CompView::flatten()
 {
+    stopAudition();
+
     auto& m = cm();
 
     if (! m.isCurrentTakeComp())
@@ -168,6 +190,70 @@ void CompView::flatten()
 }
 
 //==============================================================================
+void CompView::cleanTakes()
+{
+    stopAudition();
+
+    juce::Component::SafePointer<CompView> safe (this);
+    KngCleanTakes::run (session, *clip, [safe]
+    {
+        if (safe != nullptr)
+            safe->repaint();
+    });
+}
+
+void CompView::startAudition (int row)
+{
+    stopAudition();
+
+    auto& m = cm();
+
+    // One take on its own: switch the clip to that take until listening ends
+    if (row >= 1)
+    {
+        auditionRestoreTake = m.getActiveTakeIndex();
+        m.setActiveTakeIndex (row - 1);
+    }
+
+    auditioning = row;
+    session.getTransport().setPosition (clip->getPosition().getStart());
+    session.play();
+}
+
+void CompView::stopAudition()
+{
+    if (auditioning < 0)
+        return;
+
+    auditioning = -1;
+
+    // Back to the comp
+    if (auditionRestoreTake >= 0 && clip->getParent() != nullptr)
+        cm().setActiveTakeIndex (auditionRestoreTake);
+
+    auditionRestoreTake = -1;
+    repaint();
+}
+
+void CompView::drawPlayButton (juce::Graphics& g, juce::Rectangle<int> labelArea, bool on) const
+{
+    auto box = labelArea.removeFromRight (playZone).withSizeKeepingCentre (14, 14).toFloat();
+
+    g.setColour (on ? juce::Colours::white : juce::Colours::white.withAlpha (0.75f));
+
+    if (on)
+    {
+        g.fillRect (box.reduced (2.0f));
+    }
+    else
+    {
+        juce::Path p;
+        p.addTriangle (box.getX() + 2.0f, box.getY(), box.getX() + 2.0f, box.getBottom(),
+                       box.getRight(), box.getCentreY());
+        g.fillPath (p);
+    }
+}
+
 juce::Rectangle<int> CompView::getRowArea (int row) const
 {
     return { 6, toolbarHeight + 4 + row * (rowHeight + rowGap), getWidth() - 12, rowHeight };
@@ -209,14 +295,20 @@ void CompView::paint (juce::Graphics& g)
     if (range.isEmpty())
         return;
 
-    const auto sections = getSections();
+    // While a take is being auditioned the engine shows that take everywhere, so keep drawing the comp
+    if (auditionRestoreTake < 0)
+        sectionCache = getSections();
+
+    const auto sections = sectionCache;
     g.setFont (juce::Font (juce::FontOptions (12.0f)));
 
     // Comp row
     {
         auto row = getRowArea (0);
         g.setColour (juce::Colours::white);
-        g.drawText ("Comp", row.removeFromLeft (labelWidth), juce::Justification::centredLeft);
+        auto labelArea = row.removeFromLeft (labelWidth);
+        g.drawText ("Comp", labelArea.withTrimmedRight (playZone), juce::Justification::centredLeft);
+        drawPlayButton (g, labelArea, auditioning == 0);
 
         for (auto& s : sections)
         {
@@ -241,7 +333,9 @@ void CompView::paint (juce::Graphics& g)
         auto row = getRowArea (i + 1);
 
         g.setColour (colourForTake (i));
-        g.drawText ("Take " + juce::String (i + 1), row.removeFromLeft (labelWidth), juce::Justification::centredLeft);
+        auto labelArea = row.removeFromLeft (labelWidth);
+        g.drawText ("Take " + juce::String (i + 1), labelArea.withTrimmedRight (playZone), juce::Justification::centredLeft);
+        drawPlayButton (g, labelArea, auditioning == i + 1);
 
         g.setColour (juce::Colour (0xff2a2d31));
         g.fillRect (row);
@@ -281,7 +375,8 @@ void CompView::paint (juce::Graphics& g)
 void CompView::resized()
 {
     flattenButton.setBounds (6, 5, 90, 24);
-    hintLabel.setBounds (104, 5, getWidth() - 110, 24);
+    cleanButton.setBounds (102, 5, 100, 24);
+    hintLabel.setBounds (210, 5, getWidth() - 216, 24);
 }
 
 //==============================================================================
@@ -290,6 +385,26 @@ void CompView::mouseDown (const juce::MouseEvent& e)
     dragTake = -1;
 
     const int row = rowAt (e.y);
+    const bool onPlay = e.x >= 6 + labelWidth - playZone && e.x < 6 + labelWidth;
+
+    // The triangle listens: row 0 is the comp as it is, rows 1+ are one take on its own
+    if (row >= 0 && onPlay)
+    {
+        if (auditioning == row)
+        {
+            session.stop();
+            stopAudition();
+        }
+        else
+        {
+            startAudition (row);
+        }
+
+        return;
+    }
+
+    // Any other click puts the clip back on the comp first, so edits land on the comp
+    stopAudition();
 
     if (row < 1)
         return;
