@@ -41,6 +41,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `EditSessionChannels.cpp`: adds a sample channel to the Rack.
 - `EditSessionClips.cpp`: audio clip tempo-follow, pitch and gain; song markers.
 - `EditSessionSections.cpp`: Sections (a marker with a length and a kngSection property): addSection, getSectionClips, moveClipsInRange, duplicateSection (shifts everything after the section right by its length, copies the clips, adds a new numbered section).
+- `EditSessionCollect.cpp`: collectAndSave: copies audio clips and Drum Kit pad samples that live outside the project into its Audio folder and points the song at the copies (File > Collect and Save...). KNG Sampler files are not covered yet.
 - `EditSessionCrossfade.cpp`: crossfades overlapping audio clips on a lane.
 - `EditSessionDrums.cpp`: drum tracks, pads, kit folders, creating pattern clips.
 - `EditSessionExport.cpp`: mix, stem and multi-track export; render settings.
@@ -60,7 +61,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `EditSessionPlaylist.cpp`: lanes; placing, moving and deleting blocks; cue and pattern mode.
 - `EditSessionPlaylistEdit.cpp`: cut and resize blocks; tidy the Playlist; separate overlaps.
 - `EditSessionPlugins.cpp`: adds instruments and effects by id (built-in or VST).
-- `EditSessionProject.cpp`: save, import audio, copy files into the project.
+- `EditSessionProject.cpp`: save, import audio, copy files into the project. While batchImport is true importAudioFileAt and save() skip their own undo step and save (Chop to Lane sets it, so one Undo takes back the whole chop).
 - `EditSessionRouting.cpp`: buses, sends to a bus (level, pre/post fader, mute, remove), loop-safe routing check (canFeed, getBusTargets), sidechain ducking. Output itself lives in RouteMenu.h (KngRoute).
 - `EditSessionSampler.cpp`: KNG Sampler settings, chop a clip to pads, open the piano roll.
 - `EditSessionSelection.cpp`: multi-clip selection and Group Clips (clips with the same kngGroup property are picked, moved, copied and deleted together; groups expand inside getSelectedClips and isClipSelected; duplicates and pastes get new ids through regroupCopies).
@@ -228,6 +229,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - `EditSessionBackup.cpp`: getLockFile, getBackupsFolder, timerCallback, makeBackup, pruneBackups
 - `EditSessionChannels.cpp`: addSampleChannel
 - `EditSessionClips.cpp`: getClipSourceBpm, setClipFollowTempo, setClipPitch, setClipGain, getMarkers, addMarkerAt, jumpToMarker
+- `EditSessionCollect.cpp`: collectAndSave
 - `EditSessionCrossfade.cpp`: crossfadeOverlaps
 - `EditSessionDrums.cpp`: getKitsFolder, isDrumTrack, getDrumSampler, getPadName, setPadName, setPadSample, clearPad, getPadGain, getPadPan, setPadGainAndPan, getPadPitch, setPadPitch, playPad, loadKitFolder, createPatternClip
 - `EditSessionExport.cpp`: getLameExecutable, getExportsFolder, trackHasContent, getExportRange, makeRenderParams, exportMix, exportStem, exportTracks
@@ -339,7 +341,7 @@ Medium:
 Large:
 14. Master output panel: built (small scope and spectrum in the master strip, big window under View > Master Output...), not yet tested.
 15. Sections: built and not yet tested (add, move with clips, resize, duplicate with room, select clips, delete).
-16. Collect and Save: importAudioFile and copyIntoProject already copy imports into the project. Extend it to Sounds browser files, KNG Sampler files and Kit samples, with a File menu item.
+16. Collect and Save: built for audio clips and Drum Kit pads (File > Collect and Save...), not yet tested. KNG Sampler files still need adding.
 17. Slice Editor, second part: tempo match is built (SliceEditorTempo.cpp), not yet tested. Chop to Lane is built (each slice becomes its own clip on a new lane), not yet tested. Opening the editor from a lane is built (lane header right-click, Slice Editor submenu), not yet tested. Still to do: Snap to key (KngTune and the theory settings).
 
 ### Waiting on a decision

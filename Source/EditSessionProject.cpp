@@ -5,6 +5,9 @@ namespace te = tracktion;
 //==============================================================================
 void EditSession::save()
 {
+    if (batchImport)
+        return;
+
     // Remember this project's zoom
     edit->state.setProperty ("kngViewStart", viewStart, nullptr);
     edit->state.setProperty ("kngViewLength", viewLength, nullptr);
@@ -94,7 +97,8 @@ double EditSession::importAudioFileAt (const juce::File& file, int trackIndex, d
     const double start = juce::jmax (0.0, startSeconds);
     const double end   = start + audioFile.getLength();
 
-    beginEdit();
+    if (! batchImport)
+        beginEdit();
 
     const te::TimeRange range (te::TimePosition::fromSeconds (start), te::TimePosition::fromSeconds (end));
     auto clip = track->insertWaveClip (file.getFileNameWithoutExtension(), dest,

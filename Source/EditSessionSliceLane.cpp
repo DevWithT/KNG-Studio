@@ -35,17 +35,22 @@ int EditSession::chopClipToLane (te::AudioClipBase& clip, const std::vector<doub
     if (files.empty())
         return -1;
 
+    beginEdit ("Chop to lane");
     addTrack();
     const int laneIndex = getNumTracks() - 1;
 
     if (auto* lane = getTrack (laneIndex))
         lane->setName (clip.getName().isNotEmpty() ? clip.getName() + " slices" : juce::String ("Slices"));
 
+    batchImport = true;
+
     for (size_t k = 0; k < files.size(); ++k)
         importAudioFileAt (files[k], laneIndex, starts[k]);
 
+    batchImport = false;
+
     // So you don't hear it twice
-    beginEdit();
+    // (still the same undo step as the lane and the clips above)
     clip.setMuted (true);
     save();
 

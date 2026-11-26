@@ -67,6 +67,7 @@ juce::PopupMenu MainComponent::getMenuForIndex (int menuIndex, const juce::Strin
             add (cmdSaveTemplate, "Save as Template...", {}, hasSession);
             m.addSeparator();
             add (cmdImport, "Import Audio...", {}, hasSession);
+            add (9005, "Collect and Save...", {}, hasSession);
             add (cmdExport, "Export...", {}, hasSession);
             m.addSeparator();
             add (cmdSettings, "Settings...", "Ctrl+,");
@@ -201,6 +202,26 @@ void MainComponent::menuItemSelected (int id, int)
         case cmdUndo:          session->undo(); break;
         case cmdRedo:          session->redo(); break;
         case 9004: if (auto* w = MasterScope::open (*session)) songWindows.add (w); break;
+        case 9005:
+        {
+            int missing = 0;
+            const int copied = session->collectAndSave (&missing);
+
+            juce::String msg;
+
+            if (copied < 0)
+                msg = "Stop recording first.";
+            else if (copied == 0 && missing == 0)
+                msg = "Everything is already inside the project folder.";
+            else
+                msg = "Copied " + juce::String (copied) + (copied == 1 ? " file" : " files") + " into the project's Audio folder.";
+
+            if (missing > 0)
+                msg += "\n\n" + juce::String (missing) + (missing == 1 ? " file was" : " files were") + " missing or could not be copied, so they were left as they are.";
+
+            juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::InfoIcon, "Collect and Save", msg);
+            break;
+        }
         case 9003: if (auto* w = PluginCpuMonitor::open (*session)) songWindows.add (w); break;
         case 9002: if (auto* w = RoutingMatrix::open (*session)) songWindows.add (w); break;
         case cmdUndoHistory:   if (auto* w = UndoHistoryList::open (*session)) songWindows.add (w); break;

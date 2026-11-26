@@ -473,6 +473,8 @@ public:
     // Import
     bool importAudioFile (const juce::File& file);
     double importAudioFileAt (const juce::File& file, int trackIndex, double startSeconds);
+    /** Copies every audio clip and Drum Kit pad sample that sits outside the project folder into its Audio folder and points the song at the copies. Returns how many files it copied, or -1 while recording. numMissing gets the number of files it could not find or copy. */
+    int collectAndSave (int* numMissing = nullptr);
 
     void refreshInputs();
     void save();
@@ -522,6 +524,7 @@ private:
     bool patternMode = false;
     int playlistTool = 0;
     bool deferSave = false;
+    bool batchImport = false;   // true while one job imports many files: they share one undo step and one save
     double recordStartSeconds = 0.0;
     int recordingPattern = 0;   // set while recording notes into a pattern (Pattern mode)
     std::vector<tracktion::EditItemID> clipsBeforeRecording;
