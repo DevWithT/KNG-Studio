@@ -20,6 +20,7 @@
 #include "PluginWindow.h"
 #include "MidiMapDialog.h"
 #include "KngPopOut.h"
+#include "CaptureMidi.h"
 
 //==============================================================================
 void MainComponent::togglePlayStop()
@@ -59,6 +60,7 @@ void MainComponent::showShortcuts()
         "Ctrl+X\tCut clip\n"
         "Ctrl+A / Ctrl+Shift+A\tSelect all / select none\n"
         "Ctrl+I\tInvert selection\n"
+        "Ctrl+Shift+C\tCapture: turn the MIDI you just played into a clip\n"
         "Ctrl+R\tRe-take (while recording)\n"
         "Ctrl+L\tMIDI Learn on / off\n"
         "Ctrl+K\tComputer keyboard piano on / off\n"
@@ -127,7 +129,15 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
         if (code == 'O' || code == 'o')  { openProject();                    return true; }
         if (code == 'N' || code == 'n')  { newProject();                     return true; }
         if (code == 'D' || code == 'd')  { session->duplicateSelectedClip(); return true; }
-        if (code == 'C' || code == 'c')  { session->copySelectedClip();      return true; }
+        if (code == 'C' || code == 'c')
+        {
+            if (mods.isShiftDown())
+                KngCapture::run (*session);
+            else
+                session->copySelectedClip();
+
+            return true;
+        }
         if (code == 'V' || code == 'v')  { session->pasteClip();             return true; }
         if (code == 'A' || code == 'a')
         {

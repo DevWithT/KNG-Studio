@@ -55,6 +55,8 @@ public:
     void deleteTrack (int index);
     /** Puts a copy of a lane right under it: its audio clips, effects and settings. Pattern blocks are not copied (they would play twice). Returns the new lane's index, or -1. */
     int duplicateLane (int trackIndex);
+    /** Capture: turns the MIDI you just played (about the last 30 seconds, with no recording running) into a clip on the track your keyboard feeds. Returns an error message, or an empty string on success. */
+    juce::String captureMidi();
     void moveTrack (int index, int direction);
     void setFocusedTrack (int index)            { focusedTrack = index; }
 

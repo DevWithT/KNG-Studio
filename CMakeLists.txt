@@ -58,6 +58,7 @@ target_sources(KNGStudio PRIVATE
     Source/EditSessionSelection.cpp
     Source/EditSessionClips.cpp
     Source/EditSessionClipTools.cpp
+    Source/EditSessionCapture.cpp
     Source/EditSessionCollect.cpp
     Source/EditSessionSections.cpp
     Source/MarkerBar.cpp
