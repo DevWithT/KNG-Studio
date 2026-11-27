@@ -11,6 +11,7 @@ The app icon is Assets/Icon/KngIcon.png (ICON_BIG and ICON_SMALL in juce_add_gui
 - Change only what a prompt asks for. Do not refactor or tidy anything else.
 - Do not run bash, builds, type checks or servers unless a prompt asks.
 - When you create or delete a source file, add or remove its line in this map in the same change.
+- Keep this file current. When a prompt builds or finishes something, update the file map, the To do list and the Session log in the same change.
 
 ## 3. File map
 
@@ -415,3 +416,8 @@ Large:
 - Playlist scroll bar for more bars: bar built (covers the song plus one empty screen), not yet tested.
 - Bars past the end of the song are dimmed in the Playlist lanes until something is placed there: built, not yet tested.
 - Snap on and off in every area. The Playlist follows the Snap button already, the piano roll has its own grid box with Grid Off. Check drops and anywhere else that ignores it.
+
+## 8. Session log
+Newest first. A few lines per session: the date, what changed, what is still untested.
+
+- 2026-11-27: Added this Session log and the keep-current rule. Not rebuilt or tested since the last batch: the Collect Files fix (setToFile with PathStyle::alwaysRelative), Cut Clip, Swap Clips, Invert Selection, Duplicate Lane, Recent Projects, the Settings fold, Project Settings, Scratch Pads, Clean Takes, the comp listen triangles and Capture MIDI.
